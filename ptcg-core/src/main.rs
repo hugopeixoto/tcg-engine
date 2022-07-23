@@ -62,10 +62,12 @@ pub enum Action {
 trait CardArchetype {
     // probably want to add the Zone of the card
     fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action>;
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState;
 }
 
 trait TrainerCardArchetype {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool;
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState;
 }
 
 struct GenericCard {
@@ -134,6 +136,10 @@ impl CardArchetype for Trainer {
             vec![]
         }
     }
+
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        self.archetype.execute(player, card, engine, dm).discard_from_hand(player, card)
+    }
 }
 
 #[derive(Default)]
@@ -141,6 +147,10 @@ struct ClefairyDoll {}
 impl TrainerCardArchetype for ClefairyDoll {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_bench(player, card)
+    }
+
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
     }
 }
 
@@ -152,6 +162,9 @@ impl TrainerCardArchetype for ComputerSearch {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 2)
     }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
+    }
 }
 
 #[derive(Default)]
@@ -160,6 +173,9 @@ impl TrainerCardArchetype for ImpostorProfessorOak {
     // effect: shuffle(hand, to: deck); draw(7)
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
+    }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
     }
 }
 
@@ -171,6 +187,9 @@ impl TrainerCardArchetype for ItemFinder {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 2) && engine.discard_pile_has_trainer(player, card)
     }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
+    }
 }
 
 #[derive(Default)]
@@ -181,6 +200,9 @@ impl TrainerCardArchetype for Lass {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
+    }
 }
 
 #[derive(Default)]
@@ -188,6 +210,9 @@ struct PokemonBreeder {}
 impl TrainerCardArchetype for PokemonBreeder {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true // todo: bunch of checks
+    }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
     }
 }
 
@@ -197,6 +222,9 @@ impl TrainerCardArchetype for PokemonTrader {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true // TODO: pokemon communication
     }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
+    }
 }
 
 #[derive(Default)]
@@ -204,6 +232,9 @@ struct ScoopUp {}
 impl TrainerCardArchetype for ScoopUp {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
+    }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
     }
 }
 
@@ -213,6 +244,9 @@ impl TrainerCardArchetype for Defender {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
+    }
 }
 
 #[derive(Default)]
@@ -220,6 +254,9 @@ struct EnergyRetrieval {}
 impl TrainerCardArchetype for EnergyRetrieval {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 1) && engine.discard_pile_has_basic_energy(player, card)
+    }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
     }
 }
 
@@ -229,6 +266,9 @@ impl TrainerCardArchetype for Maintenance {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 2) // TODO: not discard but shuffle
     }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
+    }
 }
 
 #[derive(Default)]
@@ -236,6 +276,9 @@ struct PlusPower {}
 impl TrainerCardArchetype for PlusPower {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
+    }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
     }
 }
 
@@ -245,6 +288,9 @@ impl TrainerCardArchetype for Pokedex {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).deck.is_empty()
     }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
+    }
 }
 
 #[derive(Default)]
@@ -253,14 +299,19 @@ impl TrainerCardArchetype for ProfessorOak {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).deck.is_empty()
     }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
+    }
 }
-
 
 #[derive(Default)]
 struct Bill {}
 impl TrainerCardArchetype for Bill {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).deck.is_empty()
+    }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.draw_n_to_hand(player, 2, dm)
     }
 }
 
@@ -270,6 +321,9 @@ impl TrainerCardArchetype for GustOfWind {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player.opponent()).bench.is_empty()
     }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
+    }
 }
 
 #[derive(Default)]
@@ -278,6 +332,9 @@ impl TrainerCardArchetype for Switch {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).bench.is_empty()
     }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
+    }
 }
 
 #[derive(Default)]
@@ -285,6 +342,9 @@ struct NOOP {}
 impl CardArchetype for NOOP {
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
+    }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
     }
 }
 
@@ -327,7 +387,8 @@ impl GameEngine {
                                 }
                             }
                         },
-                        Action::TrainerFromHand(_card) => {
+                        Action::TrainerFromHand(card) => {
+                            self.state = GenericCard::from(card).archetype.execute(player, card, self, dm);
                         },
                         Action::AttachFromHand(card) => {
                             let targets = self.attachment_from_hand_targets(player, card);

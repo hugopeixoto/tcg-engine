@@ -423,6 +423,18 @@ impl GameState {
         self.with_player_side(player, side)
     }
 
+    pub fn discard_from_hand(&self, player: Player, card: &Card) -> Self {
+        let mut side = self.side(player).clone();
+
+        let p = side.hand.iter().position(|c| c == card).unwrap();
+        side.hand.remove(p);
+
+        side.discard.push(card.clone());
+
+        self.with_player_side(player, side)
+    }
+
+
     pub fn reveal_pokemon(&self, player: Player) -> Self {
         let mut side = self.side(player).clone();
 
