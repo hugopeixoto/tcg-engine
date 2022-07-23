@@ -36,6 +36,39 @@ pub enum DeckSlice {
     Ordered(Vec<Card>),
 }
 
+impl DeckSlice {
+    pub fn remove_card(&self, card: &Card) -> (Option<Card>, Self) {
+        match self {
+            DeckSlice::Shuffled(cards) => {
+                let mut cards = cards.clone();
+                let p = cards.iter().position(|c| c == card);
+                match p {
+                    Some(p) => {
+                        cards.remove(p);
+                        (Some(card.clone()), DeckSlice::Shuffled(cards))
+                    },
+                    None => {
+                        (None, DeckSlice::Shuffled(cards))
+                    }
+                }
+            },
+            DeckSlice::Ordered(cards) => {
+                let mut cards = cards.clone();
+                let p = cards.iter().position(|c| c == card);
+                match p {
+                    Some(p) => {
+                        cards.remove(p);
+                        (Some(card.clone()), DeckSlice::Ordered(cards))
+                    },
+                    None => {
+                        (None, DeckSlice::Ordered(cards))
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[derive(Default, Clone)]
 pub struct Deck {
     slices: Vec<DeckSlice>,
@@ -98,6 +131,10 @@ impl Deck {
         self.slices.is_empty()
     }
 
+    pub fn cards(&self) -> Vec<Card> {
+        self.slices.iter().flat_map(|s| match s { DeckSlice::Ordered(x) => x, DeckSlice::Shuffled(x) => x }).cloned().collect()
+    }
+
     pub fn len(&self) -> usize {
         self.slices.iter().map(|s| match s { DeckSlice::Ordered(x) => x.len(), DeckSlice::Shuffled(x) => x.len() }).sum()
     }
@@ -123,6 +160,18 @@ impl Deck {
                 }
             }
         }
+    }
+
+    pub fn remove_card(&self, card: &Card) -> (Option<Card>, Self) {
+        for (i, slice) in self.slices.iter().enumerate() {
+            if let (Some(c), slice) = slice.remove_card(card) {
+                let mut deck = self.clone();
+                deck.slices[i] = slice;
+                return (Some(c), deck);
+            }
+        }
+
+        (None, self.clone())
     }
 }
 
@@ -426,10 +475,22 @@ impl GameState {
     pub fn discard_from_hand(&self, player: Player, card: &Card) -> Self {
         let mut side = self.side(player).clone();
 
-        let p = side.hand.iter().position(|c| c == card).unwrap();
-        side.hand.remove(p);
+        if let Some(p) = side.hand.iter().position(|c| c == card) {
+            side.hand.remove(p);
+            side.discard.push(card.clone());
+        }
 
-        side.discard.push(card.clone());
+        self.with_player_side(player, side)
+    }
+
+    pub fn tutor_to_hand(&self, player: Player, card: &Card) -> Self {
+        let mut side = self.side(player).clone();
+
+        if let (Some(c), deck) = side.deck.remove_card(card) {
+            println!("removed card from deck: {}", c);
+            side.hand.push(c);
+            side.deck = deck;
+        }
 
         self.with_player_side(player, side)
     }

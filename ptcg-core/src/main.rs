@@ -21,6 +21,8 @@ pub trait DecisionMaker: Shuffler {
     fn confirm_setup_bench_selection(&mut self, p: Player, cards: &Vec<Card>) -> Vec<Card>;
     fn pick_action<'a>(&mut self, p: Player, actions: &'a Vec<Action>) -> &'a Action;
     fn pick_target<'a>(&mut self, p: Player, actions: &'a Vec<InPlayID>) -> &'a InPlayID;
+    fn pick_from_hand<'a>(&mut self, p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card>;
+    fn search_deck<'a>(&mut self, p: Player, whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card>;
 }
 
 #[derive(PartialEq, Eq)]
@@ -162,8 +164,22 @@ impl TrainerCardArchetype for ComputerSearch {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 2)
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        let mut state = engine.state.clone();
+
+        let cost = dm.pick_from_hand(player, player, 2, &engine.state.side(player).hand); // TODO: can't pick used card
+        for discarded in cost {
+            state = state.discard_from_hand(player, discarded);
+        }
+
+        let deck_cards = engine.state.side(player).deck.cards();
+        let chosen = dm.search_deck(player, player, 1, &deck_cards);
+        for searched in chosen {
+            println!("tutoring card to hand {}", searched);
+            state = state.tutor_to_hand(player, searched);
+        }
+
+        state.shuffle_deck(player)
     }
 }
 
@@ -299,8 +315,14 @@ impl TrainerCardArchetype for ProfessorOak {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).deck.is_empty()
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        let mut state = engine.state.clone();
+
+        for discarded in engine.state.side(player).hand.iter() {
+            state = state.discard_from_hand(player, discarded);
+        }
+
+        state.draw_n_to_hand(player, 7, dm)
     }
 }
 
@@ -762,6 +784,46 @@ impl DecisionMaker for CLI {
         }
 
         targets.iter().find(|&&x| x == choice.unwrap()).unwrap()
+    }
+
+    fn pick_from_hand<'a>(&mut self, p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card> {
+        let mut choice = None;
+
+        println!("Pick {} cards from {:?}'s hand:", how_many, whose);
+        for (i, card) in hand.iter().enumerate() {
+            println!("{}. {}", i + 1, card);
+        }
+
+        while choice.is_none() {
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+            let chosen = input.trim().split(",").filter_map(|c| c.parse::<usize>().ok()).collect::<Vec<_>>();
+            if chosen.len() == how_many && chosen.iter().all(|&x| 1 <= x && x <= hand.len()) {
+                choice = Some(chosen.iter().map(|i| &hand[i - 1]).collect());
+            }
+        }
+
+        choice.unwrap()
+    }
+
+    fn search_deck<'a>(&mut self, p: Player, whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card> {
+        let mut choice = None;
+
+        println!("Pick {} cards from {:?}'s deck:", how_many, whose);
+        for (i, card) in deck.iter().enumerate() {
+            println!("{}. {}", i + 1, card);
+        }
+
+        while choice.is_none() {
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+            let chosen = input.trim().split(",").filter_map(|c| c.parse::<usize>().ok()).collect::<Vec<_>>();
+            if chosen.len() == how_many && chosen.iter().all(|&x| 1 <= x && x <= deck.len()) {
+                choice = Some(chosen.iter().map(|i| &deck[i - 1]).collect());
+            }
+        }
+
+        choice.unwrap()
     }
 }
 
