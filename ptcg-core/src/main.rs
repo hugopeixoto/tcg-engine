@@ -9,197 +9,8 @@ mod cli;
 
 use state::*;
 
-
-impl GameState {
-    pub fn initial(a: &[&str], b: &[&str]) -> Self {
-        Self {
-            p1: PlayerSide {
-                deck: Deck::new(&a.iter().map(|x| x.to_string()).collect::<Vec<_>>()),
-                ..Default::default()
-            },
-            p2: PlayerSide {
-                deck: Deck::new(&b.iter().map(|x| x.to_string()).collect::<Vec<_>>()),
-                ..Default::default()
-            },
-            ..Default::default()
-        }
-    }
-
-    pub fn next_play_id(&self) -> InPlayID {
-        let mut max = 0;
-
-        for in_play in self.p1.active.iter() {
-            max = max.max(in_play.id);
-        }
-        for in_play in self.p2.active.iter() {
-            max = max.max(in_play.id);
-        }
-        for in_play in self.p1.bench.iter() {
-            max = max.max(in_play.id);
-        }
-        for in_play in self.p2.bench.iter() {
-            max = max.max(in_play.id);
-        }
-
-        max + 1
-    }
-
-    pub fn side(&self, player: Player) -> &PlayerSide {
-        match player {
-            Player::One => &self.p1,
-            Player::Two => &self.p2,
-        }
-    }
-
-    fn side_mut(&mut self, player: Player) -> &mut PlayerSide {
-        match player {
-            Player::One => &mut self.p1,
-            Player::Two => &mut self.p2,
-        }
-    }
-
-    pub fn with_player_side(&self, player: Player, side: PlayerSide) -> Self {
-        match player {
-            Player::One => Self { p1: side, ..self.clone() },
-            Player::Two => Self { p2: side, ..self.clone() },
-        }
-    }
-
-    pub fn put_on_top_of_deck(&self, player: Player, card: Card) -> Self {
-        let side = self.side(player);
-
-        self.with_player_side(player, PlayerSide {
-            deck: side.deck.put_on_top(card),
-            ..side.clone()
-        })
-    }
-
-    pub fn shuffle_hand_into_deck(&self, player: Player) -> Self {
-        let mut state = self.clone();
-        while !state.side(player).hand.is_empty() {
-            let card = state.side_mut(player).hand.pop().unwrap();
-            state = state.put_on_top_of_deck(player, card.clone());
-        }
-        state.shuffle_deck(player)
-    }
-
-    pub fn shuffle_deck(&self, player: Player) -> Self {
-        let side = self.side(player);
-
-        self.with_player_side(player, PlayerSide {
-            deck: side.deck.shuffle(),
-            ..side.clone()
-        })
-    }
-
-    pub fn draw_to_hand(&self, player: Player, dm: &mut dyn Shuffler) -> Self {
-        let side = self.side(player);
-
-        let (deck, card) = side.deck.draw(dm);
-        let mut hand = side.hand.clone();
-        if let Some(card) = card { hand.push(card); }
-
-        self.with_player_side(player, PlayerSide { deck, hand, ..side.clone() })
-    }
-
-    pub fn draw_to_prizes(&self, player: Player, dm: &mut dyn Shuffler) -> Self {
-        let side = self.side(player);
-
-        let (deck, card) = side.deck.draw(dm);
-        let mut prizes = side.prizes.clone();
-        if let Some(card) = card { prizes.push(FaceCard::Down(card)); }
-
-        self.with_player_side(player, PlayerSide { deck, prizes, ..side.clone() })
-    }
-
-    pub fn draw_n_to_hand(&self, player: Player, n: usize, dm: &mut dyn Shuffler) -> Self {
-        if n == 0 {
-            self.clone()
-        } else {
-            self.draw_to_hand(player, dm).draw_n_to_hand(player, n - 1, dm)
-        }
-    }
-
-    pub fn play_from_hand_to_active_face_down(&self, player: Player, card: &Card) -> Self {
-        let mut side = self.side(player).clone();
-
-        let p = side.hand.iter().position(|c| c == card).unwrap();
-        side.hand.remove(p);
-
-        side.active.push(InPlayCard {
-            id: self.next_play_id(),
-            stack: vec![FaceCard::Down(card.clone())],
-            ..Default::default()
-        });
-
-        self.with_player_side(player, side)
-    }
-
-    pub fn play_from_hand_to_bench_face_down(&self, player: Player, card: &Card) -> Self {
-        let mut side = self.side(player).clone();
-
-        let p = side.hand.iter().position(|c| c == card).unwrap();
-        side.hand.remove(p);
-
-        side.bench.push(InPlayCard {
-            id: self.next_play_id(),
-            stack: vec![FaceCard::Down(card.clone())],
-            ..Default::default()
-        });
-
-        self.with_player_side(player, side)
-    }
-
-    pub fn attach_from_hand(&self, player: Player, card: &Card, target: InPlayID) -> Self {
-        let mut side = self.side(player).clone();
-
-        let p = side.hand.iter().position(|c| c == card).unwrap();
-        side.hand.remove(p);
-
-        side.in_play_mut(target).unwrap().attached.push(FaceCard::Up(card.clone()));
-
-        self.with_player_side(player, side)
-    }
-
-    pub fn bench_from_hand(&self, player: Player, card: &Card) -> Self {
-        let mut side = self.side(player).clone();
-
-        let p = side.hand.iter().position(|c| c == card).unwrap();
-        side.hand.remove(p);
-
-        side.bench.push(InPlayCard {
-            id: self.next_play_id(),
-            stack: vec![FaceCard::Up(card.clone())],
-            ..Default::default()
-        });
-
-        self.with_player_side(player, side)
-    }
-
-    pub fn reveal_pokemon(&self, player: Player) -> Self {
-        let mut side = self.side(player).clone();
-
-        for active in side.active.iter_mut() {
-            active.stack[0] = active.stack[0].up();
-        }
-
-        for benched in side.bench.iter_mut() {
-            benched.stack[0] = benched.stack[0].up();
-        }
-
-        self.with_player_side(player, side)
-    }
-
-    pub fn with_stage(&self, stage: GameStage) -> Self {
-        Self {
-            stage,
-            ..self.clone()
-        }
-    }
-}
-
-struct GameEngine {
-    state: GameState,
+pub struct GameEngine {
+    pub state: GameState,
 }
 
 pub trait DecisionMaker: Shuffler {
@@ -212,69 +23,15 @@ pub trait DecisionMaker: Shuffler {
     fn pick_target<'a>(&mut self, p: Player, actions: &'a Vec<InPlayID>) -> &'a InPlayID;
 }
 
-struct CLI {
-}
-
-impl Shuffler for CLI {
-    fn random_card(&mut self, n: usize) -> usize {
-        rand::thread_rng().gen_range(0..n)
-    }
-}
-
-impl DecisionMaker for CLI {
-    fn confirm_setup_mulligan(&mut self, _p: Player) {
-    }
-
-    fn confirm_setup_active_or_mulligan(&mut self, _p: Player, _maybe: &Vec<Card>) -> SetupActiveSelection {
-        SetupActiveSelection::Mulligan
-    }
-
-    fn confirm_setup_active(&mut self, _p: Player, yes: &Vec<Card>, _maybe: &Vec<Card>) -> Card {
-        yes[0].clone()
-    }
-
-    fn confirm_mulligan_draw(&mut self, _p: Player, upto: usize) -> usize {
-        upto
-    }
-
-    fn confirm_setup_bench_selection(&mut self, _p: Player, cards: &Vec<Card>) -> Vec<Card> {
-        cards.clone()
-    }
-
-    fn pick_action<'a>(&mut self, p: Player, actions: &'a Vec<Action>) -> &'a Action {
-        let mut choice = None;
-
-        while choice.is_none() {
-            let mut input = String::new();
-            std::io::stdin().read_line(&mut input).expect("Failed to read input");
-            choice = input.trim().parse::<usize>().ok();
-        }
-
-        &actions[choice.unwrap() - 1]
-    }
-
-    fn pick_target<'a>(&mut self, p: Player, targets: &'a Vec<InPlayID>) -> &'a InPlayID {
-        let mut choice = None;
-
-        while choice.is_none() || !targets.contains(&choice.unwrap()) {
-            let mut input = String::new();
-            std::io::stdin().read_line(&mut input).expect("Failed to read input");
-            choice = input.trim().parse::<InPlayID>().ok();
-        }
-
-        targets.iter().find(|&&x| x == choice.unwrap()).unwrap()
-    }
-}
-
 #[derive(PartialEq, Eq)]
-enum Maybe {
+pub enum Maybe {
     Yes,
     No,
     Maybe,
 }
 
 #[derive(PartialEq, Eq)]
-enum Stage {
+pub enum Stage {
     // Baby,
     Basic,
     // Break,
@@ -300,6 +57,235 @@ pub enum Action {
     TrainerFromHand(Card),
     AttachFromHand(Card),
     BenchFromHand(Card),
+}
+
+trait CardArchetype {
+    // probably want to add the Zone of the card
+    fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action>;
+}
+
+trait TrainerCardArchetype {
+    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool;
+}
+
+struct GenericCard {
+    archetype: Box<dyn CardArchetype>,
+}
+impl GenericCard {
+    pub fn new(archetype: Box<dyn CardArchetype>) -> Self {
+        Self { archetype }
+    }
+
+    pub fn from(identifier: &str) -> Self {
+        match identifier {
+            "Clefairy Doll (BS 70)"             => GenericCard::new(Box::new(Trainer::new(Box::new(ClefairyDoll::default())))),
+            "Computer Search (BS 71)"           => GenericCard::new(Box::new(Trainer::new(Box::new(ComputerSearch::default())))),
+            //"Devolution Spray (BS 72)"          => GenericCard::new(Box::new(Trainer::new(Box::new(DevolutionSpray::default())))),
+            "Impostor Professor Oak (BS 73)"    => GenericCard::new(Box::new(Trainer::new(Box::new(ImpostorProfessorOak::default())))),
+            "Item Finder (BS 74)"               => GenericCard::new(Box::new(Trainer::new(Box::new(ItemFinder::default())))),
+            "Lass (BS 75)"                      => GenericCard::new(Box::new(Trainer::new(Box::new(Lass::default())))),
+            "Pokemon Breeder (BS 76)"           => GenericCard::new(Box::new(Trainer::new(Box::new(PokemonBreeder::default())))),
+            "Pokemon Trader (BS 77)"            => GenericCard::new(Box::new(Trainer::new(Box::new(PokemonTrader::default())))),
+            "Scoop Up (BS 78)"                  => GenericCard::new(Box::new(Trainer::new(Box::new(ScoopUp::default())))),
+            //"Super Energy Removal (BS 79)"      => GenericCard::new(Box::new(Trainer::new(Box::new(SuperEnergyRemoval::default())))),
+            "Defender (BS 80)"                  => GenericCard::new(Box::new(Trainer::new(Box::new(Defender::default())))),
+            "Energy Retrieval (BS 81)"          => GenericCard::new(Box::new(Trainer::new(Box::new(EnergyRetrieval::default())))),
+            //"Full Heal (BS 82)"                 => GenericCard::new(Box::new(Trainer::new(Box::new(FullHeal::default())))),
+            "Maintenance (BS 83)"               => GenericCard::new(Box::new(Trainer::new(Box::new(Maintenance::default())))),
+            "PlusPower (BS 84)"                 => GenericCard::new(Box::new(Trainer::new(Box::new(PlusPower::default())))),
+            //"Pokemon Center (BS 85)"            => GenericCard::new(Box::new(Trainer::new(Box::new(PokemonCenter::default())))),
+            //"Pokemon Flute (BS 86)"             => GenericCard::new(Box::new(Trainer::new(Box::new(PokemonFlute::default())))),
+            "Pokedex (BS 87)"                   => GenericCard::new(Box::new(Trainer::new(Box::new(Pokedex::default())))),
+            "Professor Oak (BS 88)"             => GenericCard::new(Box::new(Trainer::new(Box::new(ProfessorOak::default())))),
+            //"Revive (BS 89)"                    => GenericCard::new(Box::new(Trainer::new(Box::new(Revive::default())))),
+            //"Super Potion (BS 90)"              => GenericCard::new(Box::new(Trainer::new(Box::new(SuperPotion::default())))),
+            "Bill (BS 91)"                      => GenericCard::new(Box::new(Trainer::new(Box::new(Bill::default())))),
+            //"Energy Removal (BS 92)"            => GenericCard::new(Box::new(Trainer::new(Box::new(EnergyRemoval::default())))),
+            "Gust of Wind (BS 93)"              => GenericCard::new(Box::new(Trainer::new(Box::new(GustOfWind::default())))),
+            //"Potion (BS 94)"                    => GenericCard::new(Box::new(Trainer::new(Box::new(Potion::default())))),
+            "Switch (BS 95)"                    => GenericCard::new(Box::new(Trainer::new(Box::new(Switch::default())))),
+            _ => GenericCard::new(Box::new(NOOP::default())),
+            // "Devolution Spray (BS 72)" => mine.in_play.any(is_evolution),
+            //"Super Energy Removal (BS 79)" => mine.in_play.any(energy_attached(1..)) && opp.in_play.any(energy_attached(1..)),
+            //"Full Heal (BS 82)" => self.active.any(asleep|confused|paralyzed|poisoned),
+            //"Pokemon Center (BS 85)" => mine.in_play.any((has_damage_counters|energy_attached(1..))&can_damage_counters_be_removed),
+            //"Pokemon Flute (BS 86)" => self.discard_pile_has_basic_pokemon(opp) && !opp.can_bench
+            //"Revive (BS 89)" => same as pokeflute but for ourselves,
+            //"Super Potion (BS 90)" => mine.in_play.any(has_damage_counters&energy_attached(1..)),
+            //"Energy Removal (BS 92)" => opp.in_play.any(energy_attached(1..))
+            //"Potion (BS 94)" => mine.in_play.any(has_damage_counters),
+        }
+    }
+}
+
+struct Trainer {
+    archetype: Box<dyn TrainerCardArchetype>,
+}
+impl Trainer {
+    pub fn new(archetype: Box<dyn TrainerCardArchetype>) -> Self {
+        Self { archetype }
+    }
+}
+impl CardArchetype for Trainer {
+    fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action> {
+        if self.archetype.requirements_ok(player, card, engine) {
+            vec![Action::TrainerFromHand(card.clone())]
+        } else {
+            vec![]
+        }
+    }
+}
+
+#[derive(Default)]
+struct ClefairyDoll {}
+impl TrainerCardArchetype for ClefairyDoll {
+    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
+        engine.can_bench(player, card)
+    }
+}
+
+#[derive(Default)]
+struct ComputerSearch {}
+impl TrainerCardArchetype for ComputerSearch {
+    // cost: discard(2, from: hand)
+    // effect: search(1, from: deck); move(it, to: hand)
+    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
+        engine.can_discard_other(player, card, 2)
+    }
+}
+
+#[derive(Default)]
+struct ImpostorProfessorOak {}
+impl TrainerCardArchetype for ImpostorProfessorOak {
+    // effect: shuffle(hand, to: deck); draw(7)
+    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
+        true
+    }
+}
+
+#[derive(Default)]
+struct ItemFinder {}
+impl TrainerCardArchetype for ItemFinder {
+    // cost: discard(2, from: hand)
+    // effect: me.search(1.item, from: discard); move(it, to: hand)
+    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
+        engine.can_discard_other(player, card, 2) && engine.discard_pile_has_trainer(player, card)
+    }
+}
+
+#[derive(Default)]
+struct Lass {}
+impl TrainerCardArchetype for Lass {
+    // effect: me.reveal(all.trainer, from: hand); me.shuffle(it, to: deck)
+    // effect: opp.reveal(all.trainer, from: hand); opp.shuffle(it, to: deck)
+    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
+        true
+    }
+}
+
+#[derive(Default)]
+struct PokemonBreeder {}
+impl TrainerCardArchetype for PokemonBreeder {
+    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
+        true // todo: bunch of checks
+    }
+}
+
+#[derive(Default)]
+struct PokemonTrader {}
+impl TrainerCardArchetype for PokemonTrader {
+    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
+        true // TODO: pokemon communication
+    }
+}
+
+#[derive(Default)]
+struct ScoopUp {}
+impl TrainerCardArchetype for ScoopUp {
+    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
+        true
+    }
+}
+
+#[derive(Default)]
+struct Defender {}
+impl TrainerCardArchetype for Defender {
+    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
+        true
+    }
+}
+
+#[derive(Default)]
+struct EnergyRetrieval {}
+impl TrainerCardArchetype for EnergyRetrieval {
+    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
+        engine.can_discard_other(player, card, 1) && engine.discard_pile_has_basic_energy(player, card)
+    }
+}
+
+#[derive(Default)]
+struct Maintenance {}
+impl TrainerCardArchetype for Maintenance {
+    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
+        engine.can_discard_other(player, card, 2) // TODO: not discard but shuffle
+    }
+}
+
+#[derive(Default)]
+struct PlusPower {}
+impl TrainerCardArchetype for PlusPower {
+    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
+        true
+    }
+}
+
+#[derive(Default)]
+struct Pokedex {}
+impl TrainerCardArchetype for Pokedex {
+    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
+        !engine.state.side(player).deck.is_empty()
+    }
+}
+
+#[derive(Default)]
+struct ProfessorOak {}
+impl TrainerCardArchetype for ProfessorOak {
+    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
+        !engine.state.side(player).deck.is_empty()
+    }
+}
+
+
+#[derive(Default)]
+struct Bill {}
+impl TrainerCardArchetype for Bill {
+    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
+        !engine.state.side(player).deck.is_empty()
+    }
+}
+
+#[derive(Default)]
+struct GustOfWind {}
+impl TrainerCardArchetype for GustOfWind {
+    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
+        !engine.state.side(player.opponent()).bench.is_empty()
+    }
+}
+
+#[derive(Default)]
+struct Switch {}
+impl TrainerCardArchetype for Switch {
+    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
+        !engine.state.side(player).bench.is_empty()
+    }
+}
+
+#[derive(Default)]
+struct NOOP {}
+impl CardArchetype for NOOP {
+    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
+        vec![]
+    }
 }
 
 impl GameEngine {
@@ -388,53 +374,8 @@ impl GameEngine {
     }
 
     pub fn card_actions(&self, player: Player, card: &Card) -> Vec<Action> {
-        let opp = player.opponent();
-
-        let my_deck = &self.state.side(player).deck;
-        let my_bench = &self.state.side(player).bench;
-
         if self.is_trainer(card) {
-            let requirements_ok = match card.as_str() {
-                // play as basic_pokemon
-                "Clefairy Doll (BS 70)" => self.can_bench(player, card),
-                // cost: discard(2, from: hand)
-                // effect: search(1, from: deck); move(it, to: hand)
-                "Computer Search (BS 71)" => self.can_discard_other(player, card, 2),
-                // "Devolution Spray (BS 72)" => mine.in_play.any(is_evolution),
-                // effect: shuffle(hand, to: deck); draw(7)
-                "Impostor Professor Oak (BS 73)" => true,
-                // cost: me.discard(2, from: hand)
-                // effect: me.search(1.item, from: discard); move(it, to: hand)
-                "Item Finder (BS 74)" => self.can_discard_other(player, card, 2) && self.discard_pile_has_trainer(player, card),
-                // effect: me.reveal(all.trainer, from: hand); me.shuffle(it, to: deck)
-                // effect: opp.reveal(all.trainer, from: hand); opp.shuffle(it, to: deck)
-                "Lass (BS 75)" => true,
-                "Pokemon Breeder (BS 76)" => true, // TODO: bunch checks
-                "Pokemon Trader (BS 77)" => true, // TODO: pokecomm
-                "Scoop Up (BS 78)" => true,
-                //"Super Energy Removal (BS 79)" => mine.in_play.any(energy_attached(1..)) && opp.in_play.any(energy_attached(1..)),
-                "Defender (BS 80)" => true,
-                "Energy Retrieval (BS 81)" => self.can_discard_other(player, card, 1) && self.discard_pile_has_basic_energy(player, card),
-                //"Full Heal (BS 82)" => self.active.any(asleep|confused|paralyzed|poisoned),
-                "Maintenance (BS 83)" => self.can_discard_other(player, card, 2), // not discard but shuffle
-                "PlusPower (BS 84)" => true,
-                //"Pokemon Center (BS 85)" => mine.in_play.any((has_damage_counters|energy_attached(1..))&can_damage_counters_be_removed),
-                //"Pokemon Flute (BS 86)" => self.discard_pile_has_basic_pokemon(opp) && !opp.can_bench
-                "Pokedex (BS 87)" => !my_deck.is_empty(),
-                "Professor Oak (BS 88)" => !my_deck.is_empty(),
-                //"Revive (BS 89)" => same as pokeflute but for ourselves,
-                //"Super Potion (BS 90)" => mine.in_play.any(has_damage_counters&energy_attached(1..)),
-                "Bill (BS 91)" => my_deck.len() > 0,
-                //"Energy Removal (BS 92)" => opp.in_play.any(energy_attached(1..))
-                "Gust of Wind (BS 93)" => self.state.side(opp).bench.len() > 0,
-                //"Potion (BS 94)" => mine.in_play.any(has_damage_counters),
-                "Switch (BS 95)" => !my_bench.is_empty(),
-                _ => false,
-            };
-
-            if requirements_ok {
-                return vec![Action::TrainerFromHand(card.clone())];
-            }
+            return GenericCard::from(card).archetype.card_actions(player, card, self);
         } else if self.is_energy(card) {
             if !self.attachment_from_hand_targets(player, card).is_empty() {
                 return vec![Action::AttachFromHand(card.clone())];
@@ -709,6 +650,59 @@ impl GameEngine {
     }
 }
 
+struct CLI {
+}
+
+impl Shuffler for CLI {
+    fn random_card(&mut self, n: usize) -> usize {
+        rand::thread_rng().gen_range(0..n)
+    }
+}
+
+impl DecisionMaker for CLI {
+    fn confirm_setup_mulligan(&mut self, _p: Player) {
+    }
+
+    fn confirm_setup_active_or_mulligan(&mut self, _p: Player, _maybe: &Vec<Card>) -> SetupActiveSelection {
+        SetupActiveSelection::Mulligan
+    }
+
+    fn confirm_setup_active(&mut self, _p: Player, yes: &Vec<Card>, _maybe: &Vec<Card>) -> Card {
+        yes[0].clone()
+    }
+
+    fn confirm_mulligan_draw(&mut self, _p: Player, upto: usize) -> usize {
+        upto
+    }
+
+    fn confirm_setup_bench_selection(&mut self, _p: Player, cards: &Vec<Card>) -> Vec<Card> {
+        cards.clone()
+    }
+
+    fn pick_action<'a>(&mut self, p: Player, actions: &'a Vec<Action>) -> &'a Action {
+        let mut choice = None;
+
+        while choice.is_none() {
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+            choice = input.trim().parse::<usize>().ok();
+        }
+
+        &actions[choice.unwrap() - 1]
+    }
+
+    fn pick_target<'a>(&mut self, p: Player, targets: &'a Vec<InPlayID>) -> &'a InPlayID {
+        let mut choice = None;
+
+        while choice.is_none() || !targets.contains(&choice.unwrap()) {
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+            choice = input.trim().parse::<InPlayID>().ok();
+        }
+
+        targets.iter().find(|&&x| x == choice.unwrap()).unwrap()
+    }
+}
 
 fn main() {
     let state = GameState::initial(

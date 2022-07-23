@@ -256,3 +256,191 @@ pub struct GameState {
     // effects
     pub effects: Vec<Effect>,
 }
+
+impl GameState {
+    pub fn initial(a: &[&str], b: &[&str]) -> Self {
+        Self {
+            p1: PlayerSide {
+                deck: Deck::new(&a.iter().map(|x| x.to_string()).collect::<Vec<_>>()),
+                ..Default::default()
+            },
+            p2: PlayerSide {
+                deck: Deck::new(&b.iter().map(|x| x.to_string()).collect::<Vec<_>>()),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+
+    pub fn next_play_id(&self) -> InPlayID {
+        let mut max = 0;
+
+        for in_play in self.p1.active.iter() {
+            max = max.max(in_play.id);
+        }
+        for in_play in self.p2.active.iter() {
+            max = max.max(in_play.id);
+        }
+        for in_play in self.p1.bench.iter() {
+            max = max.max(in_play.id);
+        }
+        for in_play in self.p2.bench.iter() {
+            max = max.max(in_play.id);
+        }
+
+        max + 1
+    }
+
+    pub fn side(&self, player: Player) -> &PlayerSide {
+        match player {
+            Player::One => &self.p1,
+            Player::Two => &self.p2,
+        }
+    }
+
+    fn side_mut(&mut self, player: Player) -> &mut PlayerSide {
+        match player {
+            Player::One => &mut self.p1,
+            Player::Two => &mut self.p2,
+        }
+    }
+
+    pub fn with_player_side(&self, player: Player, side: PlayerSide) -> Self {
+        match player {
+            Player::One => Self { p1: side, ..self.clone() },
+            Player::Two => Self { p2: side, ..self.clone() },
+        }
+    }
+
+    pub fn put_on_top_of_deck(&self, player: Player, card: Card) -> Self {
+        let side = self.side(player);
+
+        self.with_player_side(player, PlayerSide {
+            deck: side.deck.put_on_top(card),
+            ..side.clone()
+        })
+    }
+
+    pub fn shuffle_hand_into_deck(&self, player: Player) -> Self {
+        let mut state = self.clone();
+        while !state.side(player).hand.is_empty() {
+            let card = state.side_mut(player).hand.pop().unwrap();
+            state = state.put_on_top_of_deck(player, card.clone());
+        }
+        state.shuffle_deck(player)
+    }
+
+    pub fn shuffle_deck(&self, player: Player) -> Self {
+        let side = self.side(player);
+
+        self.with_player_side(player, PlayerSide {
+            deck: side.deck.shuffle(),
+            ..side.clone()
+        })
+    }
+
+    pub fn draw_to_hand(&self, player: Player, dm: &mut dyn Shuffler) -> Self {
+        let side = self.side(player);
+
+        let (deck, card) = side.deck.draw(dm);
+        let mut hand = side.hand.clone();
+        if let Some(card) = card { hand.push(card); }
+
+        self.with_player_side(player, PlayerSide { deck, hand, ..side.clone() })
+    }
+
+    pub fn draw_to_prizes(&self, player: Player, dm: &mut dyn Shuffler) -> Self {
+        let side = self.side(player);
+
+        let (deck, card) = side.deck.draw(dm);
+        let mut prizes = side.prizes.clone();
+        if let Some(card) = card { prizes.push(FaceCard::Down(card)); }
+
+        self.with_player_side(player, PlayerSide { deck, prizes, ..side.clone() })
+    }
+
+    pub fn draw_n_to_hand(&self, player: Player, n: usize, dm: &mut dyn Shuffler) -> Self {
+        if n == 0 {
+            self.clone()
+        } else {
+            self.draw_to_hand(player, dm).draw_n_to_hand(player, n - 1, dm)
+        }
+    }
+
+    pub fn play_from_hand_to_active_face_down(&self, player: Player, card: &Card) -> Self {
+        let mut side = self.side(player).clone();
+
+        let p = side.hand.iter().position(|c| c == card).unwrap();
+        side.hand.remove(p);
+
+        side.active.push(InPlayCard {
+            id: self.next_play_id(),
+            stack: vec![FaceCard::Down(card.clone())],
+            ..Default::default()
+        });
+
+        self.with_player_side(player, side)
+    }
+
+    pub fn play_from_hand_to_bench_face_down(&self, player: Player, card: &Card) -> Self {
+        let mut side = self.side(player).clone();
+
+        let p = side.hand.iter().position(|c| c == card).unwrap();
+        side.hand.remove(p);
+
+        side.bench.push(InPlayCard {
+            id: self.next_play_id(),
+            stack: vec![FaceCard::Down(card.clone())],
+            ..Default::default()
+        });
+
+        self.with_player_side(player, side)
+    }
+
+    pub fn attach_from_hand(&self, player: Player, card: &Card, target: InPlayID) -> Self {
+        let mut side = self.side(player).clone();
+
+        let p = side.hand.iter().position(|c| c == card).unwrap();
+        side.hand.remove(p);
+
+        side.in_play_mut(target).unwrap().attached.push(FaceCard::Up(card.clone()));
+
+        self.with_player_side(player, side)
+    }
+
+    pub fn bench_from_hand(&self, player: Player, card: &Card) -> Self {
+        let mut side = self.side(player).clone();
+
+        let p = side.hand.iter().position(|c| c == card).unwrap();
+        side.hand.remove(p);
+
+        side.bench.push(InPlayCard {
+            id: self.next_play_id(),
+            stack: vec![FaceCard::Up(card.clone())],
+            ..Default::default()
+        });
+
+        self.with_player_side(player, side)
+    }
+
+    pub fn reveal_pokemon(&self, player: Player) -> Self {
+        let mut side = self.side(player).clone();
+
+        for active in side.active.iter_mut() {
+            active.stack[0] = active.stack[0].up();
+        }
+
+        for benched in side.bench.iter_mut() {
+            benched.stack[0] = benched.stack[0].up();
+        }
+
+        self.with_player_side(player, side)
+    }
+
+    pub fn with_stage(&self, stage: GameStage) -> Self {
+        Self {
+            stage,
+            ..self.clone()
+        }
+    }
+}
