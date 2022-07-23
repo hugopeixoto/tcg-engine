@@ -22,6 +22,7 @@ pub trait DecisionMaker: Shuffler {
     fn pick_action<'a>(&mut self, p: Player, actions: &'a Vec<Action>) -> &'a Action;
     fn pick_target<'a>(&mut self, p: Player, actions: &'a Vec<InPlayID>) -> &'a InPlayID;
     fn pick_from_hand<'a>(&mut self, p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card>;
+    fn pick_from_discard<'a>(&mut self, p: Player, whose: Player, how_many: usize, discard: &Vec<Card>, searchable: &'a Vec<Card>) -> Vec<&'a Card>;
     fn search_deck<'a>(&mut self, p: Player, whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card>;
 }
 
@@ -162,7 +163,7 @@ impl TrainerCardArchetype for ComputerSearch {
     // cost: discard(2, from: hand)
     // effect: search(1, from: deck); move(it, to: hand)
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
-        engine.can_discard_other(player, card, 2)
+        engine.can_discard_other(player, card, 2) && !engine.state.side(player).deck.is_empty()
     }
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
         let mut state = engine.state.clone();
@@ -175,7 +176,6 @@ impl TrainerCardArchetype for ComputerSearch {
         let deck_cards = engine.state.side(player).deck.cards();
         let chosen = dm.search_deck(player, player, 1, &deck_cards);
         for searched in chosen {
-            println!("tutoring card to hand {}", searched);
             state = state.tutor_to_hand(player, searched);
         }
 
@@ -190,7 +190,7 @@ impl TrainerCardArchetype for ImpostorProfessorOak {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
         engine.state.clone()
     }
 }
@@ -203,8 +203,24 @@ impl TrainerCardArchetype for ItemFinder {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 2) && engine.discard_pile_has_trainer(player, card)
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        let mut state = engine.state.clone();
+
+        let discard_cards = engine.state.side(player).discard.clone();
+        let searchable_cards = discard_cards.iter().filter(|c| engine.is_trainer(c)).cloned().collect();
+
+        let cost = dm.pick_from_hand(player, player, 2, &engine.state.side(player).hand); // TODO: can't pick used card
+
+        for discarded in cost {
+            state = state.discard_from_hand(player, discarded);
+        }
+
+        let chosen = dm.pick_from_discard(player, player, 1, &discard_cards, &searchable_cards);
+        for searched in chosen {
+            state = state.discard_to_hand(player, searched);
+        }
+
+        state.shuffle_deck(player)
     }
 }
 
@@ -282,8 +298,15 @@ impl TrainerCardArchetype for Maintenance {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 2) // TODO: not discard but shuffle
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        let mut state = engine.state.clone();
+
+        let cost = dm.pick_from_hand(player, player, 2, &engine.state.side(player).hand); // TODO: can't pick used card
+        for shuffled in cost {
+            state = state.shuffle_from_hand_into_deck(player, shuffled);
+        }
+
+        state.draw_n_to_hand(player, 1, dm)
     }
 }
 
@@ -376,9 +399,15 @@ impl GameEngine {
             cli::CLIDrawTarget::print(&self.state);
             match self.state.stage {
                 GameStage::Uninitialized => { self.setup(dm); },
+                GameStage::Winner(_) => { break; },
+                GameStage::Tie => { break; },
                 GameStage::StartOfTurn(player) => {
-                    self.state = self.state.draw_to_hand(player, dm);
-                    self.state = self.state.with_stage(GameStage::Turn(player));
+                    if self.state.side(player).deck.is_empty() {
+                        self.state = self.state.with_stage(GameStage::Winner(player.opponent()));
+                    } else {
+                        self.state = self.state.draw_to_hand(player, dm);
+                        self.state = self.state.with_stage(GameStage::Turn(player));
+                    }
                 },
                 GameStage::Turn(player) => {
                     println!("available actions for {:?}:", player);
@@ -800,6 +829,26 @@ impl DecisionMaker for CLI {
             let chosen = input.trim().split(",").filter_map(|c| c.parse::<usize>().ok()).collect::<Vec<_>>();
             if chosen.len() == how_many && chosen.iter().all(|&x| 1 <= x && x <= hand.len()) {
                 choice = Some(chosen.iter().map(|i| &hand[i - 1]).collect());
+            }
+        }
+
+        choice.unwrap()
+    }
+
+    fn pick_from_discard<'a>(&mut self, p: Player, whose: Player, how_many: usize, discard: &Vec<Card>, searchable: &'a Vec<Card>) -> Vec<&'a Card> {
+        let mut choice = None;
+
+        println!("Pick {} cards from {:?}'s hand:", how_many, whose);
+        for (i, card) in searchable.iter().enumerate() {
+            println!("{}. {}", i + 1, card);
+        }
+
+        while choice.is_none() {
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+            let chosen = input.trim().split(",").filter_map(|c| c.parse::<usize>().ok()).collect::<Vec<_>>();
+            if chosen.len() == how_many && chosen.iter().all(|&x| 1 <= x && x <= searchable.len()) {
+                choice = Some(chosen.iter().map(|i| &searchable[i - 1]).collect());
             }
         }
 

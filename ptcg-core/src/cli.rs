@@ -127,6 +127,15 @@ impl CLIDrawable for GameState {
             GameStage::Turn(Player::Two) => {
                 target.draw_line("^", 3, 24);
             },
+            GameStage::Winner(Player::One) => {
+                target.draw_line("Player one wins!", 3, 25);
+            },
+            GameStage::Winner(Player::Two) => {
+                target.draw_line("Player two wins!", 3, 24);
+            },
+            GameStage::Tie => {
+                target.draw_line("It's a tie!", 3, 24);
+            },
         }
 
         target.draw_line(&format!("{:3}", self.p1.deck.len()), x + 64, 35);

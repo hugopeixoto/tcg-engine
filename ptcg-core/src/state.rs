@@ -240,6 +240,8 @@ pub enum GameStage {
     Uninitialized,
     StartOfTurn(Player),
     Turn(Player),
+    Winner(Player),
+    Tie,
 }
 
 
@@ -361,7 +363,7 @@ impl GameState {
         }
     }
 
-    pub fn put_on_top_of_deck(&self, player: Player, card: Card) -> Self {
+    fn put_on_top_of_deck(&self, player: Player, card: Card) -> Self {
         let side = self.side(player);
 
         self.with_player_side(player, PlayerSide {
@@ -377,6 +379,15 @@ impl GameState {
             state = state.put_on_top_of_deck(player, card.clone());
         }
         state.shuffle_deck(player)
+    }
+
+    pub fn shuffle_from_hand_into_deck(&self, player: Player, card: &Card) -> Self {
+        let mut side = self.side(player).clone();
+
+        let p = side.hand.iter().position(|c| c == card).unwrap();
+        side.hand.remove(p);
+
+        self.with_player_side(player, side).put_on_top_of_deck(player, card.clone()).shuffle_deck(player)
     }
 
     pub fn shuffle_deck(&self, player: Player) -> Self {
@@ -490,6 +501,17 @@ impl GameState {
             println!("removed card from deck: {}", c);
             side.hand.push(c);
             side.deck = deck;
+        }
+
+        self.with_player_side(player, side)
+    }
+
+    pub fn discard_to_hand(&self, player: Player, card: &Card) -> Self {
+        let mut side = self.side(player).clone();
+
+        if let Some(p) = side.discard.iter().position(|c| c == card) {
+            side.discard.remove(p);
+            side.hand.push(card.clone());
         }
 
         self.with_player_side(player, side)
