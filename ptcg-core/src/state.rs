@@ -1,8 +1,9 @@
 pub type Card = String;
 pub type InPlayID = usize;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Player {
+    #[default]
     One,
     Two,
 }
@@ -16,7 +17,7 @@ impl Player {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Debug, Clone)]
 pub enum RotationalStatus {
     #[default]
     None,
@@ -175,7 +176,7 @@ impl Deck {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum FaceCard {
     Up(Card),
     Down(Card),
@@ -190,9 +191,10 @@ impl FaceCard {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct InPlayCard {
     pub id: InPlayID,
+    pub owner: Player,
     pub stack: Vec<FaceCard>,
     pub attached: Vec<FaceCard>,
     pub damage_counters: u32,
@@ -435,6 +437,7 @@ impl GameState {
 
         side.active.push(InPlayCard {
             id: self.next_play_id(),
+            owner: player,
             stack: vec![FaceCard::Down(card.clone())],
             ..Default::default()
         });
@@ -450,6 +453,7 @@ impl GameState {
 
         side.bench.push(InPlayCard {
             id: self.next_play_id(),
+            owner: player,
             stack: vec![FaceCard::Down(card.clone())],
             ..Default::default()
         });
@@ -476,6 +480,7 @@ impl GameState {
 
         side.bench.push(InPlayCard {
             id: self.next_play_id(),
+            owner: player,
             stack: vec![FaceCard::Up(card.clone())],
             ..Default::default()
         });
@@ -517,6 +522,17 @@ impl GameState {
         self.with_player_side(player, side)
     }
 
+    pub fn switch_active_with(&self, in_play: &InPlayCard) -> Self {
+        let mut side = self.side(in_play.owner).clone();
+
+        let benching = side.active.pop().unwrap();
+        side.bench.push(benching);
+
+        side.bench.retain(|x| x.id != in_play.id);
+        side.active.push(in_play.clone());
+
+        self.with_player_side(in_play.owner, side)
+    }
 
     pub fn reveal_pokemon(&self, player: Player) -> Self {
         let mut side = self.side(player).clone();

@@ -23,6 +23,7 @@ pub trait DecisionMaker: Shuffler {
     fn pick_target<'a>(&mut self, p: Player, actions: &'a Vec<InPlayID>) -> &'a InPlayID;
     fn pick_from_hand<'a>(&mut self, p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card>;
     fn pick_from_discard<'a>(&mut self, p: Player, whose: Player, how_many: usize, discard: &Vec<Card>, searchable: &'a Vec<Card>) -> Vec<&'a Card>;
+    fn pick_in_play<'a>(&mut self, p: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard>;
     fn search_deck<'a>(&mut self, p: Player, whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card>;
 }
 
@@ -153,7 +154,7 @@ impl TrainerCardArchetype for ClefairyDoll {
     }
 
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+        panic!("not implemented");
     }
 }
 
@@ -190,8 +191,10 @@ impl TrainerCardArchetype for ImpostorProfessorOak {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
-    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        let opponent = player.opponent();
+
+        engine.state.shuffle_hand_into_deck(opponent).draw_n_to_hand(opponent, 7, dm)
     }
 }
 
@@ -233,7 +236,7 @@ impl TrainerCardArchetype for Lass {
         true
     }
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+        panic!("not implemented");
     }
 }
 
@@ -244,7 +247,7 @@ impl TrainerCardArchetype for PokemonBreeder {
         true // todo: bunch of checks
     }
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+        panic!("not implemented");
     }
 }
 
@@ -255,7 +258,7 @@ impl TrainerCardArchetype for PokemonTrader {
         true // TODO: pokemon communication
     }
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+        panic!("not implemented");
     }
 }
 
@@ -266,7 +269,7 @@ impl TrainerCardArchetype for ScoopUp {
         true
     }
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+        panic!("not implemented");
     }
 }
 
@@ -277,7 +280,7 @@ impl TrainerCardArchetype for Defender {
         true
     }
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+        panic!("not implemented");
     }
 }
 
@@ -288,7 +291,7 @@ impl TrainerCardArchetype for EnergyRetrieval {
         engine.can_discard_other(player, card, 1) && engine.discard_pile_has_basic_energy(player, card)
     }
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+        panic!("not implemented");
     }
 }
 
@@ -317,7 +320,7 @@ impl TrainerCardArchetype for PlusPower {
         true
     }
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+        panic!("not implemented");
     }
 }
 
@@ -328,7 +331,7 @@ impl TrainerCardArchetype for Pokedex {
         !engine.state.side(player).deck.is_empty()
     }
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+        panic!("not implemented");
     }
 }
 
@@ -366,8 +369,11 @@ impl TrainerCardArchetype for GustOfWind {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player.opponent()).bench.is_empty()
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        let chosen = dm.pick_in_play(player, 1, &engine.state.side(player.opponent()).bench);
+
+        // TODO: clear effects on defending
+        engine.state.switch_active_with(&chosen[0])
     }
 }
 
@@ -378,7 +384,7 @@ impl TrainerCardArchetype for Switch {
         !engine.state.side(player).bench.is_empty()
     }
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+        panic!("not implemented");
     }
 }
 
@@ -389,7 +395,7 @@ impl CardArchetype for NOOP {
         vec![]
     }
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+        panic!("not implemented");
     }
 }
 
@@ -791,7 +797,7 @@ impl DecisionMaker for CLI {
         cards.clone()
     }
 
-    fn pick_action<'a>(&mut self, p: Player, actions: &'a Vec<Action>) -> &'a Action {
+    fn pick_action<'a>(&mut self, _p: Player, actions: &'a Vec<Action>) -> &'a Action {
         let mut choice = None;
 
         while choice.is_none() {
@@ -803,7 +809,7 @@ impl DecisionMaker for CLI {
         &actions[choice.unwrap() - 1]
     }
 
-    fn pick_target<'a>(&mut self, p: Player, targets: &'a Vec<InPlayID>) -> &'a InPlayID {
+    fn pick_target<'a>(&mut self, _p: Player, targets: &'a Vec<InPlayID>) -> &'a InPlayID {
         let mut choice = None;
 
         while choice.is_none() || !targets.contains(&choice.unwrap()) {
@@ -815,7 +821,7 @@ impl DecisionMaker for CLI {
         targets.iter().find(|&&x| x == choice.unwrap()).unwrap()
     }
 
-    fn pick_from_hand<'a>(&mut self, p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card> {
+    fn pick_from_hand<'a>(&mut self, _p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card> {
         let mut choice = None;
 
         println!("Pick {} cards from {:?}'s hand:", how_many, whose);
@@ -835,12 +841,32 @@ impl DecisionMaker for CLI {
         choice.unwrap()
     }
 
-    fn pick_from_discard<'a>(&mut self, p: Player, whose: Player, how_many: usize, discard: &Vec<Card>, searchable: &'a Vec<Card>) -> Vec<&'a Card> {
+    fn pick_from_discard<'a>(&mut self, _p: Player, whose: Player, how_many: usize, _discard: &Vec<Card>, searchable: &'a Vec<Card>) -> Vec<&'a Card> {
         let mut choice = None;
 
         println!("Pick {} cards from {:?}'s hand:", how_many, whose);
         for (i, card) in searchable.iter().enumerate() {
             println!("{}. {}", i + 1, card);
+        }
+
+        while choice.is_none() {
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+            let chosen = input.trim().split(",").filter_map(|c| c.parse::<usize>().ok()).collect::<Vec<_>>();
+            if chosen.len() == how_many && chosen.iter().all(|&x| 1 <= x && x <= searchable.len()) {
+                choice = Some(chosen.iter().map(|i| &searchable[i - 1]).collect());
+            }
+        }
+
+        choice.unwrap()
+    }
+
+    fn pick_in_play<'a>(&mut self, _p: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard> {
+        let mut choice = None;
+
+        println!("Pick {} in play pokemon:", how_many);
+        for (i, card) in searchable.iter().enumerate() {
+            println!("{}. {:?}", i + 1, card);
         }
 
         while choice.is_none() {
@@ -896,7 +922,7 @@ fn main() {
             "Defender (BS 80)", "Defender (BS 80)",
             "Energy Removal (BS 92)", "Energy Removal (BS 92)",
             "PlusPower (BS 84)",
-            "Gust of Wind (BS 93)",
+            "Impostor Professor Oak (BS 73)",
             "Psychic Energy (BS 101)", "Psychic Energy (BS 101)", "Psychic Energy (BS 101)", "Psychic Energy (BS 101)",
             "Psychic Energy (BS 101)", "Psychic Energy (BS 101)",
             "Double Colorless Energy (BS 96)", "Double Colorless Energy (BS 96)", "Double Colorless Energy (BS 96)", "Double Colorless Energy (BS 96)",
