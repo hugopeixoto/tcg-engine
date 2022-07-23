@@ -223,7 +223,7 @@ impl TrainerCardArchetype for ItemFinder {
             state = state.discard_to_hand(player, searched);
         }
 
-        state.shuffle_deck(player)
+        state
     }
 }
 
@@ -290,8 +290,24 @@ impl TrainerCardArchetype for EnergyRetrieval {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 1) && engine.discard_pile_has_basic_energy(player, card)
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        panic!("not implemented");
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        let mut state = engine.state.clone();
+
+        let discard_cards = engine.state.side(player).discard.clone();
+        let searchable_cards = discard_cards.iter().filter(|c| engine.is_basic_energy(c)).cloned().collect();
+
+        let cost = dm.pick_from_hand(player, player, 2, &engine.state.side(player).hand); // TODO: can't pick used card
+
+        for discarded in cost {
+            state = state.discard_from_hand(player, discarded);
+        }
+
+        let chosen = dm.pick_from_discard(player, player, 1, &discard_cards, &searchable_cards);
+        for searched in chosen {
+            state = state.discard_to_hand(player, searched);
+        }
+
+        state
     }
 }
 
