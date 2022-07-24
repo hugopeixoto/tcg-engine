@@ -266,13 +266,10 @@ impl TrainerCardArchetype for PokemonTrader {
 struct ScoopUp {}
 impl TrainerCardArchetype for ScoopUp {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
-        engine.state.side(player).active.iter().any(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic))) ||
-            engine.state.side(player).bench.iter().any(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic)))
+        engine.state.side(player).in_play().iter().any(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic)))
     }
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        let mut choices = engine.state.side(player).active.iter().filter(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic))).cloned().collect::<Vec<_>>();
-
-        choices.extend(engine.state.side(player).bench.iter().filter(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic))).cloned());
+        let choices = engine.state.side(player).in_play().into_iter().filter(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic))).cloned().collect();
 
         let chosen = dm.pick_in_play(player, 1, &choices);
 

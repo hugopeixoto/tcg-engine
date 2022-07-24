@@ -258,6 +258,15 @@ impl PlayerSide {
 
         None
     }
+
+    pub fn in_play(&self) -> Vec<&InPlayCard> {
+        let mut cards = vec![];
+
+        cards.extend(self.active.iter());
+        cards.extend(self.bench.iter());
+
+        cards
+    }
 }
 
 #[derive(Default, Clone)]
