@@ -52,6 +52,21 @@ pub enum Stage {
     // VUnion,
 }
 
+#[derive(PartialEq, Eq)]
+pub enum Type {
+    Fighting,
+    Fire,
+    Grass,
+    Lightning,
+    Psychic,
+    Water,
+    Dark,
+    Metal,
+    Fairy,
+    Dragon,
+    Colorless,
+}
+
 #[derive(PartialEq, Eq, Debug)]
 pub enum SetupActiveSelection {
     Mulligan,
@@ -115,22 +130,7 @@ impl GameEngine {
                             self.state = card.archetype().execute(player, card, self, dm);
                         },
                         Action::AttachFromHand(card) => {
-                            let targets = self.attachment_from_hand_targets(player, card);
-                            println!("available targets: {:?}", targets);
-
-                            let target = dm.pick_target(player, &targets);
-
-                            self.state = self.state.attach_from_hand(player, card, *target);
-                            if self.is_energy(card) {
-                                let effect = Effect {
-                                    source: EffectSource::Energy(player, card.clone()),
-                                    target: EffectTarget::Player(player),
-                                    expires: EffectExpiration::EndOfTurn(player, 0),
-                                    consequence: EffectConsequence::BlockAttachmentFromHand,
-                                    name: "ENERGY_ATTACH_FOR_TURN".into(),
-                                };
-                                self.state.effects.push(effect);
-                            }
+                            self.state = card.archetype().execute(player, card, self, dm);
                         },
                         Action::BenchFromHand(card) => {
                             self.state = self.state.bench_from_hand(player, card);
@@ -200,9 +200,7 @@ impl GameEngine {
         if self.is_trainer(card) {
             return card.archetype().card_actions(player, card, self);
         } else if self.is_energy(card) {
-            if !self.attachment_from_hand_targets(player, card).is_empty() {
-                return vec![Action::AttachFromHand(card.clone())];
-            }
+            return card.archetype().card_actions(player, card, self);
         }
 
         if self.can_bench_from_hand(card) {

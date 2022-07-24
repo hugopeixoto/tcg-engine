@@ -39,6 +39,12 @@ impl CardDB for Card {
             "Gust of Wind (BS 93)"              => Trainer::create::<GustOfWind>(),
             //"Potion (BS 94)"                  => Trainer::create::<Potion>(),
             "Switch (BS 95)"                    => Trainer::create::<Switch>(),
+            "Fighting Energy (BS 97)"           => BasicEnergy::create(Type::Fighting),
+            "Fire Energy (BS 98)"               => BasicEnergy::create(Type::Fire),
+            "Grass Energy (BS 99)"              => BasicEnergy::create(Type::Grass),
+            "Electric Energy (BS 100)"          => BasicEnergy::create(Type::Lightning),
+            "Psychic Energy (BS 101)"           => BasicEnergy::create(Type::Psychic),
+            "Water Energy (BS 102)"             => BasicEnergy::create(Type::Water),
             _                                   => Box::new(NOOP::default()),
             //"Devolution Spray (BS 72)" => mine.in_play.any(is_evolution),
             //"Super Energy Removal (BS 79)" => mine.in_play.any(energy_attached(1..)) && opp.in_play.any(energy_attached(1..)),
@@ -50,6 +56,47 @@ impl CardDB for Card {
             //"Energy Removal (BS 92)" => opp.in_play.any(energy_attached(1..))
             //"Potion (BS 94)" => mine.in_play.any(has_damage_counters),
         }
+    }
+}
+
+struct BasicEnergy {
+    energy_type: Type,
+}
+impl BasicEnergy {
+    pub fn create(energy_type: Type) -> Box<dyn CardArchetype> {
+        Box::new(BasicEnergy { energy_type })
+    }
+}
+impl CardArchetype for BasicEnergy {
+    fn stage(&self) -> Option<Stage> {
+        None
+    }
+
+    fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action> {
+        if !engine.attachment_from_hand_targets(player, card).is_empty() {
+            vec![Action::AttachFromHand(card.clone())]
+        } else {
+            vec![]
+        }
+    }
+
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        let targets = engine.attachment_from_hand_targets(player, card);
+        let target = dm.pick_target(player, &targets);
+
+        let mut state = engine.state.attach_from_hand(player, card, *target);
+        if engine.is_energy(card) {
+            let effect = Effect {
+                source: EffectSource::Energy(player, card.clone()),
+                target: EffectTarget::Player(player),
+                expires: EffectExpiration::EndOfTurn(player, 0),
+                consequence: EffectConsequence::BlockAttachmentFromHand,
+                name: "ENERGY_ATTACH_FOR_TURN".into(),
+            };
+            state.effects.push(effect);
+        }
+
+        state
     }
 }
 
@@ -415,6 +462,8 @@ impl DecisionMaker for CLI {
 
     fn pick_target<'a>(&mut self, _p: Player, targets: &'a Vec<InPlayID>) -> &'a InPlayID {
         let mut choice = None;
+
+        println!("available targets: {:?}", targets);
 
         while choice.is_none() || !targets.contains(&choice.unwrap()) {
             let mut input = String::new();
