@@ -46,6 +46,7 @@ impl CardDB for Card {
             "Electric Energy (BS 100)"          => BasicEnergy::create(Type::Lightning),
             "Psychic Energy (BS 101)"           => BasicEnergy::create(Type::Psychic),
             "Water Energy (BS 102)"             => BasicEnergy::create(Type::Water),
+            "Psyduck (FO 53)"                   => Pokemon::create::<Psyduck>(),
             _                                   => Box::new(NOOP::default()),
             //"Devolution Spray (BS 72)" => mine.in_play.any(is_evolution),
             //"Super Energy Removal (BS 79)" => mine.in_play.any(energy_attached(1..)) && opp.in_play.any(energy_attached(1..)),
@@ -78,6 +79,49 @@ impl CardArchetype for Alakazam {
     }
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
         engine.state.clone()
+    }
+    fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
+        vec![]
+    }
+    fn provides(&self) -> Vec<Type> {
+        vec![]
+    }
+}
+
+#[derive(Default)]
+struct Psyduck {}
+impl CardArchetype for Psyduck {
+    fn stage(&self) -> Option<Stage> {
+        Some(Stage::Basic)
+    }
+    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
+        vec![]
+    }
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
+    }
+    fn attacks(&self, _player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
+        let mut attacks = vec![];
+
+        if engine.is_attack_energy_cost_met(in_play, &[Type::Psychic]) {
+            attacks.push(Action::Attack(in_play.clone(), "Headache".into(), Box::new(Self::headache)));
+        }
+        if engine.is_attack_energy_cost_met(in_play, &[Type::Water]) {
+            attacks.push(Action::Attack(in_play.clone(), "Fury Swipes".into(), Box::new(Self::fury_swipes)));
+        }
+
+        attacks
+    }
+    fn provides(&self) -> Vec<Type> {
+        vec![]
+    }
+}
+impl Psyduck {
+    pub fn headache(state: &GameState) -> GameState {
+        state.clone()
+    }
+    pub fn fury_swipes(state: &GameState) -> GameState {
+        state.clone()
     }
 }
 
@@ -120,6 +164,14 @@ impl CardArchetype for BasicEnergy {
 
         state
     }
+
+    fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
+        vec![]
+    }
+
+    fn provides(&self) -> Vec<Type> {
+        vec![self.energy_type.clone()]
+    }
 }
 
 trait TrainerCardArchetype {
@@ -150,6 +202,14 @@ impl CardArchetype for Trainer {
 
     fn stage(&self) -> Option<Stage> {
         None
+    }
+
+    fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
+        vec![]
+    }
+
+    fn provides(&self) -> Vec<Type> {
+        vec![]
     }
 }
 
@@ -242,7 +302,7 @@ impl TrainerCardArchetype for Lass {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
         panic!("not implemented");
     }
 }
@@ -253,7 +313,7 @@ impl TrainerCardArchetype for PokemonBreeder {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true // todo: bunch of checks
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
         panic!("not implemented");
     }
 }
@@ -264,7 +324,7 @@ impl TrainerCardArchetype for PokemonTrader {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true // TODO: pokemon communication
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
         panic!("not implemented");
     }
 }
@@ -299,7 +359,7 @@ impl TrainerCardArchetype for Defender {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
         panic!("not implemented");
     }
 }
@@ -355,7 +415,7 @@ impl TrainerCardArchetype for PlusPower {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
         panic!("not implemented");
     }
 }
@@ -366,7 +426,7 @@ impl TrainerCardArchetype for Pokedex {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).deck.is_empty()
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
         panic!("not implemented");
     }
 }
@@ -438,6 +498,12 @@ impl CardArchetype for NOOP {
     }
     fn stage(&self) -> Option<Stage> {
         None
+    }
+    fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
+        vec![]
+    }
+    fn provides(&self) -> Vec<Type> {
+        vec![]
     }
 }
 
@@ -536,7 +602,7 @@ impl DecisionMaker for CLI {
         choice.unwrap()
     }
 
-    fn pick_in_play<'a>(&mut self, _p: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard> {
+    fn pick_in_play<'a>(&mut self, _player: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard> {
         let mut choice = None;
 
         println!("Pick {} in play pokemon:", how_many);
@@ -556,7 +622,7 @@ impl DecisionMaker for CLI {
         choice.unwrap()
     }
 
-    fn search_deck<'a>(&mut self, p: Player, whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card> {
+    fn search_deck<'a>(&mut self, _player: Player, whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card> {
         let mut choice = None;
 
         println!("Pick {} cards from {:?}'s deck:", how_many, whose);

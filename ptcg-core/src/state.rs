@@ -351,7 +351,7 @@ impl GameState {
                 ..Default::default()
             },
             p2: PlayerSide {
-                deck: Deck::new(&a.iter().enumerate().map(|(n, x)| Card { owner: Player::Two, in_game_id: a.len() + n, archetype: x.to_string() }).collect::<Vec<_>>()),
+                deck: Deck::new(&b.iter().enumerate().map(|(n, x)| Card { owner: Player::Two, in_game_id: a.len() + n, archetype: x.to_string() }).collect::<Vec<_>>()),
                 ..Default::default()
             },
             ..Default::default()

@@ -6,6 +6,8 @@ pub trait CardArchetype {
     fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action>;
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState;
     fn stage(&self) -> Option<Stage>;
+    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action>;
+    fn provides(&self) -> Vec<Type>;
 }
 
 pub trait CardDB {
@@ -52,7 +54,7 @@ pub enum Stage {
     // VUnion,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     Fighting,
     Fire,
@@ -73,12 +75,23 @@ pub enum SetupActiveSelection {
     Place(Card),
 }
 
-#[derive(Debug, Clone)]
 pub enum Action {
     Pass,
     TrainerFromHand(Card),
     AttachFromHand(Card),
     BenchFromHand(Card),
+    Attack(InPlayCard, String, Box<dyn Fn(&GameState) -> GameState>),
+}
+impl std::fmt::Debug for Action {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Action::TrainerFromHand(c) => { write!(f, "Play {}", c.archetype) },
+            Action::AttachFromHand(c) => { write!(f, "Attach {}", c.archetype) },
+            Action::BenchFromHand(c) => { write!(f, "Bench {}", c.archetype) },
+            Action::Attack(in_play, name, _) => { write!(f, "Attack with {}: {}", in_play.stack[0].card().archetype, name) },
+            Action::Pass => { write!(f, "Pass") },
+        }
+    }
 }
 
 impl GameEngine {
@@ -106,7 +119,7 @@ impl GameEngine {
 
                     let action = dm.pick_action(player, &actions);
 
-                    match action {
+                    match &action {
                         Action::Pass => {
                             // count down end of turn effects
                             self.state = self.state.with_stage(GameStage::StartOfTurn(player.opponent()));
@@ -131,6 +144,9 @@ impl GameEngine {
                         },
                         Action::AttachFromHand(card) => {
                             self.state = card.archetype().execute(player, card, self, dm);
+                        },
+                        Action::Attack(_in_play, _name, executor) => {
+                            self.state = executor(&self.state);
                         },
                         Action::BenchFromHand(card) => {
                             self.state = self.state.bench_from_hand(player, card);
@@ -191,9 +207,25 @@ impl GameEngine {
             actions.extend(self.card_actions(player, card));
         }
 
+        for active in self.state.side(player).active.iter() {
+            actions.extend(self.in_play_actions(player, active, true));
+        }
+
+        for benched in self.state.side(player).bench.iter() {
+            actions.extend(self.in_play_actions(player, benched, false));
+        }
+
         actions.push(Action::Pass);
 
         actions
+    }
+
+    pub fn in_play_actions(&self, player: Player, in_play: &InPlayCard, active: bool) -> Vec<Action> {
+        if active {
+            in_play.stack[0].card().archetype().attacks(player, in_play, self)
+        } else {
+            vec![]
+        }
     }
 
     pub fn card_actions(&self, player: Player, card: &Card) -> Vec<Action> {
@@ -208,6 +240,24 @@ impl GameEngine {
         }
 
         vec![]
+    }
+
+    pub fn is_attack_energy_cost_met(&self, in_play: &InPlayCard, cost: &[Type]) -> bool {
+        let mut energy = vec![];
+        for attached in in_play.attached.iter() {
+            if self.is_energy(attached.card()) {
+                energy.extend(attached.card().archetype().provides());
+            }
+        }
+
+        for required in cost {
+            match energy.iter().position(|c| c == required) {
+                Some(p) => { energy.remove(p); },
+                None => { return false; }
+            }
+        }
+
+        true
     }
 
     pub fn attachment_from_hand_targets(&self, player: Player, _card: &Card) -> Vec<InPlayID> {
