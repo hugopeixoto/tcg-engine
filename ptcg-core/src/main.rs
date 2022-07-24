@@ -265,11 +265,27 @@ impl TrainerCardArchetype for PokemonTrader {
 #[derive(Default)]
 struct ScoopUp {}
 impl TrainerCardArchetype for ScoopUp {
-    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
-        true
+    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
+        engine.state.side(player).active.iter().any(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic))) ||
+            engine.state.side(player).bench.iter().any(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic)))
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        panic!("not implemented");
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        let mut choices = engine.state.side(player).active.iter().filter(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic))).cloned().collect::<Vec<_>>();
+
+        choices.extend(engine.state.side(player).bench.iter().filter(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic))).cloned());
+
+        let chosen = dm.pick_in_play(player, 1, &choices);
+
+        let mut state = engine.state.clone();
+        for card in chosen[0].cards() {
+            if engine.stage(card) == Some(Stage::Basic) {
+                state = state.move_card_to_hand(card);
+            } else {
+                state = state.move_card_to_discard(card);
+            }
+        }
+
+        state
     }
 }
 
@@ -374,7 +390,7 @@ impl TrainerCardArchetype for Bill {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).deck.is_empty()
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
         engine.state.draw_n_to_hand(player, 2, dm)
     }
 }
@@ -399,8 +415,11 @@ impl TrainerCardArchetype for Switch {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).bench.is_empty()
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        panic!("not implemented");
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+        let chosen = dm.pick_in_play(player, 1, &engine.state.side(player).bench);
+
+        // TODO: clear effects on defending
+        engine.state.switch_active_with(&chosen[0])
     }
 }
 
@@ -410,7 +429,7 @@ impl CardArchetype for NOOP {
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
         panic!("not implemented");
     }
 }
@@ -461,7 +480,7 @@ impl GameEngine {
                             }
                         },
                         Action::TrainerFromHand(card) => {
-                            self.state = GenericCard::from(card).archetype.execute(player, card, self, dm);
+                            self.state = GenericCard::from(&card.archetype).archetype.execute(player, card, self, dm);
                         },
                         Action::AttachFromHand(card) => {
                             let targets = self.attachment_from_hand_targets(player, card);
@@ -487,6 +506,44 @@ impl GameEngine {
                     }
                 }
             }
+
+            // Q. When both active Pokémon are knocked out, who places a new active first?
+            // A. The player whose turn would be next.
+            // https://compendium.pokegym.net/ruling/818/
+            let who_first = match self.state.stage {
+                GameStage::Turn(player) => player.opponent(),
+                GameStage::StartOfTurn(player) => player.opponent(),
+                _ => Player::One,
+            };
+
+            for who in [who_first, who_first.opponent()] {
+                // TODO: 2v2 games
+                while self.state.side(who).active.len() < 1 && !self.state.side(who).bench.is_empty() {
+                    let chosen = dm.pick_in_play(who, 1, &self.state.side(who).bench);
+                    self.state = self.state.promote(chosen[0]);
+                }
+            }
+
+            // Well, if one of you has a Benched Pokémon to replace your Active Pokémon and
+            // the other player doesn't, then the person who can replace his or her Active
+            // Pokémon wins. Otherwise, you play Sudden Death. This is explained in the
+            // Pokémon rules in the Expert Rules section under "What Happens if Both Players
+            // Win at the Same Time?"
+            // https://compendium.pokegym.net/ruling/882/
+            let [a, b] = [Player::One, Player::Two].map(|player| {
+                let prize_done = self.state.side(player).prizes.is_empty();
+                let no_active = self.state.side(player.opponent()).active.is_empty();
+
+                (if prize_done { 1 } else { 0 }) + (if no_active { 1 } else { 0 })
+            });
+
+            if a > 0 && a > b {
+                self.state.stage = GameStage::Winner(Player::One);
+            } else if b > 0 && b > a {
+                self.state.stage = GameStage::Winner(Player::Two);
+            } else if b > 0 && b == a {
+                self.state.stage = GameStage::Tie;
+            }
         }
     }
 
@@ -509,7 +566,7 @@ impl GameEngine {
 
     pub fn card_actions(&self, player: Player, card: &Card) -> Vec<Action> {
         if self.is_trainer(card) {
-            return GenericCard::from(card).archetype.card_actions(player, card, self);
+            return GenericCard::from(&card.archetype).archetype.card_actions(player, card, self);
         } else if self.is_energy(card) {
             if !self.attachment_from_hand_targets(player, card).is_empty() {
                 return vec![Action::AttachFromHand(card.clone())];
@@ -700,7 +757,7 @@ impl GameEngine {
     }
 
     pub fn placeable_as_active_during_setup(&self, card: &Card) -> Maybe {
-        if card == "Mysterious Fossil (FO 62)" {
+        if card.archetype == "Mysterious Fossil (FO 62)" {
             Maybe::Maybe
         } else if self.stage(card) == Some(Stage::Basic) {
             Maybe::Yes
@@ -710,7 +767,7 @@ impl GameEngine {
     }
 
     pub fn placeable_as_benched_during_setup(&self, card: &Card) -> bool {
-        if card == "Mysterious Fossil (FO 62)" {
+        if card.archetype == "Mysterious Fossil (FO 62)" {
             true
         } else if self.stage(card) == Some(Stage::Basic) {
             true
@@ -720,7 +777,7 @@ impl GameEngine {
     }
 
     pub fn can_bench_from_hand(&self, card: &Card) -> bool {
-        if card == "Mysterious Fossil (FO 62)" {
+        if card.archetype == "Mysterious Fossil (FO 62)" {
             true
         } else if self.stage(card) == Some(Stage::Basic) {
             true
@@ -730,7 +787,7 @@ impl GameEngine {
     }
 
     pub fn is_trainer(&self, card: &Card) -> bool {
-        match card.as_str() {
+        match card.archetype.as_str() {
             "Clefairy Doll (BS 70)" => true,
             "Computer Search (BS 71)" => true,
             "Devolution Spray (BS 72)" => true,
@@ -762,11 +819,11 @@ impl GameEngine {
     }
 
     pub fn is_energy(&self, card: &Card) -> bool {
-        self.is_basic_energy(card) || card == "Double Colorless Energy (BS 96)"
+        self.is_basic_energy(card) || card.archetype == "Double Colorless Energy (BS 96)"
     }
 
     pub fn is_basic_energy(&self, card: &Card) -> bool {
-        match card.as_str() {
+        match card.archetype.as_str() {
             "Psychic Energy (BS 101)" => true,
             "Water Energy (BS 102)" => true,
             _ => false,
@@ -774,7 +831,7 @@ impl GameEngine {
     }
 
     pub fn stage(&self, card: &Card) -> Option<Stage> {
-        match card.as_str() {
+        match card.archetype.as_str() {
             "Psyduck (FO 53)" | "Voltorb (BS 67)" | "Growlithe (BS 28)" | "Gastly (FO 33)" => Some(Stage::Basic),
             "Squirtle (BS 63)" | "Articuno (FO 17)" => Some(Stage::Basic),
             "Electrode (BS 21)" | "Arcanine (BS 23)" | "Wartortle (BS 42)" => Some(Stage::Stage1),
@@ -842,7 +899,7 @@ impl DecisionMaker for CLI {
 
         println!("Pick {} cards from {:?}'s hand:", how_many, whose);
         for (i, card) in hand.iter().enumerate() {
-            println!("{}. {}", i + 1, card);
+            println!("{}. {}", i + 1, card.archetype);
         }
 
         while choice.is_none() {
@@ -862,7 +919,7 @@ impl DecisionMaker for CLI {
 
         println!("Pick {} cards from {:?}'s hand:", how_many, whose);
         for (i, card) in searchable.iter().enumerate() {
-            println!("{}. {}", i + 1, card);
+            println!("{}. {}", i + 1, card.archetype);
         }
 
         while choice.is_none() {
@@ -902,7 +959,7 @@ impl DecisionMaker for CLI {
 
         println!("Pick {} cards from {:?}'s deck:", how_many, whose);
         for (i, card) in deck.iter().enumerate() {
-            println!("{}. {}", i + 1, card);
+            println!("{}. {}", i + 1, card.archetype);
         }
 
         while choice.is_none() {
@@ -938,7 +995,7 @@ fn main() {
             "Defender (BS 80)", "Defender (BS 80)",
             "Energy Removal (BS 92)", "Energy Removal (BS 92)",
             "PlusPower (BS 84)",
-            "Impostor Professor Oak (BS 73)",
+            "Scoop Up (BS 78)",
             "Psychic Energy (BS 101)", "Psychic Energy (BS 101)", "Psychic Energy (BS 101)", "Psychic Energy (BS 101)",
             "Psychic Energy (BS 101)", "Psychic Energy (BS 101)",
             "Double Colorless Energy (BS 96)", "Double Colorless Energy (BS 96)", "Double Colorless Energy (BS 96)", "Double Colorless Energy (BS 96)",

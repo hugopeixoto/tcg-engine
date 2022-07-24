@@ -48,8 +48,8 @@ impl CLIDrawable for FaceCard {
             },
             FaceCard::Up(c) => {
                 target.draw_line("|‾‾‾‾‾|", x, y);
-                target.draw_line(&format!("| {:3} |", &c[0..3]), x, y + 1);
-                target.draw_line(&format!("| {:3} |", &c[3..6]), x, y + 2);
+                target.draw_line(&format!("| {:3} |", &c.archetype[0..3]), x, y + 1);
+                target.draw_line(&format!("| {:3} |", &c.archetype[3..6]), x, y + 2);
                 target.draw_line("|_____|", x, y + 3);
             },
         }
@@ -64,7 +64,7 @@ impl CLIDrawable for InPlayCard {
         let energies = self.attached
             .iter()
             .filter(|card| match card { FaceCard::Up(_) => true, _ => false })
-            .map(|card| match card { FaceCard::Up(card) => match card.as_str() {
+            .map(|card| match card { FaceCard::Up(card) => match card.archetype.as_str() {
                 "Psychic Energy (BS 101)" => "[P]",
                 "Water Energy (BS 102)" => "[P]",
                 "Double Colorless Energy (BS 96)" => "[C][C]",

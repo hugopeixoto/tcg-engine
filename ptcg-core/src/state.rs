@@ -1,4 +1,10 @@
-pub type Card = String;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Card {
+    pub owner: Player,
+    pub in_game_id: usize,
+    pub archetype: String,
+}
+
 pub type InPlayID = usize;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
@@ -189,6 +195,13 @@ impl FaceCard {
             Self::Down(c) => Self::Up(c.clone()),
         }
     }
+
+    pub fn card(&self) -> &Card {
+        match self {
+            Self::Up(c) => c,
+            Self::Down(c) => c,
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone)]
@@ -201,6 +214,17 @@ pub struct InPlayCard {
     pub rotational_status: RotationalStatus,
     pub poisoned: bool,
     pub burned: bool,
+}
+
+impl InPlayCard {
+    pub fn cards(&self) -> Vec<&Card> {
+        let mut cards = vec![];
+
+        cards.extend(self.stack.iter().map(|c| c.card()));
+        cards.extend(self.attached.iter().map(|c| c.card()));
+
+        cards
+    }
 }
 
 #[derive(Default, Clone)]
@@ -314,11 +338,11 @@ impl GameState {
     pub fn initial(a: &[&str], b: &[&str]) -> Self {
         Self {
             p1: PlayerSide {
-                deck: Deck::new(&a.iter().map(|x| x.to_string()).collect::<Vec<_>>()),
+                deck: Deck::new(&a.iter().enumerate().map(|(n, x)| Card { owner: Player::One, in_game_id: n, archetype: x.to_string() }).collect::<Vec<_>>()),
                 ..Default::default()
             },
             p2: PlayerSide {
-                deck: Deck::new(&b.iter().map(|x| x.to_string()).collect::<Vec<_>>()),
+                deck: Deck::new(&a.iter().enumerate().map(|(n, x)| Card { owner: Player::Two, in_game_id: a.len() + n, archetype: x.to_string() }).collect::<Vec<_>>()),
                 ..Default::default()
             },
             ..Default::default()
@@ -488,6 +512,72 @@ impl GameState {
         self.with_player_side(player, side)
     }
 
+    fn without_card(&self, card: &Card) -> Self {
+        let mut state = self.clone();
+
+        state.p1.discard.retain(|c| c != card);
+        state.p1.hand.retain(|c| c != card);
+        state.p1.lost_zone.retain(|c| c != card);
+        state.p1.prizes.retain(|c| c.card() != card);
+        state.p1.deck = state.p1.deck.remove_card(card).1;
+        if state.p1.stadium == Some(card.clone()) {
+            state.p1.stadium = None;
+        }
+        if state.p1.supporter == Some(card.clone()) {
+            state.p1.supporter = None;
+        }
+        for active in state.p1.active.iter_mut() {
+            active.stack.retain(|c| c.card() != card);
+            active.attached.retain(|c| c.card() != card);
+        }
+        for benched in state.p1.bench.iter_mut() {
+            benched.stack.retain(|c| c.card() != card);
+            benched.attached.retain(|c| c.card() != card);
+        }
+        state.p1.active.retain(|c| !c.stack.is_empty());
+        state.p1.bench.retain(|c| !c.stack.is_empty());
+
+        state.p2.discard.retain(|c| c != card);
+        state.p2.hand.retain(|c| c != card);
+        state.p2.lost_zone.retain(|c| c != card);
+        state.p2.prizes.retain(|c| c.card() != card);
+        state.p2.deck = state.p2.deck.remove_card(card).1;
+        if state.p2.stadium == Some(card.clone()) {
+            state.p2.stadium = None;
+        }
+        if state.p2.supporter == Some(card.clone()) {
+            state.p2.supporter = None;
+        }
+        for active in state.p2.active.iter_mut() {
+            active.stack.retain(|c| c.card() != card);
+            active.attached.retain(|c| c.card() != card);
+        }
+        for benched in state.p2.bench.iter_mut() {
+            benched.stack.retain(|c| c.card() != card);
+            benched.attached.retain(|c| c.card() != card);
+        }
+        state.p2.active.retain(|c| !c.stack.is_empty());
+        state.p2.bench.retain(|c| !c.stack.is_empty());
+
+        state
+    }
+
+    pub fn move_card_to_discard(&self, card: &Card) -> Self {
+        let mut state = self.without_card(card); // broken_state
+
+        state.side_mut(card.owner).discard.push(card.clone());
+
+        state
+    }
+
+    pub fn move_card_to_hand(&self, card: &Card) -> Self {
+        let mut state = self.without_card(card); // broken_state
+
+        state.side_mut(card.owner).hand.push(card.clone());
+
+        state
+    }
+
     pub fn discard_from_hand(&self, player: Player, card: &Card) -> Self {
         let mut side = self.side(player).clone();
 
@@ -503,7 +593,6 @@ impl GameState {
         let mut side = self.side(player).clone();
 
         if let (Some(c), deck) = side.deck.remove_card(card) {
-            println!("removed card from deck: {}", c);
             side.hand.push(c);
             side.deck = deck;
         }
@@ -527,6 +616,15 @@ impl GameState {
 
         let benching = side.active.pop().unwrap();
         side.bench.push(benching);
+
+        side.bench.retain(|x| x.id != in_play.id);
+        side.active.push(in_play.clone());
+
+        self.with_player_side(in_play.owner, side)
+    }
+
+    pub fn promote(&self, in_play: &InPlayCard) -> Self {
+        let mut side = self.side(in_play.owner).clone();
 
         side.bench.retain(|x| x.id != in_play.id);
         side.active.push(in_play.clone());
