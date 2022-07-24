@@ -13,6 +13,7 @@ use engine::*;
 impl CardDB for Card {
     fn archetype(&self) -> Box<dyn CardArchetype> {
         match self.archetype.as_str() {
+            "Alakazam (BS 1)"                   => Pokemon::create::<Alakazam>(),
             "Clefairy Doll (BS 70)"             => Trainer::create::<ClefairyDoll>(),
             "Computer Search (BS 71)"           => Trainer::create::<ComputerSearch>(),
             //"Devolution Spray (BS 72)"        => Trainer::create::<DevolutionSpray>(),
@@ -56,6 +57,27 @@ impl CardDB for Card {
             //"Energy Removal (BS 92)" => opp.in_play.any(energy_attached(1..))
             //"Potion (BS 94)" => mine.in_play.any(has_damage_counters),
         }
+    }
+}
+
+struct Pokemon {}
+impl Pokemon {
+    pub fn create<T: Default + CardArchetype + 'static>() -> Box<dyn CardArchetype> {
+        Box::new(T::default())
+    }
+}
+
+#[derive(Default)]
+struct Alakazam {}
+impl CardArchetype for Alakazam {
+    fn stage(&self) -> Option<Stage> {
+        Some(Stage::Stage2)
+    }
+    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
+        vec![]
+    }
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
+        engine.state.clone()
     }
 }
 
