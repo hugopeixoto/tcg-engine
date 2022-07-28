@@ -18,7 +18,8 @@ pub struct GameEngine {
     pub state: GameState,
 }
 
-pub trait DecisionMaker: Shuffler {
+pub trait DecisionMaker {
+    fn shuffler(&mut self) -> &mut dyn Shuffler;
     fn confirm_setup_mulligan(&mut self, p: Player);
     fn confirm_setup_active_or_mulligan(&mut self, p: Player, maybe: &Vec<Card>) -> SetupActiveSelection;
     fn confirm_setup_active(&mut self, p: Player, yes: &Vec<Card>, maybe: &Vec<Card>) -> Card;
@@ -106,7 +107,7 @@ impl GameEngine {
                     if self.state.side(player).deck.is_empty() {
                         self.state = self.state.with_stage(GameStage::Winner(player.opponent()));
                     } else {
-                        self.state = self.state.draw_to_hand(player, dm);
+                        self.state = self.state.draw_to_hand(player, dm.shuffler());
                         self.state = self.state.with_stage(GameStage::Turn(player));
                     }
                 },
@@ -322,7 +323,9 @@ impl GameEngine {
             self.state = self.state.shuffle_hand_into_deck(Player::One).shuffle_hand_into_deck(Player::Two);
 
             // 2. each player draws 7 cards
-            self.state = self.state.draw_n_to_hand(Player::One, 7, dm).draw_n_to_hand(Player::Two, 7, dm);
+            self.state = self.state
+                .draw_n_to_hand(Player::One, 7, dm.shuffler())
+                .draw_n_to_hand(Player::Two, 7, dm.shuffler());
 
             // 3. players pick a card to be their active pokemon (face down)
             p1selection = self.confirm_setup_selection(Player::One, dm);
@@ -340,22 +343,22 @@ impl GameEngine {
 
         while p2selection == SetupActiveSelection::Mulligan {
             // p2 shuffles, draws 7, selects again
-            self.state = self.state.shuffle_hand_into_deck(Player::Two).draw_n_to_hand(Player::Two, 7, dm);
+            self.state = self.state.shuffle_hand_into_deck(Player::Two).draw_n_to_hand(Player::Two, 7, dm.shuffler());
             p2selection = self.confirm_setup_selection(Player::Two, dm);
 
             // p1 is asked to draw 0,1,2 cards
             let n = dm.confirm_mulligan_draw(Player::One, 2);
-            self.state = self.state.draw_n_to_hand(Player::One, n, dm);
+            self.state = self.state.draw_n_to_hand(Player::One, n, dm.shuffler());
         }
 
         while p1selection == SetupActiveSelection::Mulligan {
             // p1 shuffles, draws 7, selects again
-            self.state = self.state.shuffle_hand_into_deck(Player::One).draw_n_to_hand(Player::One, 7, dm);
+            self.state = self.state.shuffle_hand_into_deck(Player::One).draw_n_to_hand(Player::One, 7, dm.shuffler());
             p1selection = self.confirm_setup_selection(Player::One, dm);
 
             // p2 is asked to draw 0,1,2 cards
             let n = dm.confirm_mulligan_draw(Player::Two, 2);
-            self.state = self.state.draw_n_to_hand(Player::Two, n, dm);
+            self.state = self.state.draw_n_to_hand(Player::Two, n, dm.shuffler());
         }
 
         if let SetupActiveSelection::Place(card) = &p1selection {
@@ -395,11 +398,11 @@ impl GameEngine {
 
     pub fn setup_prizes(&mut self, dm: &mut dyn DecisionMaker) {
         for _ in 0..6 {
-            self.state = self.state.draw_to_prizes(Player::One, dm);
+            self.state = self.state.draw_to_prizes(Player::One, dm.shuffler());
         }
 
         for _ in 0..6 {
-            self.state = self.state.draw_to_prizes(Player::Two, dm);
+            self.state = self.state.draw_to_prizes(Player::Two, dm.shuffler());
         }
     }
 

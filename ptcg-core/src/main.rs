@@ -1,5 +1,3 @@
-#![feature(trait_upcasting)]
-
 extern crate rand;
 use crate::rand::Rng;
 
@@ -261,7 +259,9 @@ impl TrainerCardArchetype for ImpostorProfessorOak {
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
         let opponent = player.opponent();
 
-        engine.state.shuffle_hand_into_deck(opponent).draw_n_to_hand(opponent, 7, dm)
+        engine.state
+            .shuffle_hand_into_deck(opponent)
+            .draw_n_to_hand(opponent, 7, dm.shuffler())
     }
 }
 
@@ -405,7 +405,7 @@ impl TrainerCardArchetype for Maintenance {
             state = state.shuffle_from_hand_into_deck(player, shuffled);
         }
 
-        state.draw_n_to_hand(player, 1, dm)
+        state.draw_n_to_hand(player, 1, dm.shuffler())
     }
 }
 
@@ -444,7 +444,7 @@ impl TrainerCardArchetype for ProfessorOak {
             state = state.discard_from_hand(player, discarded);
         }
 
-        state.draw_n_to_hand(player, 7, dm)
+        state.draw_n_to_hand(player, 7, dm.shuffler())
     }
 }
 
@@ -455,7 +455,7 @@ impl TrainerCardArchetype for Bill {
         !engine.state.side(player).deck.is_empty()
     }
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.draw_n_to_hand(player, 2, dm)
+        engine.state.draw_n_to_hand(player, 2, dm.shuffler())
     }
 }
 
@@ -517,6 +517,10 @@ impl Shuffler for CLI {
 }
 
 impl DecisionMaker for CLI {
+    fn shuffler(&mut self) -> &mut dyn Shuffler {
+        self
+    }
+
     fn confirm_setup_mulligan(&mut self, _p: Player) {
     }
 
