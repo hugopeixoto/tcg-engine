@@ -75,8 +75,8 @@ impl CardArchetype for Alakazam {
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
-    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.clone()
     }
     fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
         vec![]
@@ -95,8 +95,8 @@ impl CardArchetype for Psyduck {
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
-    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.clone()
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.clone()
     }
     fn attacks(&self, _player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         let mut attacks = vec![];
@@ -104,7 +104,7 @@ impl CardArchetype for Psyduck {
         if engine.is_attack_energy_cost_met(in_play, &[Type::Psychic]) {
             attacks.push(Action::Attack(in_play.clone(), "Headache".into(), Box::new(Self::headache)));
         }
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Water]) {
+        if engine.is_attack_energy_cost_met(in_play, &[Type::Psychic]) { // fix: it's actually water
             attacks.push(Action::Attack(in_play.clone(), "Fury Swipes".into(), Box::new(Self::fury_swipes)));
         }
 
@@ -115,11 +115,18 @@ impl CardArchetype for Psyduck {
     }
 }
 impl Psyduck {
-    pub fn headache(state: &GameState) -> GameState {
-        state.clone()
+    pub fn headache(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        // effect:
+        //   target: Player(opponent)
+        //   duration: EndOfTurn(opponent, 0)
+        //   what: blocked play trainers from hand
+        engine.clone()
     }
-    pub fn fury_swipes(state: &GameState) -> GameState {
-        state.clone()
+    pub fn fury_swipes(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        //let damage = 10 * dm.flip(3).heads();
+
+        //state.attack(damage, vec![])
+        engine.clone()
     }
 }
 
@@ -144,9 +151,11 @@ impl CardArchetype for BasicEnergy {
         }
     }
 
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let targets = engine.attachment_from_hand_targets(player, card);
         let target = dm.pick_target(player, &targets);
+
+        let engine = engine.attach_from_hand(player, card, target);
 
         let mut state = engine.state.attach_from_hand(player, card, *target);
         if engine.is_energy(card) {
@@ -160,7 +169,7 @@ impl CardArchetype for BasicEnergy {
             state.effects.push(effect);
         }
 
-        state
+        engine
     }
 
     fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
@@ -174,7 +183,7 @@ impl CardArchetype for BasicEnergy {
 
 trait TrainerCardArchetype {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool;
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState;
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
 }
 
 struct Trainer {
@@ -194,8 +203,8 @@ impl CardArchetype for Trainer {
         }
     }
 
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        self.archetype.execute(player, card, engine, dm).discard_from_hand(player, card)
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        GameEngine { state: self.archetype.execute(player, card, engine, dm).state.discard_from_hand(player, card) }
     }
 
     fn stage(&self) -> Option<Stage> {
@@ -218,7 +227,7 @@ impl TrainerCardArchetype for ClefairyDoll {
         engine.can_bench(player, card)
     }
 
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         panic!("not implemented");
     }
 }
@@ -231,7 +240,7 @@ impl TrainerCardArchetype for ComputerSearch {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 2) && !engine.state.side(player).deck.is_empty()
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let mut state = engine.state.clone();
 
         let cost = dm.pick_from_hand(player, player, 2, &engine.state.side(player).hand); // TODO: can't pick used card
@@ -245,7 +254,7 @@ impl TrainerCardArchetype for ComputerSearch {
             state = state.tutor_to_hand(player, searched);
         }
 
-        state.shuffle_deck(player)
+        GameEngine { state: state.shuffle_deck(player) }
     }
 }
 
@@ -256,12 +265,12 @@ impl TrainerCardArchetype for ImpostorProfessorOak {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player.opponent()).deck.is_empty() || engine.state.side(player.opponent()).hand.len() > 7
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let opponent = player.opponent();
 
-        engine.state
+        GameEngine { state: engine.state
             .shuffle_hand_into_deck(opponent)
-            .draw_n_to_hand(opponent, 7, dm.shuffler())
+            .draw_n_to_hand(opponent, 7, dm.shuffler()) }
     }
 }
 
@@ -273,7 +282,7 @@ impl TrainerCardArchetype for ItemFinder {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 2) && engine.discard_pile_has_trainer(player, card)
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let mut state = engine.state.clone();
 
         let discard_cards = engine.state.side(player).discard.clone();
@@ -290,7 +299,7 @@ impl TrainerCardArchetype for ItemFinder {
             state = state.discard_to_hand(player, searched);
         }
 
-        state
+        GameEngine { state }
     }
 }
 
@@ -302,7 +311,7 @@ impl TrainerCardArchetype for Lass {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         panic!("not implemented");
     }
 }
@@ -313,7 +322,7 @@ impl TrainerCardArchetype for PokemonBreeder {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true // todo: bunch of checks
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         panic!("not implemented");
     }
 }
@@ -324,7 +333,7 @@ impl TrainerCardArchetype for PokemonTrader {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true // TODO: pokemon communication
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         panic!("not implemented");
     }
 }
@@ -335,7 +344,7 @@ impl TrainerCardArchetype for ScoopUp {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         engine.state.side(player).in_play().iter().any(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic)))
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let choices = engine.state.side(player).in_play().into_iter().filter(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic))).cloned().collect();
 
         let chosen = dm.pick_in_play(player, 1, &choices);
@@ -349,7 +358,7 @@ impl TrainerCardArchetype for ScoopUp {
             }
         }
 
-        state
+        GameEngine { state }
     }
 }
 
@@ -359,7 +368,7 @@ impl TrainerCardArchetype for Defender {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         panic!("not implemented");
     }
 }
@@ -370,7 +379,7 @@ impl TrainerCardArchetype for EnergyRetrieval {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 1) && engine.discard_pile_has_basic_energy(player, card)
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let mut state = engine.state.clone();
 
         let discard_cards = engine.state.side(player).discard.clone();
@@ -387,7 +396,7 @@ impl TrainerCardArchetype for EnergyRetrieval {
             state = state.discard_to_hand(player, searched);
         }
 
-        state
+        GameEngine { state }
     }
 }
 
@@ -397,7 +406,7 @@ impl TrainerCardArchetype for Maintenance {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 2) // TODO: not discard but shuffle
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let mut state = engine.state.clone();
 
         let cost = dm.pick_from_hand(player, player, 2, &engine.state.side(player).hand); // TODO: can't pick used card
@@ -405,7 +414,7 @@ impl TrainerCardArchetype for Maintenance {
             state = state.shuffle_from_hand_into_deck(player, shuffled);
         }
 
-        state.draw_n_to_hand(player, 1, dm.shuffler())
+        GameEngine { state: state.draw_n_to_hand(player, 1, dm.shuffler()) }
     }
 }
 
@@ -415,7 +424,7 @@ impl TrainerCardArchetype for PlusPower {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         panic!("not implemented");
     }
 }
@@ -426,7 +435,7 @@ impl TrainerCardArchetype for Pokedex {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).deck.is_empty()
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         panic!("not implemented");
     }
 }
@@ -437,14 +446,14 @@ impl TrainerCardArchetype for ProfessorOak {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).deck.is_empty()
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let mut state = engine.state.clone();
 
         for discarded in engine.state.side(player).hand.iter() {
             state = state.discard_from_hand(player, discarded);
         }
 
-        state.draw_n_to_hand(player, 7, dm.shuffler())
+        GameEngine { state: state.draw_n_to_hand(player, 7, dm.shuffler()) }
     }
 }
 
@@ -454,8 +463,8 @@ impl TrainerCardArchetype for Bill {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).deck.is_empty()
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
-        engine.state.draw_n_to_hand(player, 2, dm.shuffler())
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        GameEngine { state: engine.state.draw_n_to_hand(player, 2, dm.shuffler()) }
     }
 }
 
@@ -465,11 +474,11 @@ impl TrainerCardArchetype for GustOfWind {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player.opponent()).bench.is_empty()
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let chosen = dm.pick_in_play(player, 1, &engine.state.side(player.opponent()).bench);
 
         // TODO: clear effects on defending
-        engine.state.switch_active_with(&chosen[0])
+        GameEngine { state: engine.state.switch_active_with(&chosen[0]) }
     }
 }
 
@@ -479,11 +488,11 @@ impl TrainerCardArchetype for Switch {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).bench.is_empty()
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let chosen = dm.pick_in_play(player, 1, &engine.state.side(player).bench);
 
         // TODO: clear effects on defending
-        engine.state.switch_active_with(&chosen[0])
+        GameEngine { state: engine.state.switch_active_with(&chosen[0]) }
     }
 }
 
@@ -493,7 +502,7 @@ impl CardArchetype for NOOP {
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameState {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         panic!("not implemented");
     }
     fn stage(&self) -> Option<Stage> {

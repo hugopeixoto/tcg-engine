@@ -4,7 +4,7 @@ use crate::cli::CLIDrawTarget;
 pub trait CardArchetype {
     // probably want to add the Zone of the card
     fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action>;
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameState;
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
     fn stage(&self) -> Option<Stage>;
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action>;
     fn provides(&self) -> Vec<Type>;
@@ -14,6 +14,7 @@ pub trait CardDB {
     fn archetype(&self) -> Box<dyn CardArchetype>;
 }
 
+#[derive(Clone)]
 pub struct GameEngine {
     pub state: GameState,
 }
@@ -81,7 +82,7 @@ pub enum Action {
     TrainerFromHand(Card),
     AttachFromHand(Card),
     BenchFromHand(Card),
-    Attack(InPlayCard, String, Box<dyn Fn(&GameState) -> GameState>),
+    Attack(InPlayCard, String, Box<dyn Fn(&GameEngine, &mut dyn DecisionMaker) -> GameEngine>),
 }
 impl std::fmt::Debug for Action {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
@@ -96,104 +97,132 @@ impl std::fmt::Debug for Action {
 }
 
 impl GameEngine {
-    pub fn play(&mut self, dm: &mut dyn DecisionMaker) {
-        loop {
+    pub fn play(&self, dm: &mut dyn DecisionMaker) -> Self {
+        let mut engine = self.clone();
+        while !engine.is_finished() {
             CLIDrawTarget::print(&self.state);
-            match self.state.stage {
-                GameStage::Uninitialized => { self.setup(dm); },
-                GameStage::Winner(_) => { break; },
-                GameStage::Tie => { break; },
-                GameStage::StartOfTurn(player) => {
-                    if self.state.side(player).deck.is_empty() {
-                        self.state = self.state.with_stage(GameStage::Winner(player.opponent()));
-                    } else {
-                        self.state = self.state.draw_to_hand(player, dm.shuffler());
-                        self.state = self.state.with_stage(GameStage::Turn(player));
-                    }
-                },
-                GameStage::Turn(player) => {
-                    println!("available actions for {:?}:", player);
-                    let actions = self.available_actions(player);
-                    for (i, action) in actions.iter().enumerate() {
-                        println!(" {}. {:?}", i + 1, action);
-                    }
+            engine = engine.step(dm);
+        }
 
-                    let action = dm.pick_action(player, &actions);
+        engine
+    }
 
-                    match &action {
-                        Action::Pass => {
-                            // count down end of turn effects
-                            self.state = self.state.with_stage(GameStage::StartOfTurn(player.opponent()));
+    pub fn is_finished(&self) -> bool {
+        match self.state.stage {
+            GameStage::Winner(_) | GameStage::Tie => { true },
+            _ => { false },
+        }
+    }
 
-                            self.state.effects.retain(|e| match e.expires {
-                                EffectExpiration::EndOfTurn(p, 0) => p != player,
-                                _ => true,
-                            });
-                            for effect in self.state.effects.iter_mut() {
-                                match effect.expires {
-                                    EffectExpiration::EndOfTurn(p, t) => {
-                                        if p == player {
-                                            effect.expires = EffectExpiration::EndOfTurn(p, t - 1)
-                                        }
-                                    },
-                                    _ => {},
-                                }
+    pub fn step(&self, dm: &mut dyn DecisionMaker) -> Self {
+        let mut engine = match self.state.stage {
+            GameStage::Uninitialized => { self.setup(dm) },
+            GameStage::Winner(_) => { self.clone() },
+            GameStage::Tie => { self.clone() },
+            GameStage::StartOfTurn(player) => {
+                let mut engine = self.clone();
+
+                if engine.state.side(player).deck.is_empty() {
+                    engine.state = engine.state.with_stage(GameStage::Winner(player.opponent()));
+                } else {
+                    engine.state = engine.state.draw_to_hand(player, dm.shuffler());
+                    engine.state = engine.state.with_stage(GameStage::Turn(player));
+                }
+
+                engine
+            },
+            GameStage::Turn(player) => {
+                let mut engine = self.clone();
+
+                println!("available actions for {:?}:", player);
+                let actions = engine.available_actions(player);
+                for (i, action) in actions.iter().enumerate() {
+                    println!(" {}. {:?}", i + 1, action);
+                }
+
+                let action = dm.pick_action(player, &actions);
+
+                match &action {
+                    Action::Pass => {
+                        // count down end of turn effects
+                        engine.state = engine.state.with_stage(GameStage::PokemonCheckup(player.opponent()));
+
+                        engine.state.effects.retain(|e| match e.expires {
+                            EffectExpiration::EndOfTurn(p, 0) => p != player,
+                            _ => true,
+                        });
+                        for effect in engine.state.effects.iter_mut() {
+                            match effect.expires {
+                                EffectExpiration::EndOfTurn(p, t) => {
+                                    if p == player {
+                                        effect.expires = EffectExpiration::EndOfTurn(p, t - 1)
+                                    }
+                                },
+                                _ => {},
                             }
-                        },
-                        Action::TrainerFromHand(card) => {
-                            self.state = card.archetype().execute(player, card, self, dm);
-                        },
-                        Action::AttachFromHand(card) => {
-                            self.state = card.archetype().execute(player, card, self, dm);
-                        },
-                        Action::Attack(_in_play, _name, executor) => {
-                            self.state = executor(&self.state);
-                        },
-                        Action::BenchFromHand(card) => {
-                            self.state = self.state.bench_from_hand(player, card);
-                        },
-                    }
+                        }
+                    },
+                    Action::TrainerFromHand(card) => {
+                        engine = card.archetype().execute(player, card, &engine, dm);
+                    },
+                    Action::AttachFromHand(card) => {
+                        engine = card.archetype().execute(player, card, &engine, dm);
+                    },
+                    Action::Attack(_in_play, _name, executor) => {
+                        engine = executor(&engine, dm);
+                    },
+                    Action::BenchFromHand(card) => {
+                        engine = GameEngine { state: engine.state.bench_from_hand(player, card) };
+                    },
                 }
+
+                engine
             }
+        };
 
-            // Q. When both active Pokémon are knocked out, who places a new active first?
-            // A. The player whose turn would be next.
-            // https://compendium.pokegym.net/ruling/818/
-            let who_first = match self.state.stage {
-                GameStage::Turn(player) => player.opponent(),
-                GameStage::StartOfTurn(player) => player.opponent(),
-                _ => Player::One,
-            };
+        // Q. When both active Pokémon are knocked out, who places a new active first?
+        // A. The player whose turn would be next.
+        // https://compendium.pokegym.net/ruling/818/
+        let who_first = match engine.state.stage {
+            GameStage::Turn(player) => player.opponent(),
+            GameStage::StartOfTurn(player) => player.opponent(),
+            _ => Player::One,
+        };
 
-            for who in [who_first, who_first.opponent()] {
-                // TODO: 2v2 games
-                while self.state.side(who).active.len() < 1 && !self.state.side(who).bench.is_empty() {
-                    let chosen = dm.pick_in_play(who, 1, &self.state.side(who).bench);
-                    self.state = self.state.promote(chosen[0]);
-                }
-            }
-
-            // Well, if one of you has a Benched Pokémon to replace your Active Pokémon and
-            // the other player doesn't, then the person who can replace his or her Active
-            // Pokémon wins. Otherwise, you play Sudden Death. This is explained in the
-            // Pokémon rules in the Expert Rules section under "What Happens if Both Players
-            // Win at the Same Time?"
-            // https://compendium.pokegym.net/ruling/882/
-            let [a, b] = [Player::One, Player::Two].map(|player| {
-                let prize_done = self.state.side(player).prizes.is_empty();
-                let no_active = self.state.side(player.opponent()).active.is_empty();
-
-                (if prize_done { 1 } else { 0 }) + (if no_active { 1 } else { 0 })
-            });
-
-            if a > 0 && a > b {
-                self.state.stage = GameStage::Winner(Player::One);
-            } else if b > 0 && b > a {
-                self.state.stage = GameStage::Winner(Player::Two);
-            } else if b > 0 && b == a {
-                self.state.stage = GameStage::Tie;
+        for who in [who_first, who_first.opponent()] {
+            // TODO: 2v2 games
+            while engine.state.side(who).active.len() < 1 && !engine.state.side(who).bench.is_empty() {
+                let chosen = dm.pick_in_play(who, 1, &engine.state.side(who).bench);
+                engine.state = engine.state.promote(chosen[0]);
             }
         }
+
+        // Well, if one of you has a Benched Pokémon to replace your Active Pokémon and
+        // the other player doesn't, then the person who can replace his or her Active
+        // Pokémon wins. Otherwise, you play Sudden Death. This is explained in the
+        // Pokémon rules in the Expert Rules section under "What Happens if Both Players
+        // Win at the Same Time?"
+        // https://compendium.pokegym.net/ruling/882/
+        let [a, b] = [Player::One, Player::Two].map(|player| {
+            let prize_done = engine.state.side(player).prizes.is_empty();
+            let no_active = engine.state.side(player.opponent()).active.is_empty();
+
+            (if prize_done { 1 } else { 0 }) + (if no_active { 1 } else { 0 })
+        });
+
+        if a > 0 && a > b {
+            engine.state.stage = GameStage::Winner(Player::One);
+        } else if b > 0 && b > a {
+            engine.state.stage = GameStage::Winner(Player::Two);
+        } else if b > 0 && b == a {
+            engine.state.stage = GameStage::Tie;
+        }
+
+        engine
+    }
+
+    pub fn attach_from_hand(&self, player: Player, card: &Card, target: &InPlayID) -> Self {
+        self.clone()
     }
 
     pub fn available_actions(&self, player: Player) -> Vec<Action> {
@@ -314,101 +343,115 @@ impl GameEngine {
         self.state.side(player).discard.iter().find(|c| self.is_basic_energy(c)) != None
     }
 
-    pub fn setup(&mut self, dm: &mut dyn DecisionMaker) {
+    pub fn setup(&self, dm: &mut dyn DecisionMaker) -> Self {
+        let mut engine = self.clone();
+
         let mut p1selection = SetupActiveSelection::Mulligan;
         let mut p2selection = SetupActiveSelection::Mulligan;
 
         while p1selection == SetupActiveSelection::Mulligan && p2selection == SetupActiveSelection::Mulligan {
             // 1. each player shuffles their deck
-            self.state = self.state.shuffle_hand_into_deck(Player::One).shuffle_hand_into_deck(Player::Two);
+            engine.state = engine.state.shuffle_hand_into_deck(Player::One).shuffle_hand_into_deck(Player::Two);
 
             // 2. each player draws 7 cards
-            self.state = self.state
+            engine.state = engine.state
                 .draw_n_to_hand(Player::One, 7, dm.shuffler())
                 .draw_n_to_hand(Player::Two, 7, dm.shuffler());
 
             // 3. players pick a card to be their active pokemon (face down)
-            p1selection = self.confirm_setup_selection(Player::One, dm);
-            p2selection = self.confirm_setup_selection(Player::Two, dm);
+            p1selection = engine.confirm_setup_selection(Player::One, dm);
+            p2selection = engine.confirm_setup_selection(Player::Two, dm);
         }
 
         // place selections
         if let SetupActiveSelection::Place(card) = &p1selection {
-            self.state = self.state.play_from_hand_to_active_face_down(Player::One, card);
+            engine.state = engine.state.play_from_hand_to_active_face_down(Player::One, card);
         }
 
         if let SetupActiveSelection::Place(card) = &p2selection {
-            self.state = self.state.play_from_hand_to_active_face_down(Player::Two, card);
+            engine.state = engine.state.play_from_hand_to_active_face_down(Player::Two, card);
         }
 
         while p2selection == SetupActiveSelection::Mulligan {
             // p2 shuffles, draws 7, selects again
-            self.state = self.state.shuffle_hand_into_deck(Player::Two).draw_n_to_hand(Player::Two, 7, dm.shuffler());
-            p2selection = self.confirm_setup_selection(Player::Two, dm);
+            engine.state = engine.state.shuffle_hand_into_deck(Player::Two).draw_n_to_hand(Player::Two, 7, dm.shuffler());
+            p2selection = engine.confirm_setup_selection(Player::Two, dm);
 
             // p1 is asked to draw 0,1,2 cards
             let n = dm.confirm_mulligan_draw(Player::One, 2);
-            self.state = self.state.draw_n_to_hand(Player::One, n, dm.shuffler());
+            engine.state = engine.state.draw_n_to_hand(Player::One, n, dm.shuffler());
         }
 
         while p1selection == SetupActiveSelection::Mulligan {
             // p1 shuffles, draws 7, selects again
-            self.state = self.state.shuffle_hand_into_deck(Player::One).draw_n_to_hand(Player::One, 7, dm.shuffler());
-            p1selection = self.confirm_setup_selection(Player::One, dm);
+            engine.state = engine.state.shuffle_hand_into_deck(Player::One).draw_n_to_hand(Player::One, 7, dm.shuffler());
+            p1selection = engine.confirm_setup_selection(Player::One, dm);
 
             // p2 is asked to draw 0,1,2 cards
             let n = dm.confirm_mulligan_draw(Player::Two, 2);
-            self.state = self.state.draw_n_to_hand(Player::Two, n, dm.shuffler());
+            engine.state = engine.state.draw_n_to_hand(Player::Two, n, dm.shuffler());
         }
 
         if let SetupActiveSelection::Place(card) = &p1selection {
-            if self.state.p1.active.is_empty() {
-                self.state = self.state.play_from_hand_to_active_face_down(Player::One, card);
+            if engine.state.p1.active.is_empty() {
+                engine.state = engine.state.play_from_hand_to_active_face_down(Player::One, card);
             }
         }
 
         if let SetupActiveSelection::Place(card) = &p2selection {
-            if self.state.p2.active.is_empty() {
-                self.state = self.state.play_from_hand_to_active_face_down(Player::Two, card);
+            if engine.state.p2.active.is_empty() {
+                engine.state = engine.state.play_from_hand_to_active_face_down(Player::Two, card);
             }
         }
 
-        self.setup_bench(dm);
-        self.setup_prizes(dm);
         // TODO: flip coin to decide who goes first, or check for First Ticket DRV 19.
-        self.setup_reveal_pokemon();
+        engine = engine.setup_bench(dm).setup_prizes(dm).setup_reveal_pokemon();
+
         // TODO: check for abilities that activate on reveal, like Sableye SF 48
 
-        self.state.stage = GameStage::Turn(Player::One);
+        engine.state.stage = GameStage::Turn(Player::One);
 
-        println!("Hand sizes: {}, {}", self.state.p1.hand.len(), self.state.p2.hand.len());
+        println!("Hand sizes: {}, {}", engine.state.p1.hand.len(), engine.state.p2.hand.len());
+        engine
     }
 
-    pub fn setup_bench(&mut self, dm: &mut dyn DecisionMaker) {
-        let p1bench = self.confirm_bench_selection(Player::One, dm);
-        let p2bench = self.confirm_bench_selection(Player::Two, dm);
+    pub fn setup_bench(&self, dm: &mut dyn DecisionMaker) -> Self {
+        let mut engine = self.clone();
+
+        let p1bench = engine.confirm_bench_selection(Player::One, dm);
+        let p2bench = engine.confirm_bench_selection(Player::Two, dm);
 
         for card in p1bench {
-            self.state = self.state.play_from_hand_to_bench_face_down(Player::One, &card);
+            engine.state = engine.state.play_from_hand_to_bench_face_down(Player::One, &card);
         }
         for card in p2bench {
-            self.state = self.state.play_from_hand_to_bench_face_down(Player::Two, &card);
+            engine.state = engine.state.play_from_hand_to_bench_face_down(Player::Two, &card);
         }
+
+        engine
     }
 
-    pub fn setup_prizes(&mut self, dm: &mut dyn DecisionMaker) {
+    pub fn setup_prizes(&self, dm: &mut dyn DecisionMaker) -> Self {
+        let mut engine = self.clone();
+
         for _ in 0..6 {
-            self.state = self.state.draw_to_prizes(Player::One, dm.shuffler());
+            engine.state = engine.state.draw_to_prizes(Player::One, dm.shuffler());
         }
 
         for _ in 0..6 {
-            self.state = self.state.draw_to_prizes(Player::Two, dm.shuffler());
+            engine.state = engine.state.draw_to_prizes(Player::Two, dm.shuffler());
         }
+
+        engine
     }
 
-    pub fn setup_reveal_pokemon(&mut self) {
-        self.state = self.state.reveal_pokemon(Player::One);
-        self.state = self.state.reveal_pokemon(Player::Two);
+    pub fn setup_reveal_pokemon(&self) -> Self {
+        let mut engine = self.clone();
+
+        engine.state = engine.state.reveal_pokemon(Player::One);
+        engine.state = engine.state.reveal_pokemon(Player::Two);
+
+        engine
     }
 
     pub fn confirm_bench_selection(&self, player: Player, dm: &mut dyn DecisionMaker) -> Vec<Card> {
