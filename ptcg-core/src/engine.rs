@@ -177,6 +177,11 @@ impl GameEngine {
                 }
 
                 engine
+            },
+            GameStage::PokemonCheckup(player) => {
+                let mut engine = self.clone();
+                engine.state = engine.state.with_stage(GameStage::Turn(player));
+                engine
             }
         };
 

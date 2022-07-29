@@ -275,6 +275,7 @@ pub enum GameStage {
     Uninitialized,
     StartOfTurn(Player),
     Turn(Player),
+    PokemonCheckup(Player),
     Winner(Player),
     Tie,
 }

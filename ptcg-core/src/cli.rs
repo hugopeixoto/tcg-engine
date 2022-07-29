@@ -127,6 +127,10 @@ impl CLIDrawable for GameState {
             GameStage::Turn(Player::Two) => {
                 target.draw_line("^", 3, 24);
             },
+            GameStage::PokemonCheckup(_) => {
+                target.draw_line("*", 3, 24);
+                target.draw_line("*", 3, 25);
+            },
             GameStage::Winner(Player::One) => {
                 target.draw_line("Player one wins!", 3, 25);
             },
