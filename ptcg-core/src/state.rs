@@ -210,7 +210,7 @@ pub struct InPlayCard {
     pub owner: Player,
     pub stack: Vec<FaceCard>,
     pub attached: Vec<FaceCard>,
-    pub damage_counters: u32,
+    pub damage_counters: usize,
     pub rotational_status: RotationalStatus,
     pub poisoned: bool,
     pub burned: bool,
@@ -243,15 +243,15 @@ pub struct PlayerSide {
 }
 
 impl PlayerSide {
-    pub fn in_play_mut(&mut self, id: InPlayID) -> Option<&mut InPlayCard> {
+    pub fn in_play_mut(&mut self, id: &InPlayID) -> Option<&mut InPlayCard> {
         for p in self.active.iter_mut() {
-            if p.id == id {
+            if p.id == *id {
                 return Some(p);
             }
         }
 
         for p in self.bench.iter_mut() {
-            if p.id == id {
+            if p.id == *id {
                 return Some(p);
             }
         }
@@ -495,7 +495,7 @@ impl GameState {
         self.with_player_side(player, side)
     }
 
-    pub fn attach_from_hand(&self, player: Player, card: &Card, target: InPlayID) -> Self {
+    pub fn attach_from_hand(&self, player: Player, card: &Card, target: &InPlayID) -> Self {
         let mut side = self.side(player).clone();
 
         let p = side.hand.iter().position(|c| c == card).unwrap();
@@ -629,6 +629,14 @@ impl GameState {
 
         side.bench.retain(|x| x.id != in_play.id);
         side.active.push(in_play.clone());
+
+        self.with_player_side(in_play.owner, side)
+    }
+
+    pub fn add_damage_counters(&self, in_play: &InPlayCard, counters: usize) -> Self {
+        let mut side = self.side(in_play.owner).clone();
+
+        side.in_play_mut(&in_play.id).unwrap().damage_counters += counters;
 
         self.with_player_side(in_play.owner, side)
     }

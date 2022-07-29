@@ -1,4 +1,5 @@
 use crate::state::*;
+use crate::engine::*;
 
 #[derive(Default)]
 pub struct CLIDrawTarget {
@@ -57,8 +58,8 @@ impl CLIDrawable for FaceCard {
 }
 
 
-impl CLIDrawable for InPlayCard {
-    fn draw(&self, x: usize, y: usize, target: &mut CLIDrawTarget) {
+impl InPlayCard {
+    fn draw(&self, x: usize, y: usize, target: &mut CLIDrawTarget, engine: &GameEngine) {
         self.stack[0].draw(x, y, target);
 
         let energies = self.attached
@@ -73,12 +74,13 @@ impl CLIDrawable for InPlayCard {
             .collect::<Vec<_>>()
             .join("")
             ;
-
         target.draw_line(&energies, x, y - 1);
+
+        target.draw_line(&format!("{} HP", engine.remaining_hp(self)), x, y - 2);
     }
 }
 
-impl CLIDrawable for GameState {
+impl CLIDrawable for GameEngine {
     fn draw(&self, x: usize, y: usize, target: &mut CLIDrawTarget) {
         target.draw_line("{     } {     }    {     } {     } {     } {     } {     }    |‾‾‾‾‾|", x, y +  8);
         target.draw_line("{  P  } {  P  }    {  B  } {  B  } {  B  } {  B  } {  B  }    |  U  |", x, y +  9);
@@ -115,7 +117,7 @@ impl CLIDrawable for GameState {
         target.draw_line("{     } {     }    {     } {     } {     } {     } {     }    |     |", x, y + 40);
         target.draw_line("{     } {     }    {     } {     } {     } {     } {     }    |_____|", x, y + 41);
 
-        match self.stage {
+        match self.state.stage {
             GameStage::Uninitialized => {
                 target.draw_line("x", 3, 24);
                 target.draw_line("x", 3, 25);
@@ -142,37 +144,37 @@ impl CLIDrawable for GameState {
             },
         }
 
-        target.draw_line(&format!("{:3}", self.p1.deck.len()), x + 64, 35);
-        target.draw_line(&format!("{:3}", self.p1.discard.len()), x + 64, 40);
-        if !self.p1.active.is_empty() {
-            self.p1.active[0].draw(x + 35, y + 28, target);
+        target.draw_line(&format!("{:3}", self.state.p1.deck.len()), x + 64, 35);
+        target.draw_line(&format!("{:3}", self.state.p1.discard.len()), x + 64, 40);
+        if !self.state.p1.active.is_empty() {
+            self.state.p1.active[0].draw(x + 35, y + 28, target, self);
         }
-        for (i, benched) in self.p1.bench.iter().enumerate() {
-            benched.draw(x + 19 + i * 8, 38, target);
+        for (i, benched) in self.state.p1.bench.iter().enumerate() {
+            benched.draw(x + 19 + i * 8, 38, target, self);
         }
-        for (i, prize) in self.p1.prizes.iter().rev().enumerate() {
+        for (i, prize) in self.state.p1.prizes.iter().rev().enumerate() {
             prize.draw(x + 0 + (i%2) * 8, y + 28 + (i/2) * 5, target);
         }
-        for (i, card) in self.p1.hand.iter().enumerate() {
+        for (i, card) in self.state.p1.hand.iter().enumerate() {
             FaceCard::Up(card.clone()).draw(i*8, 43, target);
         }
 
-        target.draw_line(&format!("{:3}", self.p2.deck.len()), x + 64, 15);
-        target.draw_line(&format!("{:3}", self.p2.discard.len()), x + 64, 10);
-        if !self.p2.active.is_empty() {
-            self.p2.active[0].draw(x + 35, y + 18, target);
+        target.draw_line(&format!("{:3}", self.state.p2.deck.len()), x + 64, 15);
+        target.draw_line(&format!("{:3}", self.state.p2.discard.len()), x + 64, 10);
+        if !self.state.p2.active.is_empty() {
+            self.state.p2.active[0].draw(x + 35, y + 18, target, self);
         }
-        for (i, benched) in self.p2.bench.iter().enumerate() {
-            benched.draw(x + 19 + i * 8, 8, target);
+        for (i, benched) in self.state.p2.bench.iter().enumerate() {
+            benched.draw(x + 19 + i * 8, 8, target, self);
         }
-        for (i, prize) in self.p2.prizes.iter().enumerate() {
+        for (i, prize) in self.state.p2.prizes.iter().enumerate() {
             prize.draw(x + 0 + (i%2) * 8, y + 8 + (i/2) * 5, target);
         }
-        for (i, card) in self.p2.hand.iter().enumerate() {
+        for (i, card) in self.state.p2.hand.iter().enumerate() {
             FaceCard::Up(card.clone()).draw(i*8, 3, target);
         }
 
-        for (i, effect) in self.effects.iter().enumerate() {
+        for (i, effect) in self.state.effects.iter().enumerate() {
             target.draw_line(&format!("{:?}", effect), x + 80, 8 + i);
         }
     }

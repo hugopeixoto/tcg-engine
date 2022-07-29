@@ -8,6 +8,7 @@ pub trait CardArchetype {
     fn stage(&self) -> Option<Stage>;
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action>;
     fn provides(&self) -> Vec<Type>;
+    fn hp(&self) -> Option<usize>;
 }
 
 pub trait CardDB {
@@ -15,12 +16,52 @@ pub trait CardDB {
 }
 
 #[derive(Clone)]
+pub struct RFA {
+    code: fn(&GameEngine, &mut dyn DecisionMaker) -> GameEngine,
+}
+
+impl RFA {
+    pub fn new(code: fn(&GameEngine, &mut dyn DecisionMaker) -> GameEngine) -> Self {
+        RFA { code }
+    }
+}
+
+impl AttackBody for RFA {
+    fn run(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        (self.code)(engine, dm)
+    }
+
+    fn boxed_clone(&self) -> Box<dyn AttackBody> {
+        Box::new(self.clone())
+    }
+}
+
+
+#[derive(Clone)]
 pub struct GameEngine {
     pub state: GameState,
+    pub resolving_actions: Vec<Action>,
+}
+
+#[derive(Default)]
+pub struct Flips {
+    results: Vec<bool>,
+}
+
+impl Flips {
+    pub fn from_results(results: Vec<bool>) -> Self {
+        Flips { results }
+    }
+
+    pub fn heads(&self) -> usize {
+        self.results.iter().filter(|&x| *x).count()
+    }
 }
 
 pub trait DecisionMaker {
     fn shuffler(&mut self) -> &mut dyn Shuffler;
+    fn flip(&mut self, number_of_coins: usize) -> Flips;
+
     fn confirm_setup_mulligan(&mut self, p: Player);
     fn confirm_setup_active_or_mulligan(&mut self, p: Player, maybe: &Vec<Card>) -> SetupActiveSelection;
     fn confirm_setup_active(&mut self, p: Player, yes: &Vec<Card>, maybe: &Vec<Card>) -> Card;
@@ -77,20 +118,32 @@ pub enum SetupActiveSelection {
     Place(Card),
 }
 
+pub trait AttackBody {
+    fn run(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
+    fn boxed_clone(&self) -> Box<dyn AttackBody>;
+}
+
+impl Clone for Box<dyn AttackBody> {
+    fn clone(&self) -> Self {
+        self.boxed_clone()
+    }
+}
+
+#[derive(Clone)]
 pub enum Action {
     Pass,
-    TrainerFromHand(Card),
-    AttachFromHand(Card),
-    BenchFromHand(Card),
-    Attack(InPlayCard, String, Box<dyn Fn(&GameEngine, &mut dyn DecisionMaker) -> GameEngine>),
+    TrainerFromHand(Player, Card),
+    AttachFromHand(Player, Card),
+    BenchFromHand(Player, Card),
+    Attack(Player, InPlayCard, String, Box<dyn AttackBody>),
 }
 impl std::fmt::Debug for Action {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            Action::TrainerFromHand(c) => { write!(f, "Play {}", c.archetype) },
-            Action::AttachFromHand(c) => { write!(f, "Attach {}", c.archetype) },
-            Action::BenchFromHand(c) => { write!(f, "Bench {}", c.archetype) },
-            Action::Attack(in_play, name, _) => { write!(f, "Attack with {}: {}", in_play.stack[0].card().archetype, name) },
+            Action::TrainerFromHand(_player, card) => { write!(f, "Play {}", card.archetype) },
+            Action::AttachFromHand(_player, card) => { write!(f, "Attach {}", card.archetype) },
+            Action::BenchFromHand(_player, card) => { write!(f, "Bench {}", card.archetype) },
+            Action::Attack(_player, in_play, name, _) => { write!(f, "Attack with {}: {}", in_play.stack[0].card().archetype, name) },
             Action::Pass => { write!(f, "Pass") },
         }
     }
@@ -100,7 +153,7 @@ impl GameEngine {
     pub fn play(&self, dm: &mut dyn DecisionMaker) -> Self {
         let mut engine = self.clone();
         while !engine.is_finished() {
-            CLIDrawTarget::print(&self.state);
+            CLIDrawTarget::print(&engine);
             engine = engine.step(dm);
         }
 
@@ -162,17 +215,19 @@ impl GameEngine {
                             }
                         }
                     },
-                    Action::TrainerFromHand(card) => {
+                    Action::TrainerFromHand(_, card) => {
                         engine = card.archetype().execute(player, card, &engine, dm);
                     },
-                    Action::AttachFromHand(card) => {
+                    Action::AttachFromHand(_, card) => {
                         engine = card.archetype().execute(player, card, &engine, dm);
                     },
-                    Action::Attack(_in_play, _name, executor) => {
-                        engine = executor(&engine, dm);
+                    Action::Attack(_, _in_play, _name, executor) => {
+                        engine = engine.with_action(action.clone());
+                        engine = executor.run(&engine, dm);
+                        engine = engine.pop_action();
                     },
-                    Action::BenchFromHand(card) => {
-                        engine = GameEngine { state: engine.state.bench_from_hand(player, card) };
+                    Action::BenchFromHand(_, card) => {
+                        engine = GameEngine { resolving_actions: vec![], state: engine.state.bench_from_hand(player, card) };
                     },
                 }
 
@@ -227,7 +282,45 @@ impl GameEngine {
     }
 
     pub fn attach_from_hand(&self, player: Player, card: &Card, target: &InPlayID) -> Self {
-        self.clone()
+        Self { resolving_actions: vec![], state: self.state.attach_from_hand(player, card, target) }
+    }
+
+    pub fn damage(&self, damage: usize) -> Self {
+        println!("resolving damage, context: {}", self.resolving_actions.len());
+        match self.resolving_actions.last() {
+            Some(Action::Attack(player, attacking, name, _)) => {
+                let defending = &self.state.side(player.opponent()).active[0];
+                println!("resolving damage, action: {}: {:?} -> {:?}", name, attacking, defending);
+
+                let state = self.state.add_damage_counters(defending, damage/10);
+
+                GameEngine { resolving_actions: self.resolving_actions.clone(), state }
+            },
+            _ => { panic!("wat"); },
+        }
+    }
+
+    pub fn with_effect(&self, effect: Effect) -> Self {
+        let mut engine = self.clone();
+        engine.state.effects.push(effect);
+        engine
+    }
+
+    // TODO: this should be removed, it's a temporary thing
+    pub fn with_state(&self, state: GameState) -> Self {
+        Self { resolving_actions: self.resolving_actions.clone(), state }
+    }
+
+    pub fn with_action(&self, action: Action) -> Self {
+        let mut engine = self.clone();
+        engine.resolving_actions.push(action);
+        engine
+    }
+
+    pub fn pop_action(&self) -> Self {
+        let mut engine = self.clone();
+        engine.resolving_actions.pop();
+        engine
     }
 
     pub fn available_actions(&self, player: Player) -> Vec<Action> {
@@ -271,7 +364,7 @@ impl GameEngine {
         }
 
         if self.can_bench_from_hand(card) {
-            return vec![Action::BenchFromHand(card.clone())]
+            return vec![Action::BenchFromHand(player, card.clone())]
         }
 
         vec![]
@@ -549,6 +642,9 @@ impl GameEngine {
         }
     }
 
+    pub fn remaining_hp(&self, in_play: &InPlayCard) -> usize {
+        in_play.stack[0].card().archetype().hp().unwrap_or(0).saturating_sub(in_play.damage_counters * 10)
+    }
     pub fn is_energy(&self, card: &Card) -> bool {
         self.is_basic_energy(card) || card.archetype == "Double Colorless Energy (BS 96)"
     }
