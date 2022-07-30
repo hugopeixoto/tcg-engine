@@ -468,6 +468,8 @@ impl GameEngine {
             }
         }
 
+        // TODO: This assumes that colorless requirements are at the end to work. Also, it's not
+        // ready to work with rainbow energies or any energy that provides more than one type.
         for required in cost {
             match required {
                 Type::Colorless => {

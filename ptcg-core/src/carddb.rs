@@ -186,6 +186,9 @@ impl Squirtle {
         engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
     }
     pub fn withdraw(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        // TODO: this should only activate on the opponent's next turn, not right now.
+        // If there's anything that triggers after attacking or during Pokémon Checkup,
+        // this ability shouldn't be considered.
         engine.with_effect(Effect {
             name: "SQUIRTLE_BS_WITHDRAW_NO_DAMAGE".into(),
             source: EffectSource::Attack(engine.player(), engine.attacking().id),
