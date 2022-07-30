@@ -294,15 +294,15 @@ impl Articuno {
     }
 
     pub fn blizzard(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let their_bench = dm.flip(1).heads() == 1;
+        let whose_bench = if dm.flip(1).heads() == 1 {
+            engine.opponent()
+        } else {
+            engine.player()
+        };
 
         engine
             .damage(50)
-            .then(|e| if their_bench {
-                e.target_all(e.bench(e.opponent()), |e2| e2.damage(10))
-            } else {
-                e.target_all(e.bench(e.player()), |e2| e2.damage(10))
-            })
+            .then(|e| e.target_all(e.bench(whose_bench), |e2| e2.damage(10)))
     }
 }
 
