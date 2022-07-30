@@ -1,6 +1,9 @@
 use crate::state::*;
 use crate::cli::CLIDrawTarget;
 
+pub type Weakness = (usize, Vec<Type>);
+pub type Resistance = (usize, Vec<Type>);
+
 pub trait CardArchetype {
     // probably want to add the Zone of the card
     fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action>;
@@ -9,6 +12,9 @@ pub trait CardArchetype {
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action>;
     fn provides(&self) -> Vec<Type>;
     fn hp(&self) -> Option<usize>;
+    fn weakness(&self) -> Weakness;
+    fn resistance(&self) -> Resistance;
+    fn pokemon_type(&self) -> Vec<Type>;
 }
 
 pub trait CardDB {
@@ -289,14 +295,44 @@ impl GameEngine {
         }
     }
 
-    pub fn damage(&self, damage: usize) -> Self {
-        match self.resolving_actions.last() {
-            Some(Action::Attack(player, _, _, _)) => {
+    pub fn damage(&self, mut damage: usize) -> Self {
+        let (attacking, defending) = match self.resolving_actions.last() {
+            Some(Action::Attack(player, attacking, _, _)) => {
                 let defending = &self.state.side(player.opponent()).active[0];
-                self.with_state(self.state.add_damage_counters(defending, damage/10))
+
+                (attacking, defending)
             },
             _ => { panic!("wat"); },
+        };
+
+        // damage = effects_on_attacking(damage);
+        damage = self.apply_weakness(attacking, defending, damage);
+        damage = self.apply_resistance(attacking, defending, damage);
+        // damage = effects_on_defending(damage);
+
+        self.with_state(self.state.add_damage_counters(defending, damage/10))
+    }
+
+    pub fn apply_weakness(&self, attacking: &InPlayCard, defending: &InPlayCard, mut damage: usize) -> usize {
+        let (multiplier, types) = defending.stack[0].card().archetype().weakness();
+        for weakness in types {
+            if attacking.stack[0].card().archetype().pokemon_type().contains(&weakness) {
+                damage = damage * multiplier;
+            }
         }
+
+        damage
+    }
+
+    pub fn apply_resistance(&self, attacking: &InPlayCard, defending: &InPlayCard, mut damage: usize) -> usize {
+        let (offset, types) = defending.stack[0].card().archetype().resistance();
+        for weakness in types {
+            if attacking.stack[0].card().archetype().pokemon_type().contains(&weakness) {
+                damage = damage - offset;
+            }
+        }
+
+        damage
     }
 
     pub fn paralyze(&self) -> Self {

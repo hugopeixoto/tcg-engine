@@ -82,6 +82,15 @@ impl CardArchetype for Alakazam {
     fn hp(&self) -> Option<usize> {
         Some(80)
     }
+    fn weakness(&self) -> Weakness {
+        (2, vec![Type::Psychic])
+    }
+    fn resistance(&self) -> Resistance {
+        (0, vec![])
+    }
+    fn pokemon_type(&self) -> Vec<Type> {
+        vec![Type::Psychic]
+    }
 }
 
 #[derive(Default)]
@@ -111,6 +120,15 @@ impl CardArchetype for Growlithe {
 
     fn hp(&self) -> Option<usize> {
         Some(60)
+    }
+    fn weakness(&self) -> Weakness {
+        (2, vec![Type::Water])
+    }
+    fn resistance(&self) -> Resistance {
+        (0, vec![])
+    }
+    fn pokemon_type(&self) -> Vec<Type> {
+        vec![Type::Fire]
     }
 }
 impl Growlithe {
@@ -149,6 +167,15 @@ impl CardArchetype for Squirtle {
 
     fn hp(&self) -> Option<usize> {
         Some(40)
+    }
+    fn weakness(&self) -> Weakness {
+        (2, vec![Type::Lightning])
+    }
+    fn resistance(&self) -> Resistance {
+        (0, vec![])
+    }
+    fn pokemon_type(&self) -> Vec<Type> {
+        vec![Type::Water]
     }
 }
 impl Squirtle {
@@ -192,6 +219,15 @@ impl CardArchetype for Psyduck {
 
     fn hp(&self) -> Option<usize> {
         Some(50)
+    }
+    fn weakness(&self) -> Weakness {
+        (2, vec![Type::Lightning])
+    }
+    fn resistance(&self) -> Resistance {
+        (0, vec![])
+    }
+    fn pokemon_type(&self) -> Vec<Type> {
+        vec![Type::Water]
     }
 }
 impl Psyduck {
@@ -258,6 +294,16 @@ impl CardArchetype for BasicEnergy {
     fn hp(&self) -> Option<usize> {
         None
     }
+
+    fn weakness(&self) -> Weakness {
+        (0, vec![])
+    }
+    fn resistance(&self) -> Resistance {
+        (0, vec![])
+    }
+    fn pokemon_type(&self) -> Vec<Type> {
+        vec![]
+    }
 }
 
 trait TrainerCardArchetype {
@@ -300,6 +346,18 @@ impl CardArchetype for Trainer {
 
     fn hp(&self) -> Option<usize> {
         None
+    }
+
+    fn weakness(&self) -> Weakness {
+        (0, vec![])
+    }
+
+    fn resistance(&self) -> Resistance {
+        (0, vec![])
+    }
+
+    fn pokemon_type(&self) -> Vec<Type> {
+        vec![]
     }
 }
 
@@ -599,5 +657,14 @@ impl CardArchetype for NOOP {
     }
     fn hp(&self) -> Option<usize> {
         None
+    }
+    fn weakness(&self) -> Weakness {
+        (0, vec![])
+    }
+    fn resistance(&self) -> Resistance {
+        (0, vec![])
+    }
+    fn pokemon_type(&self) -> Vec<Type> {
+        vec![]
     }
 }
