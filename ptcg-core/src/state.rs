@@ -321,6 +321,7 @@ pub enum EffectExpiration {
 pub enum EffectConsequence {
     BlockAttachmentFromHand,
     BlockTrainerFromHand,
+    BlockDamage,
 }
 
 #[derive(Clone, Debug)]

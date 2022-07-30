@@ -308,7 +308,7 @@ impl GameEngine {
         // damage = effects_on_attacking(damage);
         damage = self.apply_weakness(attacking, defending, damage);
         damage = self.apply_resistance(attacking, defending, damage);
-        // damage = effects_on_defending(damage);
+        damage = self.effects_on_defending(attacking, defending, damage);
 
         self.with_state(self.state.add_damage_counters(defending, damage/10))
     }
@@ -333,6 +333,17 @@ impl GameEngine {
         }
 
         damage
+    }
+
+    pub fn effects_on_defending(&self, _attacking: &InPlayCard, defending: &InPlayCard, damage: usize) -> usize {
+        if self.state.effects.iter()
+            .filter(|e| e.target == EffectTarget::InPlay(defending.owner, defending.id))
+            .filter(|e| e.consequence == EffectConsequence::BlockDamage)
+            .count() == 0 {
+                damage
+            } else {
+                0
+            }
     }
 
     pub fn paralyze(&self) -> Self {
@@ -458,9 +469,17 @@ impl GameEngine {
         }
 
         for required in cost {
-            match energy.iter().position(|c| c == required) {
-                Some(p) => { energy.remove(p); },
-                None => { return false; }
+            match required {
+                Type::Colorless => {
+                    if energy.is_empty() { return false; }
+                    energy.remove(0);
+                },
+                _ => {
+                    match energy.iter().position(|c| c == required) {
+                        Some(p) => { energy.remove(p); },
+                        None => { return false; }
+                    };
+                },
             }
         }
 

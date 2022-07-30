@@ -7,6 +7,7 @@ impl CardDB for Card {
             "Alakazam (BS 1)"                   => Pokemon::create::<Alakazam>(),
             "Growlithe (BS 28)"                 => Pokemon::create::<Growlithe>(),
             "Squirtle (BS 63)"                  => Pokemon::create::<Squirtle>(),
+            "Voltorb (BS 67)"                   => Pokemon::create::<Voltorb>(),
             "Clefairy Doll (BS 70)"             => Trainer::create::<ClefairyDoll>(),
             "Computer Search (BS 71)"           => Trainer::create::<ComputerSearch>(),
             //"Devolution Spray (BS 72)"        => Trainer::create::<DevolutionSpray>(),
@@ -155,7 +156,7 @@ impl CardArchetype for Squirtle {
         if engine.is_attack_energy_cost_met(in_play, &[Type::Water]) {
             attacks.push(Action::Attack(player, in_play.clone(), "Bubble".into(), Box::new(RFA::new(Self::bubble))));
         }
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Psychic]) { // fix: it's actually water
+        if engine.is_attack_energy_cost_met(in_play, &[Type::Water, Type::Colorless]) {
             attacks.push(Action::Attack(player, in_play.clone(), "Withdraw".into(), Box::new(RFA::new(Self::withdraw))));
         }
 
@@ -185,7 +186,57 @@ impl Squirtle {
         engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
     }
     pub fn withdraw(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.with_effect(Effect {
+            name: "SQUIRTLE_BS_WITHDRAW_NO_DAMAGE".into(),
+            source: EffectSource::Attack(engine.player(), engine.attacking().id),
+            target: EffectTarget::InPlay(engine.player(), engine.attacking().id),
+            consequence: EffectConsequence::BlockDamage,
+            expires: EffectExpiration::EndOfTurn(engine.opponent(), 0),
+        })
+    }
+}
+
+#[derive(Default)]
+struct Voltorb {}
+impl CardArchetype for Voltorb {
+    fn stage(&self) -> Option<Stage> {
+        Some(Stage::Basic)
+    }
+    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
+        vec![]
+    }
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
+    }
+    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
+        let mut attacks = vec![];
+
+        if engine.is_attack_energy_cost_met(in_play, &[Type::Colorless]) {
+            attacks.push(Action::Attack(player, in_play.clone(), "Tackle".into(), Box::new(RFA::new(Self::tackle))));
+        }
+
+        attacks
+    }
+    fn provides(&self) -> Vec<Type> {
+        vec![]
+    }
+
+    fn hp(&self) -> Option<usize> {
+        Some(40)
+    }
+    fn weakness(&self) -> Weakness {
+        (2, vec![Type::Fighting])
+    }
+    fn resistance(&self) -> Resistance {
+        (0, vec![])
+    }
+    fn pokemon_type(&self) -> Vec<Type> {
+        vec![Type::Lightning]
+    }
+}
+impl Voltorb {
+    pub fn tackle(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.damage(10)
     }
 }
 
