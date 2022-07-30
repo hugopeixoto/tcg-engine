@@ -5,6 +5,7 @@ impl CardDB for Card {
     fn archetype(&self) -> Box<dyn CardArchetype> {
         match self.archetype.as_str() {
             "Alakazam (BS 1)"                   => Pokemon::create::<Alakazam>(),
+            "Growlithe (BS 28)"                 => Pokemon::create::<Growlithe>(),
             "Squirtle (BS 63)"                  => Pokemon::create::<Squirtle>(),
             "Clefairy Doll (BS 70)"             => Trainer::create::<ClefairyDoll>(),
             "Computer Search (BS 71)"           => Trainer::create::<ComputerSearch>(),
@@ -80,6 +81,41 @@ impl CardArchetype for Alakazam {
     }
     fn hp(&self) -> Option<usize> {
         Some(80)
+    }
+}
+
+#[derive(Default)]
+struct Growlithe {}
+impl CardArchetype for Growlithe {
+    fn stage(&self) -> Option<Stage> {
+        Some(Stage::Basic)
+    }
+    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
+        vec![]
+    }
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.clone()
+    }
+    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
+        let mut attacks = vec![];
+
+        if engine.is_attack_energy_cost_met(in_play, &[Type::Fire, Type::Colorless]) {
+            attacks.push(Action::Attack(player, in_play.clone(), "Flare".into(), Box::new(RFA::new(Self::flare))));
+        }
+
+        attacks
+    }
+    fn provides(&self) -> Vec<Type> {
+        vec![]
+    }
+
+    fn hp(&self) -> Option<usize> {
+        Some(60)
+    }
+}
+impl Growlithe {
+    pub fn flare(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.damage(20)
     }
 }
 
