@@ -173,22 +173,15 @@ impl GameEngine {
             GameStage::Winner(_) => { self.clone() },
             GameStage::Tie => { self.clone() },
             GameStage::StartOfTurn(player) => {
-                let mut engine = self.clone();
-
-                if engine.state.side(player).deck.is_empty() {
-                    engine.state = engine.state.with_stage(GameStage::Winner(player.opponent()));
+                if self.state.side(player).deck.is_empty() {
+                    self.with_state(self.state.with_stage(GameStage::Winner(player.opponent())))
                 } else {
-                    engine.state = engine.state.draw_to_hand(player, dm.shuffler());
-                    engine.state = engine.state.with_stage(GameStage::Turn(player));
+                    self.with_state(self.state.draw_to_hand(player, dm.shuffler()).with_stage(GameStage::Turn(player)))
                 }
-
-                engine
             },
             GameStage::Turn(player) => {
-                let mut engine = self.clone();
-
                 println!("available actions for {:?}:", player);
-                let actions = engine.available_actions(player);
+                let actions = self.available_actions(player);
                 for (i, action) in actions.iter().enumerate() {
                     println!(" {}. {:?}", i + 1, action);
                 }
@@ -197,28 +190,28 @@ impl GameEngine {
 
                 match &action {
                     Action::Pass => {
-                        engine.end_turn()
+                        self.end_turn()
                     },
                     Action::TrainerFromHand(_, card) => {
-                        card.archetype().execute(player, card, &engine, dm)
+                        card.archetype().execute(player, card, &self, dm)
                     },
                     Action::AttachFromHand(_, card) => {
-                        card.archetype().execute(player, card, &engine, dm)
+                        card.archetype().execute(player, card, &self, dm)
                     },
                     Action::Attack(_, _in_play, _name, executor) => {
-                        engine = engine.with_action(action.clone());
-                        engine = executor.run(&engine, dm);
-                        engine.pop_action().end_turn()
+                       self
+                            .push_action(action.clone())
+                            .then(|e| executor.run(&e, dm))
+                            .pop_action()
+                            .end_turn()
                     },
                     Action::BenchFromHand(_, card) => {
-                        engine.with_state(engine.state.bench_from_hand(player, card))
+                        self.with_state(self.state.bench_from_hand(player, card))
                     },
                 }
             },
             GameStage::PokemonCheckup(player) => {
-                let mut engine = self.clone();
-                engine.state = engine.state.with_stage(GameStage::StartOfTurn(player));
-                engine
+                self.with_state(self.state.with_stage(GameStage::StartOfTurn(player)))
             }
         };
 
@@ -354,7 +347,7 @@ impl GameEngine {
         Self { resolving_actions: self.resolving_actions.clone(), state }
     }
 
-    pub fn with_action(&self, action: Action) -> Self {
+    pub fn push_action(&self, action: Action) -> Self {
         let mut engine = self.clone();
         engine.resolving_actions.push(action);
         engine
@@ -715,5 +708,17 @@ impl GameEngine {
             "Blastoise (BS 2)" => Some(Stage::Stage2),
             _ => None,
         }
+    }
+
+    pub fn then_if<F>(&self, condition: bool, f: F) -> Self where F: FnOnce(&Self) -> Self {
+        if condition {
+            f(self)
+        } else {
+            self.clone()
+        }
+    }
+
+    pub fn then<F>(&self, f: F) -> Self where F: FnOnce(&Self) -> Self {
+        f(self)
     }
 }
