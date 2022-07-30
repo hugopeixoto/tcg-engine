@@ -297,35 +297,24 @@ impl GameEngine {
     }
 
     pub fn damage(&self, damage: usize) -> Self {
-        println!("resolving damage, context: {}", self.resolving_actions.len());
         match self.resolving_actions.last() {
-            Some(Action::Attack(player, attacking, name, _)) => {
+            Some(Action::Attack(player, _, _, _)) => {
                 let defending = &self.state.side(player.opponent()).active[0];
-                println!("resolving damage, action: {}: {:?} -> {:?}", name, attacking, defending);
-
-                let state = self.state.add_damage_counters(defending, damage/10);
-
-                self.with_state(state)
+                self.with_state(self.state.add_damage_counters(defending, damage/10))
             },
             _ => { panic!("wat"); },
         }
     }
 
     pub fn paralyze(&self) -> Self {
-        println!("paralyzing, context: {}", self.resolving_actions.len());
         match self.resolving_actions.last() {
-            Some(Action::Attack(player, attacking, name, _)) => {
+            Some(Action::Attack(player, _, _, _)) => {
                 let defending = &self.state.side(player.opponent()).active[0];
-                println!("resolving damage, action: {}: {:?} -> {:?}", name, attacking, defending);
-
-                let state = self.state.paralyze(defending);
-
-                self.with_state(state)
+                self.with_state(self.state.paralyze(defending))
             },
             _ => { panic!("wat"); },
         }
     }
-
 
     pub fn end_turn(&self) -> Self {
         let mut engine = self.clone();
