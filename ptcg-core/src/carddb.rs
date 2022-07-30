@@ -120,6 +120,49 @@ impl Growlithe {
 }
 
 #[derive(Default)]
+struct Squirtle {}
+impl CardArchetype for Squirtle {
+    fn stage(&self) -> Option<Stage> {
+        Some(Stage::Basic)
+    }
+    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
+        vec![]
+    }
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.clone()
+    }
+    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
+        let mut attacks = vec![];
+
+        if engine.is_attack_energy_cost_met(in_play, &[Type::Water]) {
+            attacks.push(Action::Attack(player, in_play.clone(), "Bubble".into(), Box::new(RFA::new(Self::bubble))));
+        }
+        if engine.is_attack_energy_cost_met(in_play, &[Type::Psychic]) { // fix: it's actually water
+            attacks.push(Action::Attack(player, in_play.clone(), "Withdraw".into(), Box::new(RFA::new(Self::withdraw))));
+        }
+
+        attacks
+    }
+    fn provides(&self) -> Vec<Type> {
+        vec![]
+    }
+
+    fn hp(&self) -> Option<usize> {
+        Some(40)
+    }
+}
+impl Squirtle {
+    pub fn bubble(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let paralyzed = dm.flip(1).heads() == 1;
+
+        engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
+    }
+    pub fn withdraw(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.clone()
+    }
+}
+
+#[derive(Default)]
 struct Psyduck {}
 impl CardArchetype for Psyduck {
     fn stage(&self) -> Option<Stage> {
@@ -165,49 +208,6 @@ impl Psyduck {
         let damage = 10 * dm.flip(3).heads();
 
         engine.damage(damage)
-    }
-}
-
-#[derive(Default)]
-struct Squirtle {}
-impl CardArchetype for Squirtle {
-    fn stage(&self) -> Option<Stage> {
-        Some(Stage::Basic)
-    }
-    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
-        vec![]
-    }
-    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
-    }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        let mut attacks = vec![];
-
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Water]) {
-            attacks.push(Action::Attack(player, in_play.clone(), "Bubble".into(), Box::new(RFA::new(Self::bubble))));
-        }
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Psychic]) { // fix: it's actually water
-            attacks.push(Action::Attack(player, in_play.clone(), "Withdraw".into(), Box::new(RFA::new(Self::withdraw))));
-        }
-
-        attacks
-    }
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
-
-    fn hp(&self) -> Option<usize> {
-        Some(40)
-    }
-}
-impl Squirtle {
-    pub fn bubble(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
-    }
-    pub fn withdraw(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
     }
 }
 
