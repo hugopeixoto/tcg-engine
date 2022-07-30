@@ -1,8 +1,14 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Card {
     pub owner: Player,
     pub in_game_id: usize,
     pub archetype: String,
+}
+
+impl std::fmt::Debug for Card {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{} {:?}#{}", self.archetype, self.owner, self.in_game_id)
+    }
 }
 
 pub type InPlayID = usize;
@@ -23,7 +29,7 @@ impl Player {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub enum RotationalStatus {
     #[default]
     None,
@@ -269,7 +275,7 @@ impl PlayerSide {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub enum GameStage {
     #[default]
     Uninitialized,
@@ -314,6 +320,7 @@ pub enum EffectExpiration {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EffectConsequence {
     BlockAttachmentFromHand,
+    BlockTrainerFromHand,
 }
 
 #[derive(Clone, Debug)]
@@ -637,6 +644,14 @@ impl GameState {
         let mut side = self.side(in_play.owner).clone();
 
         side.in_play_mut(&in_play.id).unwrap().damage_counters += counters;
+
+        self.with_player_side(in_play.owner, side)
+    }
+
+    pub fn paralyze(&self, in_play: &InPlayCard) -> Self {
+        let mut side = self.side(in_play.owner).clone();
+
+        side.in_play_mut(&in_play.id).unwrap().rotational_status = RotationalStatus::Paralyzed;
 
         self.with_player_side(in_play.owner, side)
     }

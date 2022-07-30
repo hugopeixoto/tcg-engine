@@ -77,6 +77,13 @@ impl InPlayCard {
         target.draw_line(&energies, x, y - 1);
 
         target.draw_line(&format!("{} HP", engine.remaining_hp(self)), x, y - 2);
+
+        match self.rotational_status {
+            RotationalStatus::Paralyzed => {
+                target.draw_line("* Paralyzed", x, y - 3);
+            },
+            _ => {},
+        }
     }
 }
 
@@ -175,7 +182,11 @@ impl CLIDrawable for GameEngine {
         }
 
         for (i, effect) in self.state.effects.iter().enumerate() {
-            target.draw_line(&format!("{:?}", effect), x + 80, 8 + i);
+            target.draw_line(&format!("Effect on {:?}", effect.target), x + 80, 8 + i*5 + 0);
+            target.draw_line(&format!("  what: {:?}", effect.consequence), x + 80, 8 + i*5 + 1);
+            target.draw_line(&format!("  name: {}", effect.name), x + 80, 8 + i*5 + 2);
+            target.draw_line(&format!("  source: {:?}", effect.source), x + 80, 8 + i*5 + 3);
+            target.draw_line(&format!("  expires: {:?}", effect.expires), x + 80, 8 + i*5 + 4);
         }
     }
 }

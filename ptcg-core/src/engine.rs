@@ -197,45 +197,27 @@ impl GameEngine {
 
                 match &action {
                     Action::Pass => {
-                        // count down end of turn effects
-                        engine.state = engine.state.with_stage(GameStage::PokemonCheckup(player.opponent()));
-
-                        engine.state.effects.retain(|e| match e.expires {
-                            EffectExpiration::EndOfTurn(p, 0) => p != player,
-                            _ => true,
-                        });
-                        for effect in engine.state.effects.iter_mut() {
-                            match effect.expires {
-                                EffectExpiration::EndOfTurn(p, t) => {
-                                    if p == player {
-                                        effect.expires = EffectExpiration::EndOfTurn(p, t - 1)
-                                    }
-                                },
-                                _ => {},
-                            }
-                        }
+                        engine.end_turn()
                     },
                     Action::TrainerFromHand(_, card) => {
-                        engine = card.archetype().execute(player, card, &engine, dm);
+                        card.archetype().execute(player, card, &engine, dm)
                     },
                     Action::AttachFromHand(_, card) => {
-                        engine = card.archetype().execute(player, card, &engine, dm);
+                        card.archetype().execute(player, card, &engine, dm)
                     },
                     Action::Attack(_, _in_play, _name, executor) => {
                         engine = engine.with_action(action.clone());
                         engine = executor.run(&engine, dm);
-                        engine = engine.pop_action();
+                        engine.pop_action().end_turn()
                     },
                     Action::BenchFromHand(_, card) => {
-                        engine = GameEngine { resolving_actions: vec![], state: engine.state.bench_from_hand(player, card) };
+                        engine.with_state(engine.state.bench_from_hand(player, card))
                     },
                 }
-
-                engine
             },
             GameStage::PokemonCheckup(player) => {
                 let mut engine = self.clone();
-                engine.state = engine.state.with_stage(GameStage::Turn(player));
+                engine.state = engine.state.with_stage(GameStage::StartOfTurn(player));
                 engine
             }
         };
@@ -282,7 +264,36 @@ impl GameEngine {
     }
 
     pub fn attach_from_hand(&self, player: Player, card: &Card, target: &InPlayID) -> Self {
-        Self { resolving_actions: vec![], state: self.state.attach_from_hand(player, card, target) }
+        self.with_state(self.state.attach_from_hand(player, card, target))
+    }
+
+    // attack in flight
+    pub fn player(&self) -> Player {
+        match self.resolving_actions.last() {
+            Some(Action::Attack(player, _, _, _)) => player.clone(),
+            _ => { panic!("Error accessing GameEngine::player() while not attacking"); }
+        }
+    }
+
+    pub fn opponent(&self) -> Player {
+        match self.resolving_actions.last() {
+            Some(Action::Attack(player, _, _, _)) => player.opponent(),
+            _ => { panic!("Error accessing GameEngine::opponent() while not attacking"); }
+        }
+    }
+
+    pub fn attacking(&self) -> &InPlayCard {
+        match self.resolving_actions.last() {
+            Some(Action::Attack(_, attacking, _, _)) => attacking,
+            _ => { panic!("Error accessing GameEngine::attacking() while not attacking"); }
+        }
+    }
+
+    pub fn defending(&self) -> &InPlayCard {
+        match self.resolving_actions.last() {
+            Some(Action::Attack(player, _, _, _)) => &self.state.side(player.opponent()).active[0],
+            _ => { panic!("Error accessing GameEngine::defending() while not attacking"); }
+        }
     }
 
     pub fn damage(&self, damage: usize) -> Self {
@@ -294,10 +305,53 @@ impl GameEngine {
 
                 let state = self.state.add_damage_counters(defending, damage/10);
 
-                GameEngine { resolving_actions: self.resolving_actions.clone(), state }
+                self.with_state(state)
             },
             _ => { panic!("wat"); },
         }
+    }
+
+    pub fn paralyze(&self) -> Self {
+        println!("paralyzing, context: {}", self.resolving_actions.len());
+        match self.resolving_actions.last() {
+            Some(Action::Attack(player, attacking, name, _)) => {
+                let defending = &self.state.side(player.opponent()).active[0];
+                println!("resolving damage, action: {}: {:?} -> {:?}", name, attacking, defending);
+
+                let state = self.state.paralyze(defending);
+
+                self.with_state(state)
+            },
+            _ => { panic!("wat"); },
+        }
+    }
+
+
+    pub fn end_turn(&self) -> Self {
+        let mut engine = self.clone();
+        let player = match engine.state.stage {
+            GameStage::Turn(player) => player,
+            stage => { panic!("Can't end turn while in stage {:?}", stage); }
+        };
+
+        engine.state = engine.state.with_stage(GameStage::PokemonCheckup(player.opponent()));
+
+        engine.state.effects.retain(|e| match e.expires {
+            EffectExpiration::EndOfTurn(p, 0) => p != player,
+            _ => true,
+        });
+        for effect in engine.state.effects.iter_mut() {
+            match effect.expires {
+                EffectExpiration::EndOfTurn(p, t) => {
+                    if p == player {
+                        effect.expires = EffectExpiration::EndOfTurn(p, t - 1)
+                    }
+                },
+                _ => {},
+            }
+        }
+
+        engine
     }
 
     pub fn with_effect(&self, effect: Effect) -> Self {
@@ -349,7 +403,7 @@ impl GameEngine {
     }
 
     pub fn in_play_actions(&self, player: Player, in_play: &InPlayCard, active: bool) -> Vec<Action> {
-        if active {
+        if active && in_play.rotational_status != RotationalStatus::Paralyzed {
             in_play.stack[0].card().archetype().attacks(player, in_play, self)
         } else {
             vec![]
@@ -368,6 +422,13 @@ impl GameEngine {
         }
 
         vec![]
+    }
+
+    pub fn can_play_trainer_from_hand(&self, card: &Card) -> bool {
+        self.state.effects.iter()
+            .filter(|e| e.target == EffectTarget::Player(card.owner))
+            .filter(|e| e.consequence == EffectConsequence::BlockTrainerFromHand)
+            .count() == 0
     }
 
     pub fn is_attack_energy_cost_met(&self, in_play: &InPlayCard, cost: &[Type]) -> bool {

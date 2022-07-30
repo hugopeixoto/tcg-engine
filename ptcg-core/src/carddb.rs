@@ -117,11 +117,13 @@ impl CardArchetype for Psyduck {
 }
 impl Psyduck {
     pub fn headache(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        // effect:
-        //   target: Player(opponent)
-        //   duration: EndOfTurn(opponent, 0)
-        //   what: blocked play trainers from hand
-        engine.clone()
+        engine.with_effect(Effect {
+            name: "PSYDUCK_FO_HEADACHE_NO_TRAINERS".into(),
+            source: EffectSource::Attack(engine.player(), engine.attacking().id),
+            target: EffectTarget::Player(engine.opponent()),
+            consequence: EffectConsequence::BlockTrainerFromHand,
+            expires: EffectExpiration::EndOfTurn(engine.opponent(), 0),
+        })
     }
     pub fn fury_swipes(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let damage = 10 * dm.flip(3).heads();
@@ -163,8 +165,10 @@ impl CardArchetype for Squirtle {
     }
 }
 impl Squirtle {
-    pub fn bubble(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
+    pub fn bubble(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let paralyzed = dm.flip(1).heads() == 1;
+
+        engine.damage(10).paralyze()
     }
     pub fn withdraw(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
@@ -235,7 +239,7 @@ impl Trainer {
 }
 impl CardArchetype for Trainer {
     fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action> {
-        if self.archetype.requirements_ok(player, card, engine) {
+        if self.archetype.requirements_ok(player, card, engine) && engine.can_play_trainer_from_hand(card) {
             vec![Action::TrainerFromHand(player, card.clone())]
         } else {
             vec![]
@@ -561,5 +565,3 @@ impl CardArchetype for NOOP {
         None
     }
 }
-
-
