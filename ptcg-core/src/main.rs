@@ -211,5 +211,5 @@ fn main() {
         ],
     );
 
-    GameEngine { resolving_actions: vec![], state }.play(&mut CLI { });
+    GameEngine::from_state(state).play(&mut CLI { });
 }

@@ -249,6 +249,22 @@ pub struct PlayerSide {
 }
 
 impl PlayerSide {
+    pub fn in_play(&self, id: &InPlayID) -> Option<&InPlayCard> {
+        for p in self.active.iter() {
+            if p.id == *id {
+                return Some(p);
+            }
+        }
+
+        for p in self.bench.iter() {
+            if p.id == *id {
+                return Some(p);
+            }
+        }
+
+        None
+    }
+
     pub fn in_play_mut(&mut self, id: &InPlayID) -> Option<&mut InPlayCard> {
         for p in self.active.iter_mut() {
             if p.id == *id {
@@ -265,7 +281,7 @@ impl PlayerSide {
         None
     }
 
-    pub fn in_play(&self) -> Vec<&InPlayCard> {
+    pub fn all_in_play(&self) -> Vec<&InPlayCard> {
         let mut cards = vec![];
 
         cards.extend(self.active.iter());
@@ -685,5 +701,9 @@ impl GameState {
             stage,
             ..self.clone()
         }
+    }
+
+    pub fn in_play(&self, id: &InPlayID) -> Option<&InPlayCard> {
+        self.p1.in_play(id).or(self.p2.in_play(id))
     }
 }

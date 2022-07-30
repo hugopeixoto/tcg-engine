@@ -67,7 +67,7 @@ impl InPlayCard {
             .filter(|card| match card { FaceCard::Up(_) => true, _ => false })
             .map(|card| match card { FaceCard::Up(card) => match card.archetype.as_str() {
                 "Psychic Energy (BS 101)" => "[P]",
-                "Water Energy (BS 102)" => "[P]",
+                "Water Energy (BS 102)" => "[W]",
                 "Double Colorless Energy (BS 96)" => "[C][C]",
                 _ => "[C]"
             }, _ => "" })
@@ -178,7 +178,7 @@ impl CLIDrawable for GameEngine {
             prize.draw(x + 0 + (i%2) * 8, y + 8 + (i/2) * 5, target);
         }
         for (i, card) in self.state.p2.hand.iter().enumerate() {
-            FaceCard::Up(card.clone()).draw(i*8, 3, target);
+            FaceCard::Up(card.clone()).draw(i*8, 1, target);
         }
 
         for (i, effect) in self.state.effects.iter().enumerate() {

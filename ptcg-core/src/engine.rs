@@ -47,6 +47,7 @@ impl AttackBody for RFA {
 pub struct GameEngine {
     pub state: GameState,
     pub resolving_actions: Vec<Action>,
+    pub attack_target_stack: Vec<(InPlayID, InPlayID)>,
 }
 
 #[derive(Default)]
@@ -156,6 +157,14 @@ impl std::fmt::Debug for Action {
 }
 
 impl GameEngine {
+    pub fn from_state(state: GameState) -> Self {
+        Self {
+            attack_target_stack: vec![],
+            resolving_actions: vec![],
+            state,
+        }
+    }
+
     pub fn play(&self, dm: &mut dyn DecisionMaker) -> Self {
         let mut engine = self.clone();
         while !engine.is_finished() {
@@ -204,10 +213,12 @@ impl GameEngine {
                     Action::AttachFromHand(_, card) => {
                         card.archetype().execute(player, card, &self, dm)
                     },
-                    Action::Attack(_, _in_play, _name, executor) => {
+                    Action::Attack(player, attacking, _name, executor) => {
                        self
                             .push_action(action.clone())
+                            .push_target(attacking, &self.state.side(player.opponent()).active[0])
                             .then(|e| executor.run(&e, dm))
+                            .pop_target()
                             .pop_action()
                             .end_turn()
                     },
@@ -282,41 +293,44 @@ impl GameEngine {
     }
 
     pub fn attacking(&self) -> &InPlayCard {
-        match self.resolving_actions.last() {
-            Some(Action::Attack(_, attacking, _, _)) => attacking,
+        match self.attack_target_stack.last() {
+            Some((attacking, _defending)) => self.state.in_play(attacking).unwrap(),
             _ => { panic!("Error accessing GameEngine::attacking() while not attacking"); }
         }
     }
 
     pub fn defending(&self) -> &InPlayCard {
-        match self.resolving_actions.last() {
-            Some(Action::Attack(player, _, _, _)) => &self.state.side(player.opponent()).active[0],
+        match self.attack_target_stack.last() {
+            Some((_attacking, defending)) => self.state.in_play(defending).unwrap(),
             _ => { panic!("Error accessing GameEngine::defending() while not attacking"); }
         }
     }
 
-    pub fn damage(&self, mut damage: usize) -> Self {
-        let (attacking, defending) = match self.resolving_actions.last() {
-            Some(Action::Attack(player, attacking, _, _)) => {
-                let defending = &self.state.side(player.opponent()).active[0];
+    pub fn target_all<T, F>(&self, targets: T, f: F) -> Self where T: IntoIterator<Item=InPlayCard>, F: Fn(&Self) -> Self {
+        let mut engine = self.clone();
+        for target in targets {
+            engine = engine
+                .push_target(self.attacking(), &target)
+                .then(&f)
+                .pop_target();
+        }
 
-                (attacking, defending)
-            },
-            _ => { panic!("wat"); },
-        };
-
-        // damage = effects_on_attacking(damage);
-        damage = self.apply_weakness(attacking, defending, damage);
-        damage = self.apply_resistance(attacking, defending, damage);
-        damage = self.effects_on_defending(attacking, defending, damage);
-
-        self.with_state(self.state.add_damage_counters(defending, damage/10))
+        engine
     }
 
-    pub fn apply_weakness(&self, attacking: &InPlayCard, defending: &InPlayCard, mut damage: usize) -> usize {
-        let (multiplier, types) = defending.stack[0].card().archetype().weakness();
+    pub fn damage(&self, mut damage: usize) -> Self {
+        damage = self.effects_on_attacking(damage);
+        damage = self.apply_weakness(damage);
+        damage = self.apply_resistance(damage);
+        damage = self.effects_on_defending(damage);
+
+        self.with_state(self.state.add_damage_counters(self.defending(), damage/10))
+    }
+
+    pub fn apply_weakness(&self, mut damage: usize) -> usize {
+        let (multiplier, types) = self.defending().stack[0].card().archetype().weakness();
         for weakness in types {
-            if attacking.stack[0].card().archetype().pokemon_type().contains(&weakness) {
+            if self.attacking().stack[0].card().archetype().pokemon_type().contains(&weakness) {
                 damage = damage * multiplier;
             }
         }
@@ -324,10 +338,10 @@ impl GameEngine {
         damage
     }
 
-    pub fn apply_resistance(&self, attacking: &InPlayCard, defending: &InPlayCard, mut damage: usize) -> usize {
-        let (offset, types) = defending.stack[0].card().archetype().resistance();
+    pub fn apply_resistance(&self, mut damage: usize) -> usize {
+        let (offset, types) = self.defending().stack[0].card().archetype().resistance();
         for weakness in types {
-            if attacking.stack[0].card().archetype().pokemon_type().contains(&weakness) {
+            if self.attacking().stack[0].card().archetype().pokemon_type().contains(&weakness) {
                 damage = damage - offset;
             }
         }
@@ -335,9 +349,13 @@ impl GameEngine {
         damage
     }
 
-    pub fn effects_on_defending(&self, _attacking: &InPlayCard, defending: &InPlayCard, damage: usize) -> usize {
+    pub fn effects_on_attacking(&self, damage: usize) -> usize {
+        damage
+    }
+
+    pub fn effects_on_defending(&self, damage: usize) -> usize {
         if self.state.effects.iter()
-            .filter(|e| e.target == EffectTarget::InPlay(defending.owner, defending.id))
+            .filter(|e| e.target == EffectTarget::InPlay(self.defending().owner, self.defending().id))
             .filter(|e| e.consequence == EffectConsequence::BlockDamage)
             .count() == 0 {
                 damage
@@ -391,7 +409,10 @@ impl GameEngine {
 
     // TODO: this should be removed, it's a temporary thing
     pub fn with_state(&self, state: GameState) -> Self {
-        Self { resolving_actions: self.resolving_actions.clone(), state }
+        Self {
+            state,
+            ..self.clone()
+        }
     }
 
     pub fn push_action(&self, action: Action) -> Self {
@@ -403,6 +424,18 @@ impl GameEngine {
     pub fn pop_action(&self) -> Self {
         let mut engine = self.clone();
         engine.resolving_actions.pop();
+        engine
+    }
+
+    pub fn push_target(&self, source: &InPlayCard, target: &InPlayCard) -> Self {
+        let mut engine = self.clone();
+        engine.attack_target_stack.push((source.id, target.id));
+        engine
+    }
+
+    pub fn pop_target(&self) -> Self {
+        let mut engine = self.clone();
+        engine.attack_target_stack.pop();
         engine
     }
 
@@ -516,6 +549,10 @@ impl GameEngine {
         }
 
         targets
+    }
+
+    pub fn bench(&self, player: Player) -> Vec<InPlayCard> {
+        self.state.side(player).bench.clone()
     }
 
     pub fn can_bench(&self, player: Player, _card: &Card) -> bool {

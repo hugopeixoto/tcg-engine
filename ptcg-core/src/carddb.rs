@@ -40,6 +40,8 @@ impl CardDB for Card {
             "Electric Energy (BS 100)"          => BasicEnergy::create(Type::Lightning),
             "Psychic Energy (BS 101)"           => BasicEnergy::create(Type::Psychic),
             "Water Energy (BS 102)"             => BasicEnergy::create(Type::Water),
+            "Articuno (FO 2)"                   => Pokemon::create::<Articuno>(),
+            "Articuno (FO 17)"                  => Pokemon::create::<Articuno>(),
             "Psyduck (FO 53)"                   => Pokemon::create::<Psyduck>(),
             _                                   => Box::new(NOOP::default()),
             //"Devolution Spray (BS 72)" => mine.in_play.any(is_evolution),
@@ -240,6 +242,67 @@ impl CardArchetype for Voltorb {
 impl Voltorb {
     pub fn tackle(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(10)
+    }
+}
+
+#[derive(Default)]
+struct Articuno {}
+impl CardArchetype for Articuno {
+    fn stage(&self) -> Option<Stage> {
+        Some(Stage::Basic)
+    }
+    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
+        vec![]
+    }
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.clone()
+    }
+    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
+        let mut attacks = vec![];
+
+        if engine.is_attack_energy_cost_met(in_play, &[Type::Water, Type::Water, Type::Water]) {
+            attacks.push(Action::Attack(player, in_play.clone(), "Freeze Dry".into(), Box::new(RFA::new(Self::freeze_dry))));
+        }
+        if engine.is_attack_energy_cost_met(in_play, &[Type::Water, Type::Water, Type::Water, Type::Water]) {
+            attacks.push(Action::Attack(player, in_play.clone(), "Blizzard".into(), Box::new(RFA::new(Self::blizzard))));
+        }
+
+        attacks
+    }
+    fn provides(&self) -> Vec<Type> {
+        vec![]
+    }
+
+    fn hp(&self) -> Option<usize> {
+        Some(70)
+    }
+    fn weakness(&self) -> Weakness {
+        (0, vec![])
+    }
+    fn resistance(&self) -> Resistance {
+        (30, vec![Type::Fighting])
+    }
+    fn pokemon_type(&self) -> Vec<Type> {
+        vec![Type::Water]
+    }
+}
+impl Articuno {
+    pub fn freeze_dry(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let paralyzed = dm.flip(1).heads() == 1;
+
+        engine.damage(30).then_if(paralyzed, GameEngine::paralyze)
+    }
+
+    pub fn blizzard(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let their_bench = dm.flip(1).heads() == 1;
+
+        engine
+            .damage(50)
+            .then(|e| if their_bench {
+                e.target_all(e.bench(e.opponent()), |e2| e2.damage(10))
+            } else {
+                e.target_all(e.bench(e.player()), |e2| e2.damage(10))
+            })
     }
 }
 
@@ -537,10 +600,10 @@ impl TrainerCardArchetype for PokemonTrader {
 struct ScoopUp {}
 impl TrainerCardArchetype for ScoopUp {
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
-        engine.state.side(player).in_play().iter().any(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic)))
+        engine.state.side(player).all_in_play().iter().any(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic)))
     }
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let choices = engine.state.side(player).in_play().into_iter().filter(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic))).cloned().collect();
+        let choices = engine.state.side(player).all_in_play().into_iter().filter(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic))).cloned().collect();
 
         let chosen = dm.pick_in_play(player, 1, &choices);
 
