@@ -204,7 +204,7 @@ impl Squirtle {
     pub fn bubble(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let paralyzed = dm.flip(1).heads() == 1;
 
-        engine.damage(10).paralyze()
+        engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
     }
     pub fn withdraw(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
