@@ -156,7 +156,7 @@ impl std::fmt::Debug for Action {
             Action::BenchFromHand(_player, card) => { write!(f, "Bench {}", card.archetype) },
             Action::EvolveFromHand(_player, card) => { write!(f, "Evolve into {}", card.archetype) },
             Action::Attack(_player, in_play, name, _) => { write!(f, "Attack with {}: {}", in_play.stack[0].card().archetype, name) },
-            Action::Retreat(_player, _in_play) => { write!(f, "Retreat") },
+            Action::Retreat(_player, in_play) => { write!(f, "Retreat {}", in_play.stack[0].card().archetype) },
             Action::Pass => { write!(f, "Pass") },
         }
     }
@@ -223,7 +223,7 @@ impl GameEngine {
                         self.evolve(*player, card, dm)
                     },
                     Action::Retreat(player, in_play) => {
-                        self.retreat(*player, in_play)
+                        self.retreat(*player, in_play, dm)
                     },
                     Action::Attack(player, attacking, _name, executor) => {
                        self
@@ -471,8 +471,10 @@ impl GameEngine {
             actions.extend(self.in_play_actions(player, benched, false));
         }
 
-        if self.can_retreat(player) {
-            actions.push(Action::Retreat(player, self.state.side(player).active[0].clone()));
+        for active in self.state.side(player).active.iter() {
+            if self.can_retreat(player, active) {
+                actions.push(Action::Retreat(player, active.clone()));
+            }
         }
 
         actions.push(Action::Pass);
@@ -480,12 +482,43 @@ impl GameEngine {
         actions
     }
 
-    pub fn can_retreat(&self, _player: Player) -> bool {
-        true
+    pub fn retreat_cost(&self, _player: Player, in_play: &InPlayCard) -> usize {
+        in_play.stack[0].card().archetype().retreat()
     }
 
-    pub fn retreat(&self, _player: Player, _in_play: &InPlayCard) -> Self {
-        self.clone()
+    pub fn can_retreat(&self, player: Player, in_play: &InPlayCard) -> bool {
+        if self.state.side(player).bench.is_empty() {
+            return false;
+        }
+
+        let mut energy = vec![];
+        for attached in in_play.attached.iter() {
+            if self.is_energy(attached.card()) {
+                energy.extend(attached.card().archetype().provides());
+            }
+        }
+
+        let mut cost = vec![];
+        for _ in 0..self.retreat_cost(player, in_play) {
+            cost.push(Type::Colorless);
+        }
+
+        self.is_energy_cost_met(&cost, energy)
+    }
+
+    pub fn retreat(&self, player: Player, in_play: &InPlayCard, dm: &mut dyn DecisionMaker) -> Self {
+        let possible_targets = self.state.side(player).bench.clone();
+        let chosen = dm.pick_in_play(player, 1, &possible_targets);
+
+        // TODO: pick energies to discard instead of discarding everything
+        let mut state = self.state.clone();
+        for attached in in_play.attached.iter() {
+            if self.is_energy(attached.card()) {
+                state = state.move_card_to_discard(attached.card());
+            }
+        }
+
+        self.with_state(state.switch_active_with(&chosen[0]))
     }
 
     pub fn in_play_actions(&self, player: Player, in_play: &InPlayCard, active: bool) -> Vec<Action> {
@@ -560,17 +593,22 @@ impl GameEngine {
             }
         }
 
+        self.is_energy_cost_met(cost, energy)
+
+    }
+
+    pub fn is_energy_cost_met(&self, cost: &[Type], mut provided: Vec<Type>) -> bool {
         // TODO: This assumes that colorless requirements are at the end to work. Also, it's not
         // ready to work with rainbow energies or any energy that provides more than one type.
         for required in cost {
             match required {
                 Type::Colorless => {
-                    if energy.is_empty() { return false; }
-                    energy.remove(0);
+                    if provided.is_empty() { return false; }
+                    provided.remove(0);
                 },
                 _ => {
-                    match energy.iter().position(|c| c == required) {
-                        Some(p) => { energy.remove(p); },
+                    match provided.iter().position(|c| c == required) {
+                        Some(p) => { provided.remove(p); },
                         None => { return false; }
                     };
                 },
