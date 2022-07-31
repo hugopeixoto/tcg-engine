@@ -16,6 +16,7 @@ pub trait CardArchetype {
     fn resistance(&self) -> Resistance;
     fn pokemon_type(&self) -> Vec<Type>;
     fn name(&self) -> String;
+    fn retreat(&self) -> usize;
 }
 
 pub trait CardDB {
@@ -145,6 +146,7 @@ pub enum Action {
     BenchFromHand(Player, Card),
     EvolveFromHand(Player, Card),
     Attack(Player, InPlayCard, String, Box<dyn AttackBody>),
+    Retreat(Player, InPlayCard),
 }
 impl std::fmt::Debug for Action {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
@@ -154,6 +156,7 @@ impl std::fmt::Debug for Action {
             Action::BenchFromHand(_player, card) => { write!(f, "Bench {}", card.archetype) },
             Action::EvolveFromHand(_player, card) => { write!(f, "Evolve into {}", card.archetype) },
             Action::Attack(_player, in_play, name, _) => { write!(f, "Attack with {}: {}", in_play.stack[0].card().archetype, name) },
+            Action::Retreat(_player, _in_play) => { write!(f, "Retreat") },
             Action::Pass => { write!(f, "Pass") },
         }
     }
@@ -218,6 +221,9 @@ impl GameEngine {
                     },
                     Action::EvolveFromHand(player, card) => {
                         self.evolve(*player, card, dm)
+                    },
+                    Action::Retreat(player, in_play) => {
+                        self.retreat(*player, in_play)
                     },
                     Action::Attack(player, attacking, _name, executor) => {
                        self
@@ -465,9 +471,21 @@ impl GameEngine {
             actions.extend(self.in_play_actions(player, benched, false));
         }
 
+        if self.can_retreat(player) {
+            actions.push(Action::Retreat(player, self.state.side(player).active[0].clone()));
+        }
+
         actions.push(Action::Pass);
 
         actions
+    }
+
+    pub fn can_retreat(&self, _player: Player) -> bool {
+        true
+    }
+
+    pub fn retreat(&self, _player: Player, _in_play: &InPlayCard) -> Self {
+        self.clone()
     }
 
     pub fn in_play_actions(&self, player: Player, in_play: &InPlayCard, active: bool) -> Vec<Action> {

@@ -98,6 +98,9 @@ impl CardArchetype for Alakazam {
     fn name(&self) -> String {
         "Alakazam".into()
     }
+    fn retreat(&self) -> usize {
+        3
+    }
 }
 
 #[derive(Default)]
@@ -139,6 +142,9 @@ impl CardArchetype for Growlithe {
     }
     fn name(&self) -> String {
         "Growlithe".into()
+    }
+    fn retreat(&self) -> usize {
+        1
     }
 }
 impl Growlithe {
@@ -188,6 +194,9 @@ impl CardArchetype for Wartortle {
     }
     fn name(&self) -> String {
         "Squirtle".into()
+    }
+    fn retreat(&self) -> usize {
+        1
     }
 }
 impl Wartortle {
@@ -251,6 +260,9 @@ impl CardArchetype for Squirtle {
     fn name(&self) -> String {
         "Squirtle".into()
     }
+    fn retreat(&self) -> usize {
+        1
+    }
 }
 impl Squirtle {
     pub fn bubble(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -312,6 +324,9 @@ impl CardArchetype for Voltorb {
     fn name(&self) -> String {
         "Voltorb".into()
     }
+    fn retreat(&self) -> usize {
+        1
+    }
 }
 impl Voltorb {
     pub fn tackle(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -361,6 +376,9 @@ impl CardArchetype for Articuno {
     }
     fn name(&self) -> String {
         "Articuno".into()
+    }
+    fn retreat(&self) -> usize {
+        2
     }
 }
 impl Articuno {
@@ -425,6 +443,9 @@ impl CardArchetype for Psyduck {
     }
     fn name(&self) -> String {
         "Psyduck".into()
+    }
+    fn retreat(&self) -> usize {
+        1
     }
 }
 impl Psyduck {
@@ -505,6 +526,9 @@ impl CardArchetype for BasicEnergy {
     fn name(&self) -> String {
         self.name.clone()
     }
+    fn retreat(&self) -> usize {
+        0
+    }
 }
 
 trait TrainerCardArchetype {
@@ -563,6 +587,9 @@ impl CardArchetype for Trainer {
     }
     fn name(&self) -> String {
         self.archetype.name()
+    }
+    fn retreat(&self) -> usize {
+        0
     }
 }
 
@@ -892,5 +919,8 @@ impl CardArchetype for NOOP {
     }
     fn name(&self) -> String {
         "".into()
+    }
+    fn retreat(&self) -> usize {
+        0
     }
 }
