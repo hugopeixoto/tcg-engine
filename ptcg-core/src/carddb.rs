@@ -35,6 +35,7 @@ impl CardDB for Card {
             "Gust of Wind (BS 93)"              => Trainer::create::<GustOfWind>(),
             //"Potion (BS 94)"                  => Trainer::create::<Potion>(),
             "Switch (BS 95)"                    => Trainer::create::<Switch>(),
+            "Double Colorless Energy (BS 96)"   => Box::new(DoubleColorlessEnergy::default()),
             "Fighting Energy (BS 97)"           => BasicEnergy::create("Fighting Energy", Type::Fighting),
             "Fire Energy (BS 98)"               => BasicEnergy::create("Fire Energy", Type::Fire),
             "Grass Energy (BS 99)"              => BasicEnergy::create("Grass Energy", Type::Grass),
@@ -462,6 +463,59 @@ impl Psyduck {
         let damage = 10 * dm.flip(3).heads();
 
         engine.damage(damage)
+    }
+}
+
+#[derive(Default)]
+struct DoubleColorlessEnergy {}
+impl CardArchetype for DoubleColorlessEnergy {
+    fn stage(&self) -> Option<Stage> {
+        None
+    }
+    fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action> {
+        if !engine.attachment_from_hand_targets(player, card).is_empty() {
+            vec![Action::AttachFromHand(player, card.clone())]
+        } else {
+            vec![]
+        }
+    }
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let targets = engine.attachment_from_hand_targets(player, card);
+        let target = dm.pick_target(player, &targets);
+
+        engine
+            .attach_from_hand(player, card, target)
+            .with_effect(Effect {
+                source: EffectSource::Energy(player, card.clone()),
+                target: EffectTarget::Player(player),
+                expires: EffectExpiration::EndOfTurn(player, 0),
+                consequence: EffectConsequence::BlockAttachmentFromHand,
+                name: "ENERGY_ATTACH_FOR_TURN".into(),
+            })
+    }
+    fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
+        vec![]
+    }
+    fn provides(&self) -> Vec<Type> {
+        vec![Type::Colorless, Type::Colorless]
+    }
+    fn hp(&self) -> Option<usize> {
+        None
+    }
+    fn weakness(&self) -> Weakness {
+        (0, vec![])
+    }
+    fn resistance(&self) -> Resistance {
+        (0, vec![])
+    }
+    fn pokemon_type(&self) -> Vec<Type> {
+        vec![]
+    }
+    fn name(&self) -> String {
+        "Double Colorless Energy".into()
+    }
+    fn retreat(&self) -> usize {
+        0
     }
 }
 
