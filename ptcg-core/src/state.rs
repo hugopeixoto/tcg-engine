@@ -220,6 +220,7 @@ pub struct InPlayCard {
     pub rotational_status: RotationalStatus,
     pub poisoned: bool,
     pub burned: bool,
+    pub put_in_play_turn: usize,
 }
 
 impl InPlayCard {
@@ -363,6 +364,7 @@ pub struct GameState {
 
     // whose turn is it, what stage of the turn are we, etc
     pub stage: GameStage,
+    pub turn: usize,
 
     // effects
     pub effects: Vec<Effect>,
@@ -497,6 +499,7 @@ impl GameState {
             id: self.next_play_id(),
             owner: player,
             stack: vec![FaceCard::Down(card.clone())],
+            put_in_play_turn: 1.max(self.turn),
             ..Default::default()
         });
 
@@ -513,6 +516,7 @@ impl GameState {
             id: self.next_play_id(),
             owner: player,
             stack: vec![FaceCard::Down(card.clone())],
+            put_in_play_turn: 1.max(self.turn),
             ..Default::default()
         });
 
@@ -530,6 +534,18 @@ impl GameState {
         self.with_player_side(player, side)
     }
 
+    pub fn evolve_from_hand(&self, player: Player, card: &Card, target: &InPlayID) -> Self {
+        let mut side = self.side(player).clone();
+
+        let p = side.hand.iter().position(|c| c == card).unwrap();
+        side.hand.remove(p);
+
+        side.in_play_mut(target).unwrap().stack.insert(0, FaceCard::Up(card.clone()));
+        side.in_play_mut(target).unwrap().put_in_play_turn = self.turn;
+
+        self.with_player_side(player, side)
+    }
+
     pub fn bench_from_hand(&self, player: Player, card: &Card) -> Self {
         let mut side = self.side(player).clone();
 
@@ -540,6 +556,7 @@ impl GameState {
             id: self.next_play_id(),
             owner: player,
             stack: vec![FaceCard::Up(card.clone())],
+            put_in_play_turn: 1.max(self.turn),
             ..Default::default()
         });
 
@@ -705,5 +722,12 @@ impl GameState {
 
     pub fn in_play(&self, id: &InPlayID) -> Option<&InPlayCard> {
         self.p1.in_play(id).or(self.p2.in_play(id))
+    }
+
+    pub fn next_turn(&self) -> Self {
+        Self {
+            turn: self.turn + 1,
+            ..self.clone()
+        }
     }
 }

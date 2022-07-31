@@ -6,6 +6,7 @@ impl CardDB for Card {
         match self.archetype.as_str() {
             "Alakazam (BS 1)"                   => Pokemon::create::<Alakazam>(),
             "Growlithe (BS 28)"                 => Pokemon::create::<Growlithe>(),
+            "Wartortle (BS 42)"                 => Pokemon::create::<Wartortle>(),
             "Squirtle (BS 63)"                  => Pokemon::create::<Squirtle>(),
             "Voltorb (BS 67)"                   => Pokemon::create::<Voltorb>(),
             "Clefairy Doll (BS 70)"             => Trainer::create::<ClefairyDoll>(),
@@ -34,12 +35,12 @@ impl CardDB for Card {
             "Gust of Wind (BS 93)"              => Trainer::create::<GustOfWind>(),
             //"Potion (BS 94)"                  => Trainer::create::<Potion>(),
             "Switch (BS 95)"                    => Trainer::create::<Switch>(),
-            "Fighting Energy (BS 97)"           => BasicEnergy::create(Type::Fighting),
-            "Fire Energy (BS 98)"               => BasicEnergy::create(Type::Fire),
-            "Grass Energy (BS 99)"              => BasicEnergy::create(Type::Grass),
-            "Electric Energy (BS 100)"          => BasicEnergy::create(Type::Lightning),
-            "Psychic Energy (BS 101)"           => BasicEnergy::create(Type::Psychic),
-            "Water Energy (BS 102)"             => BasicEnergy::create(Type::Water),
+            "Fighting Energy (BS 97)"           => BasicEnergy::create("Fighting Energy", Type::Fighting),
+            "Fire Energy (BS 98)"               => BasicEnergy::create("Fire Energy", Type::Fire),
+            "Grass Energy (BS 99)"              => BasicEnergy::create("Grass Energy", Type::Grass),
+            "Lightning Energy (BS 100)"         => BasicEnergy::create("Lightning Energy", Type::Lightning),
+            "Psychic Energy (BS 101)"           => BasicEnergy::create("Psychic Energy", Type::Psychic),
+            "Water Energy (BS 102)"             => BasicEnergy::create("Water Energy", Type::Water),
             "Articuno (FO 2)"                   => Pokemon::create::<Articuno>(),
             "Articuno (FO 17)"                  => Pokemon::create::<Articuno>(),
             "Psyduck (FO 53)"                   => Pokemon::create::<Psyduck>(),
@@ -68,7 +69,7 @@ impl Pokemon {
 struct Alakazam {}
 impl CardArchetype for Alakazam {
     fn stage(&self) -> Option<Stage> {
-        Some(Stage::Stage2)
+        Some(Stage::Stage2("Kadabra".into()))
     }
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
@@ -93,6 +94,9 @@ impl CardArchetype for Alakazam {
     }
     fn pokemon_type(&self) -> Vec<Type> {
         vec![Type::Psychic]
+    }
+    fn name(&self) -> String {
+        "Alakazam".into()
     }
 }
 
@@ -133,10 +137,74 @@ impl CardArchetype for Growlithe {
     fn pokemon_type(&self) -> Vec<Type> {
         vec![Type::Fire]
     }
+    fn name(&self) -> String {
+        "Growlithe".into()
+    }
 }
 impl Growlithe {
     pub fn flare(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(20)
+    }
+}
+
+#[derive(Default)]
+struct Wartortle {}
+impl CardArchetype for Wartortle {
+    fn stage(&self) -> Option<Stage> {
+        Some(Stage::Stage1("Squirtle".into()))
+    }
+    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
+        vec![]
+    }
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.clone()
+    }
+    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
+        let mut attacks = vec![];
+
+        if engine.is_attack_energy_cost_met(in_play, &[Type::Water, Type::Colorless]) {
+            attacks.push(Action::Attack(player, in_play.clone(), "Withdraw".into(), Box::new(RFA::new(Self::withdraw))));
+        }
+        if engine.is_attack_energy_cost_met(in_play, &[Type::Water, Type::Colorless, Type::Colorless]) {
+            attacks.push(Action::Attack(player, in_play.clone(), "Bite".into(), Box::new(RFA::new(Self::bite))));
+        }
+
+        attacks
+    }
+    fn provides(&self) -> Vec<Type> {
+        vec![]
+    }
+    fn hp(&self) -> Option<usize> {
+        Some(70)
+    }
+    fn weakness(&self) -> Weakness {
+        (2, vec![Type::Lightning])
+    }
+    fn resistance(&self) -> Resistance {
+        (0, vec![])
+    }
+    fn pokemon_type(&self) -> Vec<Type> {
+        vec![Type::Water]
+    }
+    fn name(&self) -> String {
+        "Squirtle".into()
+    }
+}
+impl Wartortle {
+    pub fn withdraw(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        // TODO: this should only activate on the opponent's next turn, not right now.
+        // If there's anything that triggers after attacking or during Pokémon Checkup,
+        // this ability shouldn't be considered.
+        engine.with_effect(Effect {
+            name: "WARTORTLE_BS_WITHDRAW_NO_DAMAGE".into(),
+            source: EffectSource::Attack(engine.player(), engine.attacking().id),
+            target: EffectTarget::InPlay(engine.player(), engine.attacking().id),
+            consequence: EffectConsequence::BlockDamage,
+            expires: EffectExpiration::EndOfTurn(engine.opponent(), 0),
+        })
+    }
+    pub fn bite(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.damage(40)
     }
 }
 
@@ -179,6 +247,9 @@ impl CardArchetype for Squirtle {
     }
     fn pokemon_type(&self) -> Vec<Type> {
         vec![Type::Water]
+    }
+    fn name(&self) -> String {
+        "Squirtle".into()
     }
 }
 impl Squirtle {
@@ -238,6 +309,9 @@ impl CardArchetype for Voltorb {
     fn pokemon_type(&self) -> Vec<Type> {
         vec![Type::Lightning]
     }
+    fn name(&self) -> String {
+        "Voltorb".into()
+    }
 }
 impl Voltorb {
     pub fn tackle(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -284,6 +358,9 @@ impl CardArchetype for Articuno {
     }
     fn pokemon_type(&self) -> Vec<Type> {
         vec![Type::Water]
+    }
+    fn name(&self) -> String {
+        "Articuno".into()
     }
 }
 impl Articuno {
@@ -346,6 +423,9 @@ impl CardArchetype for Psyduck {
     fn pokemon_type(&self) -> Vec<Type> {
         vec![Type::Water]
     }
+    fn name(&self) -> String {
+        "Psyduck".into()
+    }
 }
 impl Psyduck {
     pub fn headache(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -365,11 +445,12 @@ impl Psyduck {
 }
 
 struct BasicEnergy {
+    name: String,
     energy_type: Type,
 }
 impl BasicEnergy {
-    pub fn create(energy_type: Type) -> Box<dyn CardArchetype> {
-        Box::new(BasicEnergy { energy_type })
+    pub fn create(name: &str, energy_type: Type) -> Box<dyn CardArchetype> {
+        Box::new(BasicEnergy { name: name.into(), energy_type })
     }
 }
 impl CardArchetype for BasicEnergy {
@@ -421,11 +502,15 @@ impl CardArchetype for BasicEnergy {
     fn pokemon_type(&self) -> Vec<Type> {
         vec![]
     }
+    fn name(&self) -> String {
+        self.name.clone()
+    }
 }
 
 trait TrainerCardArchetype {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool;
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
+    fn name(&self) -> String;
 }
 
 struct Trainer {
@@ -476,11 +561,15 @@ impl CardArchetype for Trainer {
     fn pokemon_type(&self) -> Vec<Type> {
         vec![]
     }
+    fn name(&self) -> String {
+        self.archetype.name()
+    }
 }
 
 #[derive(Default)]
 struct ClefairyDoll {}
 impl TrainerCardArchetype for ClefairyDoll {
+    fn name(&self) -> String { "Clefairy Doll".into() }
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_bench(player, card)
     }
@@ -493,6 +582,7 @@ impl TrainerCardArchetype for ClefairyDoll {
 #[derive(Default)]
 struct ComputerSearch {}
 impl TrainerCardArchetype for ComputerSearch {
+    fn name(&self) -> String { "Computer Search".into() }
     // cost: discard(2, from: hand)
     // effect: search(1, from: deck); move(it, to: hand)
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
@@ -519,6 +609,8 @@ impl TrainerCardArchetype for ComputerSearch {
 #[derive(Default)]
 struct ImpostorProfessorOak {}
 impl TrainerCardArchetype for ImpostorProfessorOak {
+    fn name(&self) -> String { "Impostor Professor Oak".into() }
+
     // effect: shuffle(hand, to: deck); draw(7)
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player.opponent()).deck.is_empty() || engine.state.side(player.opponent()).hand.len() > 7
@@ -535,6 +627,7 @@ impl TrainerCardArchetype for ImpostorProfessorOak {
 #[derive(Default)]
 struct ItemFinder {}
 impl TrainerCardArchetype for ItemFinder {
+    fn name(&self) -> String { "Item Finder".into() }
     // cost: discard(2, from: hand)
     // effect: me.search(1.item, from: discard); move(it, to: hand)
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
@@ -564,6 +657,7 @@ impl TrainerCardArchetype for ItemFinder {
 #[derive(Default)]
 struct Lass {}
 impl TrainerCardArchetype for Lass {
+    fn name(&self) -> String { "Lass".into() }
     // effect: me.reveal(all.trainer, from: hand); me.shuffle(it, to: deck)
     // effect: opp.reveal(all.trainer, from: hand); opp.shuffle(it, to: deck)
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
@@ -577,6 +671,7 @@ impl TrainerCardArchetype for Lass {
 #[derive(Default)]
 struct PokemonBreeder {}
 impl TrainerCardArchetype for PokemonBreeder {
+    fn name(&self) -> String { "Pokémon Breeder".into() }
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true // todo: bunch of checks
     }
@@ -588,6 +683,7 @@ impl TrainerCardArchetype for PokemonBreeder {
 #[derive(Default)]
 struct PokemonTrader {}
 impl TrainerCardArchetype for PokemonTrader {
+    fn name(&self) -> String { "Pokémon Trader".into() }
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true // TODO: pokemon communication
     }
@@ -599,6 +695,7 @@ impl TrainerCardArchetype for PokemonTrader {
 #[derive(Default)]
 struct ScoopUp {}
 impl TrainerCardArchetype for ScoopUp {
+    fn name(&self) -> String { "Scoop Up".into() }
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         engine.state.side(player).all_in_play().iter().any(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic)))
     }
@@ -623,6 +720,7 @@ impl TrainerCardArchetype for ScoopUp {
 #[derive(Default)]
 struct Defender {}
 impl TrainerCardArchetype for Defender {
+    fn name(&self) -> String { "Defender".into() }
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
@@ -634,6 +732,7 @@ impl TrainerCardArchetype for Defender {
 #[derive(Default)]
 struct EnergyRetrieval {}
 impl TrainerCardArchetype for EnergyRetrieval {
+    fn name(&self) -> String { "Energy Retrieval".into() }
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 1) && engine.discard_pile_has_basic_energy(player, card)
     }
@@ -661,6 +760,7 @@ impl TrainerCardArchetype for EnergyRetrieval {
 #[derive(Default)]
 struct Maintenance {}
 impl TrainerCardArchetype for Maintenance {
+    fn name(&self) -> String { "Maintenance".into() }
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 2) // TODO: not discard but shuffle
     }
@@ -679,6 +779,7 @@ impl TrainerCardArchetype for Maintenance {
 #[derive(Default)]
 struct PlusPower {}
 impl TrainerCardArchetype for PlusPower {
+    fn name(&self) -> String { "Plus Power".into() }
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
@@ -690,6 +791,7 @@ impl TrainerCardArchetype for PlusPower {
 #[derive(Default)]
 struct Pokedex {}
 impl TrainerCardArchetype for Pokedex {
+    fn name(&self) -> String { "Pokédex".into() }
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).deck.is_empty()
     }
@@ -701,6 +803,7 @@ impl TrainerCardArchetype for Pokedex {
 #[derive(Default)]
 struct ProfessorOak {}
 impl TrainerCardArchetype for ProfessorOak {
+    fn name(&self) -> String { "Professor Oak".into() }
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).deck.is_empty()
     }
@@ -718,6 +821,7 @@ impl TrainerCardArchetype for ProfessorOak {
 #[derive(Default)]
 struct Bill {}
 impl TrainerCardArchetype for Bill {
+    fn name(&self) -> String { "Bill".into() }
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).deck.is_empty()
     }
@@ -729,6 +833,7 @@ impl TrainerCardArchetype for Bill {
 #[derive(Default)]
 struct GustOfWind {}
 impl TrainerCardArchetype for GustOfWind {
+    fn name(&self) -> String { "Gust of Wind".into() }
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player.opponent()).bench.is_empty()
     }
@@ -743,6 +848,7 @@ impl TrainerCardArchetype for GustOfWind {
 #[derive(Default)]
 struct Switch {}
 impl TrainerCardArchetype for Switch {
+    fn name(&self) -> String { "Switch".into() }
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).bench.is_empty()
     }
@@ -783,5 +889,8 @@ impl CardArchetype for NOOP {
     }
     fn pokemon_type(&self) -> Vec<Type> {
         vec![]
+    }
+    fn name(&self) -> String {
+        "".into()
     }
 }

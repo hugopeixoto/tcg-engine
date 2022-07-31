@@ -15,6 +15,7 @@ pub trait CardArchetype {
     fn weakness(&self) -> Weakness;
     fn resistance(&self) -> Resistance;
     fn pokemon_type(&self) -> Vec<Type>;
+    fn name(&self) -> String;
 }
 
 pub trait CardDB {
@@ -98,8 +99,8 @@ pub enum Stage {
     // LevelUp,
     // Mega,
     // Restored,
-    Stage1,
-    Stage2,
+    Stage1(String),
+    Stage2(String),
     // VStar,
     // VUnion,
 }
@@ -142,6 +143,7 @@ pub enum Action {
     TrainerFromHand(Player, Card),
     AttachFromHand(Player, Card),
     BenchFromHand(Player, Card),
+    EvolveFromHand(Player, Card),
     Attack(Player, InPlayCard, String, Box<dyn AttackBody>),
 }
 impl std::fmt::Debug for Action {
@@ -150,6 +152,7 @@ impl std::fmt::Debug for Action {
             Action::TrainerFromHand(_player, card) => { write!(f, "Play {}", card.archetype) },
             Action::AttachFromHand(_player, card) => { write!(f, "Attach {}", card.archetype) },
             Action::BenchFromHand(_player, card) => { write!(f, "Bench {}", card.archetype) },
+            Action::EvolveFromHand(_player, card) => { write!(f, "Evolve into {}", card.archetype) },
             Action::Attack(_player, in_play, name, _) => { write!(f, "Attack with {}: {}", in_play.stack[0].card().archetype, name) },
             Action::Pass => { write!(f, "Pass") },
         }
@@ -191,7 +194,7 @@ impl GameEngine {
                 if self.state.side(player).deck.is_empty() {
                     self.with_state(self.state.with_stage(GameStage::Winner(player.opponent())))
                 } else {
-                    self.with_state(self.state.draw_to_hand(player, dm.shuffler()).with_stage(GameStage::Turn(player)))
+                    self.with_state(self.state.draw_to_hand(player, dm.shuffler()).with_stage(GameStage::Turn(player)).next_turn())
                 }
             },
             GameStage::Turn(player) => {
@@ -212,6 +215,9 @@ impl GameEngine {
                     },
                     Action::AttachFromHand(_, card) => {
                         card.archetype().execute(player, card, &self, dm)
+                    },
+                    Action::EvolveFromHand(player, card) => {
+                        self.evolve(*player, card, dm)
                     },
                     Action::Attack(player, attacking, _name, executor) => {
                        self
@@ -480,10 +486,45 @@ impl GameEngine {
         }
 
         if self.can_bench_from_hand(card) {
-            return vec![Action::BenchFromHand(player, card.clone())]
+            return vec![Action::BenchFromHand(player, card.clone())];
+        }
+
+        if self.can_evolve(card) {
+            return vec![Action::EvolveFromHand(player, card.clone())];
         }
 
         vec![]
+    }
+
+    pub fn evolve(&self, player: Player, card: &Card, dm: &mut dyn DecisionMaker) -> Self {
+        let possible_targets = self.evolve_targets(card);
+        let target = dm.pick_in_play(player, 1, &possible_targets);
+
+        self.with_state(self.state.evolve_from_hand(player, card, &target[0].id))
+    }
+
+    pub fn evolve_targets(&self, card: &Card) -> Vec<InPlayCard> {
+        let mut targets = vec![];
+
+        let name_to_find = match self.stage(card) {
+            Some(Stage::Stage2(name)) => name,
+            Some(Stage::Stage1(name)) => name,
+            _ => { return targets; },
+        };
+
+        for in_play in self.state.side(card.owner).all_in_play() {
+            if in_play.stack[0].card().archetype().name() == name_to_find {
+                if in_play.put_in_play_turn + 1 <= self.state.turn {
+                    targets.push(in_play.clone());
+                }
+            }
+        }
+
+        targets
+    }
+
+    pub fn can_evolve(&self, card: &Card) -> bool {
+        !self.evolve_targets(card).is_empty()
     }
 
     pub fn can_play_trainer_from_hand(&self, card: &Card) -> bool {
@@ -795,13 +836,7 @@ impl GameEngine {
     }
 
     pub fn stage(&self, card: &Card) -> Option<Stage> {
-        match card.archetype.as_str() {
-            "Psyduck (FO 53)" | "Voltorb (BS 67)" | "Growlithe (BS 28)" | "Gastly (FO 33)" => Some(Stage::Basic),
-            "Squirtle (BS 63)" | "Articuno (FO 17)" => Some(Stage::Basic),
-            "Electrode (BS 21)" | "Arcanine (BS 23)" | "Wartortle (BS 42)" => Some(Stage::Stage1),
-            "Blastoise (BS 2)" => Some(Stage::Stage2),
-            _ => None,
-        }
+        card.archetype().stage()
     }
 
     pub fn then_if<F>(&self, condition: bool, f: F) -> Self where F: FnOnce(&Self) -> Self {
