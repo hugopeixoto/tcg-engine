@@ -364,7 +364,11 @@ impl Magneton {
         engine.damage(30).then_if(paralyzed, GameEngine::paralyze)
     }
     pub fn selfdestruct(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+        engine
+            .damage(80)
+            .then(|e| e.target_all(e.bench(e.player()), |e2| e2.damage(20)))
+            .then(|e| e.target_all(e.bench(e.opponent()), |e2| e2.damage(20)))
+            .damage_self(80)
     }
 }
 
@@ -435,7 +439,13 @@ impl CardArchetype for Nidoking {
 }
 impl Nidoking {
     pub fn thrash(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+        let extra = dm.flip(1).heads() == 0;
+
+        if extra {
+            engine.damage(30 + 10)
+        } else {
+            engine.damage(30).damage_self(10)
+        }
     }
     pub fn toxic(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
@@ -746,7 +756,9 @@ impl Dugtrio {
         engine.damage(40)
     }
     pub fn earthquake(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+        engine
+            .damage(70)
+            .then(|e| e.target_all(e.bench(e.player()), |e2| e2.damage(10)))
     }
 }
 
@@ -785,7 +797,13 @@ impl Electabuzz {
         engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
     }
     pub fn thunderpunch(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+        let extra = dm.flip(1).heads() == 0;
+
+        if extra {
+            engine.damage(30 + 10)
+        } else {
+            engine.damage(30).damage_self(10)
+        }
     }
 }
 
@@ -1115,7 +1133,7 @@ impl CardArchetype for Haunter {
 }
 impl Haunter {
     pub fn hypnosis(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+        engine.asleep()
     }
     pub fn dream_eater(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
@@ -1155,7 +1173,9 @@ impl Ivysaur {
         engine.damage(30)
     }
     pub fn poisonpowder(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+        engine
+            .damage(20)
+            .poison()
     }
 }
 
@@ -2027,7 +2047,11 @@ impl Magnemite {
         engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
     }
     pub fn selfdestruct(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+        engine
+            .damage(40)
+            .then(|e| e.target_all(e.bench(e.player()), |e2| e2.damage(10)))
+            .then(|e| e.target_all(e.bench(e.opponent()), |e2| e2.damage(10)))
+            .damage_self(40)
     }
 }
 
@@ -2514,7 +2538,9 @@ impl Tangela {
         engine.damage(20).then_if(paralyzed, GameEngine::paralyze)
     }
     pub fn poisonpowder(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+        engine
+            .damage(20)
+            .poison()
     }
 }
 
