@@ -5,6 +5,7 @@ mod state;
 mod cli;
 mod engine;
 mod carddb;
+mod card_macros;
 
 use state::*;
 use engine::*;

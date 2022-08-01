@@ -1,5 +1,6 @@
 use crate::state::*;
 use crate::engine::*;
+use crate::*;
 
 impl CardDB for Card {
     fn archetype(&self) -> Box<dyn CardArchetype> {
@@ -69,9 +70,14 @@ impl Pokemon {
 #[derive(Default)]
 struct Alakazam {}
 impl CardArchetype for Alakazam {
-    fn stage(&self) -> Option<Stage> {
-        Some(Stage::Stage2("Kadabra".into()))
-    }
+    card_name!("Alakazam");
+    stage2!("Kadabra");
+    hp!(80);
+    color!(Psychic);
+    weak_to!(Psychic);
+    no_resistance!();
+    retreat!(3);
+
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
@@ -84,32 +90,19 @@ impl CardArchetype for Alakazam {
     fn provides(&self) -> Vec<Type> {
         vec![]
     }
-    fn hp(&self) -> Option<usize> {
-        Some(80)
-    }
-    fn weakness(&self) -> Weakness {
-        (2, vec![Type::Psychic])
-    }
-    fn resistance(&self) -> Resistance {
-        (0, vec![])
-    }
-    fn pokemon_type(&self) -> Vec<Type> {
-        vec![Type::Psychic]
-    }
-    fn name(&self) -> String {
-        "Alakazam".into()
-    }
-    fn retreat(&self) -> usize {
-        3
-    }
 }
 
 #[derive(Default)]
 struct Growlithe {}
 impl CardArchetype for Growlithe {
-    fn stage(&self) -> Option<Stage> {
-        Some(Stage::Basic)
-    }
+    card_name!("Growlithe");
+    basic!();
+    hp!(60);
+    color!(Fire);
+    weak_to!(Water);
+    no_resistance!();
+    retreat!(1);
+
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
@@ -128,25 +121,6 @@ impl CardArchetype for Growlithe {
     fn provides(&self) -> Vec<Type> {
         vec![]
     }
-
-    fn hp(&self) -> Option<usize> {
-        Some(60)
-    }
-    fn weakness(&self) -> Weakness {
-        (2, vec![Type::Water])
-    }
-    fn resistance(&self) -> Resistance {
-        (0, vec![])
-    }
-    fn pokemon_type(&self) -> Vec<Type> {
-        vec![Type::Fire]
-    }
-    fn name(&self) -> String {
-        "Growlithe".into()
-    }
-    fn retreat(&self) -> usize {
-        1
-    }
 }
 impl Growlithe {
     pub fn flare(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -157,9 +131,14 @@ impl Growlithe {
 #[derive(Default)]
 struct Wartortle {}
 impl CardArchetype for Wartortle {
-    fn stage(&self) -> Option<Stage> {
-        Some(Stage::Stage1("Squirtle".into()))
-    }
+    card_name!("Wartortle");
+    stage1!("Squirtle");
+    hp!(70);
+    color!(Water);
+    weak_to!(Lightning);
+    no_resistance!();
+    retreat!(1);
+
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
@@ -180,24 +159,6 @@ impl CardArchetype for Wartortle {
     }
     fn provides(&self) -> Vec<Type> {
         vec![]
-    }
-    fn hp(&self) -> Option<usize> {
-        Some(70)
-    }
-    fn weakness(&self) -> Weakness {
-        (2, vec![Type::Lightning])
-    }
-    fn resistance(&self) -> Resistance {
-        (0, vec![])
-    }
-    fn pokemon_type(&self) -> Vec<Type> {
-        vec![Type::Water]
-    }
-    fn name(&self) -> String {
-        "Squirtle".into()
-    }
-    fn retreat(&self) -> usize {
-        1
     }
 }
 impl Wartortle {
@@ -221,9 +182,14 @@ impl Wartortle {
 #[derive(Default)]
 struct Squirtle {}
 impl CardArchetype for Squirtle {
-    fn stage(&self) -> Option<Stage> {
-        Some(Stage::Basic)
-    }
+    card_name!("Squirtle");
+    basic!();
+    hp!(40);
+    color!(Water);
+    weak_to!(Lightning);
+    no_resistance!();
+    retreat!(1);
+
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
@@ -244,25 +210,6 @@ impl CardArchetype for Squirtle {
     }
     fn provides(&self) -> Vec<Type> {
         vec![]
-    }
-
-    fn hp(&self) -> Option<usize> {
-        Some(40)
-    }
-    fn weakness(&self) -> Weakness {
-        (2, vec![Type::Lightning])
-    }
-    fn resistance(&self) -> Resistance {
-        (0, vec![])
-    }
-    fn pokemon_type(&self) -> Vec<Type> {
-        vec![Type::Water]
-    }
-    fn name(&self) -> String {
-        "Squirtle".into()
-    }
-    fn retreat(&self) -> usize {
-        1
     }
 }
 impl Squirtle {
@@ -288,9 +235,14 @@ impl Squirtle {
 #[derive(Default)]
 struct Voltorb {}
 impl CardArchetype for Voltorb {
-    fn stage(&self) -> Option<Stage> {
-        Some(Stage::Basic)
-    }
+    card_name!("Voltorb");
+    basic!();
+    hp!(40);
+    color!(Lightning);
+    weak_to!(Fighting);
+    no_resistance!();
+    retreat!(1);
+
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
@@ -309,25 +261,6 @@ impl CardArchetype for Voltorb {
     fn provides(&self) -> Vec<Type> {
         vec![]
     }
-
-    fn hp(&self) -> Option<usize> {
-        Some(40)
-    }
-    fn weakness(&self) -> Weakness {
-        (2, vec![Type::Fighting])
-    }
-    fn resistance(&self) -> Resistance {
-        (0, vec![])
-    }
-    fn pokemon_type(&self) -> Vec<Type> {
-        vec![Type::Lightning]
-    }
-    fn name(&self) -> String {
-        "Voltorb".into()
-    }
-    fn retreat(&self) -> usize {
-        1
-    }
 }
 impl Voltorb {
     pub fn tackle(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -338,9 +271,14 @@ impl Voltorb {
 #[derive(Default)]
 struct Articuno {}
 impl CardArchetype for Articuno {
-    fn stage(&self) -> Option<Stage> {
-        Some(Stage::Basic)
-    }
+    card_name!("Articuno");
+    basic!();
+    hp!(70);
+    color!(Water);
+    no_weakness!();
+    resists!(Fighting, 30);
+    retreat!(2);
+
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
@@ -361,25 +299,6 @@ impl CardArchetype for Articuno {
     }
     fn provides(&self) -> Vec<Type> {
         vec![]
-    }
-
-    fn hp(&self) -> Option<usize> {
-        Some(70)
-    }
-    fn weakness(&self) -> Weakness {
-        (0, vec![])
-    }
-    fn resistance(&self) -> Resistance {
-        (30, vec![Type::Fighting])
-    }
-    fn pokemon_type(&self) -> Vec<Type> {
-        vec![Type::Water]
-    }
-    fn name(&self) -> String {
-        "Articuno".into()
-    }
-    fn retreat(&self) -> usize {
-        2
     }
 }
 impl Articuno {
@@ -405,9 +324,14 @@ impl Articuno {
 #[derive(Default)]
 struct Psyduck {}
 impl CardArchetype for Psyduck {
-    fn stage(&self) -> Option<Stage> {
-        Some(Stage::Basic)
-    }
+    card_name!("Psyduck");
+    basic!();
+    hp!(50);
+    color!(Water);
+    weak_to!(Lightning);
+    no_resistance!();
+    retreat!(1);
+
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
@@ -428,25 +352,6 @@ impl CardArchetype for Psyduck {
     }
     fn provides(&self) -> Vec<Type> {
         vec![]
-    }
-
-    fn hp(&self) -> Option<usize> {
-        Some(50)
-    }
-    fn weakness(&self) -> Weakness {
-        (2, vec![Type::Lightning])
-    }
-    fn resistance(&self) -> Resistance {
-        (0, vec![])
-    }
-    fn pokemon_type(&self) -> Vec<Type> {
-        vec![Type::Water]
-    }
-    fn name(&self) -> String {
-        "Psyduck".into()
-    }
-    fn retreat(&self) -> usize {
-        1
     }
 }
 impl Psyduck {
@@ -469,9 +374,9 @@ impl Psyduck {
 #[derive(Default)]
 struct DoubleColorlessEnergy {}
 impl CardArchetype for DoubleColorlessEnergy {
-    fn stage(&self) -> Option<Stage> {
-        None
-    }
+    card_name!("Double Colorless Energy");
+    not_a_pokemon!();
+
     fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action> {
         if !engine.attachment_from_hand_targets(player, card).is_empty() {
             vec![Action::AttachFromHand(player, card.clone())]
@@ -499,24 +404,6 @@ impl CardArchetype for DoubleColorlessEnergy {
     fn provides(&self) -> Vec<Type> {
         vec![Type::Colorless, Type::Colorless]
     }
-    fn hp(&self) -> Option<usize> {
-        None
-    }
-    fn weakness(&self) -> Weakness {
-        (0, vec![])
-    }
-    fn resistance(&self) -> Resistance {
-        (0, vec![])
-    }
-    fn pokemon_type(&self) -> Vec<Type> {
-        vec![]
-    }
-    fn name(&self) -> String {
-        "Double Colorless Energy".into()
-    }
-    fn retreat(&self) -> usize {
-        0
-    }
 }
 
 struct BasicEnergy {
@@ -529,8 +416,9 @@ impl BasicEnergy {
     }
 }
 impl CardArchetype for BasicEnergy {
-    fn stage(&self) -> Option<Stage> {
-        None
+    not_a_pokemon!();
+    fn name(&self) -> String {
+        self.name.clone()
     }
 
     fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action> {
@@ -564,25 +452,6 @@ impl CardArchetype for BasicEnergy {
         vec![self.energy_type.clone()]
     }
 
-    fn hp(&self) -> Option<usize> {
-        None
-    }
-
-    fn weakness(&self) -> Weakness {
-        (0, vec![])
-    }
-    fn resistance(&self) -> Resistance {
-        (0, vec![])
-    }
-    fn pokemon_type(&self) -> Vec<Type> {
-        vec![]
-    }
-    fn name(&self) -> String {
-        self.name.clone()
-    }
-    fn retreat(&self) -> usize {
-        0
-    }
 }
 
 trait TrainerCardArchetype {
@@ -600,6 +469,11 @@ impl Trainer {
     }
 }
 impl CardArchetype for Trainer {
+    not_a_pokemon!();
+    fn name(&self) -> String {
+        self.archetype.name()
+    }
+
     fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action> {
         if self.archetype.requirements_ok(player, card, engine) && engine.can_play_trainer_from_hand(card) {
             vec![Action::TrainerFromHand(player, card.clone())]
@@ -612,38 +486,12 @@ impl CardArchetype for Trainer {
         engine.with_state(self.archetype.execute(player, card, engine, dm).state.discard_from_hand(player, card))
     }
 
-    fn stage(&self) -> Option<Stage> {
-        None
-    }
-
     fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
 
     fn provides(&self) -> Vec<Type> {
         vec![]
-    }
-
-    fn hp(&self) -> Option<usize> {
-        None
-    }
-
-    fn weakness(&self) -> Weakness {
-        (0, vec![])
-    }
-
-    fn resistance(&self) -> Resistance {
-        (0, vec![])
-    }
-
-    fn pokemon_type(&self) -> Vec<Type> {
-        vec![]
-    }
-    fn name(&self) -> String {
-        self.archetype.name()
-    }
-    fn retreat(&self) -> usize {
-        0
     }
 }
 
@@ -663,7 +511,8 @@ impl TrainerCardArchetype for ClefairyDoll {
 #[derive(Default)]
 struct ComputerSearch {}
 impl TrainerCardArchetype for ComputerSearch {
-    fn name(&self) -> String { "Computer Search".into() }
+    card_name!("Computer Search");
+
     // cost: discard(2, from: hand)
     // effect: search(1, from: deck); move(it, to: hand)
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
@@ -684,6 +533,25 @@ impl TrainerCardArchetype for ComputerSearch {
         }
 
         engine.with_state(state.shuffle_deck(player))
+    }
+}
+
+#[derive(Default)]
+//#[card_named("Devolution Spray")]
+struct DevolutionSpray {}
+impl TrainerCardArchetype for DevolutionSpray {
+    card_name!("Devolution Spray");
+
+    // effect: shuffle(hand, to: deck); draw(7)
+    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
+        !engine.state.side(player.opponent()).deck.is_empty() || engine.state.side(player.opponent()).hand.len() > 7
+    }
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let opponent = player.opponent();
+
+        engine.with_state(engine.state
+            .shuffle_hand_into_deck(opponent)
+            .draw_n_to_hand(opponent, 7, dm.shuffler()))
     }
 }
 
@@ -944,37 +812,19 @@ impl TrainerCardArchetype for Switch {
 #[derive(Default)]
 struct NOOP {}
 impl CardArchetype for NOOP {
+    card_name!("<Unknown>");
+    not_a_pokemon!();
+
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
     fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         panic!("not implemented");
     }
-    fn stage(&self) -> Option<Stage> {
-        None
-    }
     fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
     fn provides(&self) -> Vec<Type> {
         vec![]
-    }
-    fn hp(&self) -> Option<usize> {
-        None
-    }
-    fn weakness(&self) -> Weakness {
-        (0, vec![])
-    }
-    fn resistance(&self) -> Resistance {
-        (0, vec![])
-    }
-    fn pokemon_type(&self) -> Vec<Type> {
-        vec![]
-    }
-    fn name(&self) -> String {
-        "".into()
-    }
-    fn retreat(&self) -> usize {
-        0
     }
 }
