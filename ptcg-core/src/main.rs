@@ -7,6 +7,8 @@ mod engine;
 mod carddb;
 mod card_macros;
 
+mod sets;
+
 use state::*;
 use engine::*;
 

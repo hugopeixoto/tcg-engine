@@ -1,15 +1,80 @@
 use crate::state::*;
 use crate::engine::*;
 use crate::*;
+use crate::sets::*;
 
 impl CardDB for Card {
     fn archetype(&self) -> Box<dyn CardArchetype> {
         match self.archetype.as_str() {
-            "Alakazam (BS 1)"                   => Pokemon::create::<Alakazam>(),
-            "Growlithe (BS 28)"                 => Pokemon::create::<Growlithe>(),
-            "Wartortle (BS 42)"                 => Pokemon::create::<Wartortle>(),
-            "Squirtle (BS 63)"                  => Pokemon::create::<Squirtle>(),
-            "Voltorb (BS 67)"                   => Pokemon::create::<Voltorb>(),
+            "Alakazam (BS 1)"                   => Pokemon::create::<base_set::Alakazam>(),
+            "Blastoise (BS 2)"                  => Pokemon::create::<base_set::Blastoise>(),
+            "Chansey (BS 3)"                    => Pokemon::create::<base_set::Chansey>(),
+            "Charizard (BS 4)"                  => Pokemon::create::<base_set::Charizard>(),
+            "Clefairy (BS 5)"                   => Pokemon::create::<base_set::Clefairy>(),
+            "Gyarados (BS 6)"                   => Pokemon::create::<base_set::Gyarados>(),
+            "Hitmonchan (BS 7)"                 => Pokemon::create::<base_set::Hitmonchan>(),
+            "Machamp (BS 8)"                    => Pokemon::create::<base_set::Machamp>(),
+            "Magneton (BS 9)"                   => Pokemon::create::<base_set::Magneton>(),
+            "Mewtwo (BS 10)"                    => Pokemon::create::<base_set::Mewtwo>(),
+            "Nidoking (BS 11)"                  => Pokemon::create::<base_set::Mewtwo>(),
+            "Ninetales (BS 12)"                 => Pokemon::create::<base_set::Ninetales>(),
+            "Poliwrath (BS 13)"                 => Pokemon::create::<base_set::Poliwrath>(),
+            "Raichu (BS 14)"                    => Pokemon::create::<base_set::Raichu>(),
+            "Venusaur (BS 15)"                  => Pokemon::create::<base_set::Venusaur>(),
+            "Zapdos (BS 16)"                    => Pokemon::create::<base_set::Zapdos>(),
+            "Beedrill (BS 17)"                  => Pokemon::create::<base_set::Beedrill>(),
+            "Dragonair (BS 18)"                 => Pokemon::create::<base_set::Dragonair>(),
+            "Dugtrio (BS 19)"                   => Pokemon::create::<base_set::Dugtrio>(),
+            "Electabuzz (BS 20)"                => Pokemon::create::<base_set::Electabuzz>(),
+            "Electrode (BS 21)"                 => Pokemon::create::<base_set::Electrode>(),
+            "Pidgeotto (BS 22)"                 => Pokemon::create::<base_set::Pidgeotto>(),
+            "Arcanine (BS 23)"                  => Pokemon::create::<base_set::Arcanine>(),
+            "Charmeleon (BS 24)"                => Pokemon::create::<base_set::Charmeleon>(),
+            "Dewgong (BS 25)"                   => Pokemon::create::<base_set::Dewgong>(),
+            "Dratini (BS 26)"                   => Pokemon::create::<base_set::Dratini>(),
+            "Farfetch'd (BS 27)"                => Pokemon::create::<base_set::FarfetchD>(),
+            "Growlithe (BS 28)"                 => Pokemon::create::<base_set::Growlithe>(),
+            "Haunter (BS 29)"                   => Pokemon::create::<base_set::Haunter>(),
+            "Ivysaur (BS 30)"                   => Pokemon::create::<base_set::Ivysaur>(),
+            "Jynx (BS 31)"                      => Pokemon::create::<base_set::Jynx>(),
+            "Kadabra (BS 32)"                   => Pokemon::create::<base_set::Kadabra>(),
+            "Kakuna (BS 33)"                    => Pokemon::create::<base_set::Kakuna>(),
+            "Machoke (BS 34)"                   => Pokemon::create::<base_set::Machoke>(),
+            "Magikarp (BS 35)"                  => Pokemon::create::<base_set::Magikarp>(),
+            "Magmar (BS 36)"                    => Pokemon::create::<base_set::Magmar>(),
+            "Nidorino (BS 37)"                  => Pokemon::create::<base_set::Nidorino>(),
+            "Poliwhirl (BS 38)"                 => Pokemon::create::<base_set::Poliwhirl>(),
+            "Porygon (BS 39)"                   => Pokemon::create::<base_set::Porygon>(),
+            "Raticate (BS 40)"                  => Pokemon::create::<base_set::Raticate>(),
+            "Seel (BS 41)"                      => Pokemon::create::<base_set::Seel>(),
+            "Wartortle (BS 42)"                 => Pokemon::create::<base_set::Wartortle>(),
+            "Abra (BS 43)"                      => Pokemon::create::<base_set::Abra>(),
+            "Bulbasaur (BS 44)"                 => Pokemon::create::<base_set::Bulbasaur>(),
+            "Caterpie (BS 45)"                  => Pokemon::create::<base_set::Caterpie>(),
+            "Charmander (BS 46)"                => Pokemon::create::<base_set::Charmander>(),
+            "Diglett (BS 47)"                   => Pokemon::create::<base_set::Diglett>(),
+            "Doduo (BS 48)"                     => Pokemon::create::<base_set::Doduo>(),
+            "Drowzee (BS 49)"                   => Pokemon::create::<base_set::Drowzee>(),
+            "Gastly (BS 50)"                    => Pokemon::create::<base_set::Gastly>(),
+            "Koffing (BS 51)"                   => Pokemon::create::<base_set::Koffing>(),
+            "Machop (BS 52)"                    => Pokemon::create::<base_set::Machop>(),
+            "Magnemite (BS 53)"                 => Pokemon::create::<base_set::Magnemite>(),
+            "Metapod (BS 54)"                   => Pokemon::create::<base_set::Metapod>(),
+            "Nidoran ♂ (BS 55)"                 => Pokemon::create::<base_set::NidoranM>(),
+            "Onix (BS 56)"                      => Pokemon::create::<base_set::Onix>(),
+            "Pidgey (BS 57)"                    => Pokemon::create::<base_set::Pidgey>(),
+            "Pikachu (BS 58)"                   => Pokemon::create::<base_set::Pikachu>(),
+            "Poliwag (BS 59)"                   => Pokemon::create::<base_set::Poliwag>(),
+            "Ponyta (BS 60)"                    => Pokemon::create::<base_set::Ponyta>(),
+            "Rattata (BS 61)"                   => Pokemon::create::<base_set::Rattata>(),
+            "Sandshrew (BS 62)"                 => Pokemon::create::<base_set::Sandshrew>(),
+            "Squirtle (BS 63)"                  => Pokemon::create::<base_set::Squirtle>(),
+            "Starmie (BS 64)"                   => Pokemon::create::<base_set::Starmie>(),
+            "Staryu (BS 65)"                    => Pokemon::create::<base_set::Staryu>(),
+            "Tangela (BS 66)"                   => Pokemon::create::<base_set::Tangela>(),
+            "Voltorb (BS 67)"                   => Pokemon::create::<base_set::Voltorb>(),
+            "Vulpix (BS 68)"                    => Pokemon::create::<base_set::Vulpix>(),
+            "Weedle (BS 69)"                    => Pokemon::create::<base_set::Weedle>(),
             "Clefairy Doll (BS 70)"             => Trainer::create::<ClefairyDoll>(),
             "Computer Search (BS 71)"           => Trainer::create::<ComputerSearch>(),
             //"Devolution Spray (BS 72)"        => Trainer::create::<DevolutionSpray>(),
@@ -43,9 +108,9 @@ impl CardDB for Card {
             "Lightning Energy (BS 100)"         => BasicEnergy::create("Lightning Energy", Type::Lightning),
             "Psychic Energy (BS 101)"           => BasicEnergy::create("Psychic Energy", Type::Psychic),
             "Water Energy (BS 102)"             => BasicEnergy::create("Water Energy", Type::Water),
-            "Articuno (FO 2)"                   => Pokemon::create::<Articuno>(),
-            "Articuno (FO 17)"                  => Pokemon::create::<Articuno>(),
-            "Psyduck (FO 53)"                   => Pokemon::create::<Psyduck>(),
+            "Articuno (FO 2)"                   => Pokemon::create::<fossil::Articuno>(),
+            "Articuno (FO 17)"                  => Pokemon::create::<fossil::Articuno>(),
+            "Psyduck (FO 53)"                   => Pokemon::create::<fossil::Psyduck>(),
             _                                   => Box::new(NOOP::default()),
             //"Devolution Spray (BS 72)" => mine.in_play.any(is_evolution),
             //"Super Energy Removal (BS 79)" => mine.in_play.any(energy_attached(1..)) && opp.in_play.any(energy_attached(1..)),
@@ -64,324 +129,6 @@ struct Pokemon {}
 impl Pokemon {
     pub fn create<T: Default + CardArchetype + 'static>() -> Box<dyn CardArchetype> {
         Box::new(T::default())
-    }
-}
-
-struct Attacks<'a> {
-    player: Player,
-    in_play: &'a InPlayCard,
-    engine: &'a GameEngine,
-    attacks: Vec<Action>,
-}
-
-impl<'a> Attacks<'a> {
-    pub fn new(player: Player, in_play: &'a InPlayCard, engine: &'a GameEngine) -> Self {
-        Attacks {
-            player,
-            in_play,
-            engine: engine,
-            attacks: vec![],
-        }
-    }
-
-    pub fn register(mut self, name: &str, energy_requirements: &[Type], f: fn(&GameEngine, &mut dyn DecisionMaker) -> GameEngine) -> Attacks<'a> {
-        if self.engine.is_attack_energy_cost_met(self.in_play, energy_requirements) {
-            self.attacks.push(Action::Attack(self.player, self.in_play.clone(), name.into(), Box::new(RFA::new(f))));
-        }
-
-        self
-    }
-}
-
-impl<'a> From<Attacks<'a>> for Vec<Action> {
-    fn from(attacks: Attacks<'a>) -> Self {
-        attacks.attacks
-    }
-}
-
-#[derive(Default)]
-struct Alakazam {}
-impl CardArchetype for Alakazam {
-    card_name!("Alakazam");
-    stage2!("Kadabra");
-    hp!(80);
-    color!(Psychic);
-    weak_to!(Psychic);
-    no_resistance!();
-    retreat!(3);
-
-    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
-        vec![]
-    }
-    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
-    }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Confuse Ray", &[Type::Psychic, Type::Psychic, Type::Psychic], Self::confuse_ray)
-            .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
-}
-impl Alakazam {
-    pub fn confuse_ray(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let confused = dm.flip(1).heads() == 1;
-
-        engine.damage(30).then_if(confused, GameEngine::confuse)
-    }
-
-    pub fn damage_swap(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
-    }
-}
-
-#[derive(Default)]
-struct Growlithe {}
-impl CardArchetype for Growlithe {
-    card_name!("Growlithe");
-    basic!();
-    hp!(60);
-    color!(Fire);
-    weak_to!(Water);
-    no_resistance!();
-    retreat!(1);
-
-    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
-        vec![]
-    }
-    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
-    }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Flare", &[Type::Fire, Type::Colorless], Self::flare)
-            .into()
-    }
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
-}
-impl Growlithe {
-    pub fn flare(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.damage(20)
-    }
-}
-
-#[derive(Default)]
-struct Wartortle {}
-impl CardArchetype for Wartortle {
-    card_name!("Wartortle");
-    stage1!("Squirtle");
-    hp!(70);
-    color!(Water);
-    weak_to!(Lightning);
-    no_resistance!();
-    retreat!(1);
-
-    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
-        vec![]
-    }
-    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
-    }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Withdraw", &[Type::Water, Type::Colorless], Self::withdraw)
-            .register("Bite", &[Type::Water, Type::Colorless, Type::Colorless], Self::bite)
-            .into()
-    }
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
-}
-impl Wartortle {
-    pub fn withdraw(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        // TODO: this should only activate on the opponent's next turn, not right now.
-        // If there's anything that triggers after attacking or during Pokémon Checkup,
-        // this ability shouldn't be considered.
-        engine.with_effect(Effect {
-            name: "WARTORTLE_BS_WITHDRAW_NO_DAMAGE".into(),
-            source: EffectSource::Attack(engine.player(), engine.attacking().id),
-            target: EffectTarget::InPlay(engine.player(), engine.attacking().id),
-            consequence: EffectConsequence::BlockDamage,
-            expires: EffectExpiration::EndOfTurn(engine.opponent(), 0),
-        })
-    }
-    pub fn bite(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.damage(40)
-    }
-}
-
-#[derive(Default)]
-struct Squirtle {}
-impl CardArchetype for Squirtle {
-    card_name!("Squirtle");
-    basic!();
-    hp!(40);
-    color!(Water);
-    weak_to!(Lightning);
-    no_resistance!();
-    retreat!(1);
-
-    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
-        vec![]
-    }
-    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
-    }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Bubble", &[Type::Water], Self::bubble)
-            .register("Withdraw", &[Type::Water, Type::Colorless], Self::withdraw)
-            .into()
-    }
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
-}
-impl Squirtle {
-    pub fn bubble(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
-    }
-    pub fn withdraw(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        // TODO: this should only activate on the opponent's next turn, not right now.
-        // If there's anything that triggers after attacking or during Pokémon Checkup,
-        // this ability shouldn't be considered.
-        engine.with_effect(Effect {
-            name: "SQUIRTLE_BS_WITHDRAW_NO_DAMAGE".into(),
-            source: EffectSource::Attack(engine.player(), engine.attacking().id),
-            target: EffectTarget::InPlay(engine.player(), engine.attacking().id),
-            consequence: EffectConsequence::BlockDamage,
-            expires: EffectExpiration::EndOfTurn(engine.opponent(), 0),
-        })
-    }
-}
-
-#[derive(Default)]
-struct Voltorb {}
-impl CardArchetype for Voltorb {
-    card_name!("Voltorb");
-    basic!();
-    hp!(40);
-    color!(Lightning);
-    weak_to!(Fighting);
-    no_resistance!();
-    retreat!(1);
-
-    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
-        vec![]
-    }
-    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
-    }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Tackle", &[Type::Colorless], Self::tackle)
-            .into()
-    }
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
-}
-impl Voltorb {
-    pub fn tackle(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.damage(10)
-    }
-}
-
-#[derive(Default)]
-struct Articuno {}
-impl CardArchetype for Articuno {
-    card_name!("Articuno");
-    basic!();
-    hp!(70);
-    color!(Water);
-    no_weakness!();
-    resists!(Fighting, 30);
-    retreat!(2);
-
-    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
-        vec![]
-    }
-    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
-    }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Freeze Dry", &[Type::Water, Type::Water, Type::Water], Self::freeze_dry)
-            .register("Blizzard", &[Type::Water, Type::Water, Type::Water, Type::Water], Self::blizzard)
-            .into()
-    }
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
-}
-impl Articuno {
-    pub fn freeze_dry(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(30).then_if(paralyzed, GameEngine::paralyze)
-    }
-
-    pub fn blizzard(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let whose_bench = if dm.flip(1).heads() == 1 {
-            engine.opponent()
-        } else {
-            engine.player()
-        };
-
-        engine
-            .damage(50)
-            .then(|e| e.target_all(e.bench(whose_bench), |e2| e2.damage(10)))
-    }
-}
-
-#[derive(Default)]
-struct Psyduck {}
-impl CardArchetype for Psyduck {
-    card_name!("Psyduck");
-    basic!();
-    hp!(50);
-    color!(Water);
-    weak_to!(Lightning);
-    no_resistance!();
-    retreat!(1);
-
-    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
-        vec![]
-    }
-    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
-    }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Headache", &[Type::Psychic], Self::headache)
-            .register("Fury Swipes", &[Type::Water], Self::fury_swipes)
-            .into()
-    }
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
-}
-impl Psyduck {
-    pub fn headache(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.with_effect(Effect {
-            name: "PSYDUCK_FO_HEADACHE_NO_TRAINERS".into(),
-            source: EffectSource::Attack(engine.player(), engine.attacking().id),
-            target: EffectTarget::Player(engine.opponent()),
-            consequence: EffectConsequence::BlockTrainerFromHand,
-            expires: EffectExpiration::EndOfTurn(engine.opponent(), 0),
-        })
-    }
-    pub fn fury_swipes(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let damage = 10 * dm.flip(3).heads();
-
-        engine.damage(damage)
     }
 }
 

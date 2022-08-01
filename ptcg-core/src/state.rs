@@ -38,6 +38,11 @@ pub enum RotationalStatus {
     Paralyzed,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Poison {
+    pub counters: usize,
+}
+
 pub trait Shuffler {
     fn random_card(&mut self, n: usize) -> usize;
 }
@@ -218,7 +223,7 @@ pub struct InPlayCard {
     pub attached: Vec<FaceCard>,
     pub damage_counters: usize,
     pub rotational_status: RotationalStatus,
-    pub poisoned: bool,
+    pub poisoned: Option<Poison>,
     pub burned: bool,
     pub put_in_play_turn: usize,
 }
@@ -712,6 +717,22 @@ impl GameState {
         let mut side = self.side(in_play.owner).clone();
 
         side.in_play_mut(&in_play.id).unwrap().rotational_status = RotationalStatus::Paralyzed;
+
+        self.with_player_side(in_play.owner, side)
+    }
+
+    pub fn poison(&self, in_play: &InPlayCard, counters: usize) -> Self {
+        let mut side = self.side(in_play.owner).clone();
+
+        side.in_play_mut(&in_play.id).unwrap().poisoned = Some(Poison { counters });
+
+        self.with_player_side(in_play.owner, side)
+    }
+
+    pub fn asleep(&self, in_play: &InPlayCard) -> Self {
+        let mut side = self.side(in_play.owner).clone();
+
+        side.in_play_mut(&in_play.id).unwrap().rotational_status = RotationalStatus::Asleep;
 
         self.with_player_side(in_play.owner, side)
     }

@@ -414,6 +414,10 @@ impl GameEngine {
         self.with_state(self.state.add_damage_counters(self.defending(), damage/10))
     }
 
+    pub fn damage_self(&self, _damage: usize) -> Self {
+        unimplemented!();
+    }
+
     pub fn apply_weakness(&self, mut damage: usize) -> usize {
         // TODO: +X weaknesses instead of *X
         // TODO: Super effective glasses changing weakness to *3
@@ -457,9 +461,23 @@ impl GameEngine {
         self.with_state(self.state.paralyze(self.defending()))
     }
 
+    pub fn asleep(&self) -> Self {
+        self.with_state(self.state.asleep(self.defending()))
+    }
+
+    pub fn poison(&self) -> Self {
+        self.with_state(self.state.poison(self.defending(), 1))
+    }
+
+    pub fn severe_poison(&self, counters: usize) -> Self {
+        self.with_state(self.state.poison(self.defending(), counters))
+    }
+
     pub fn confuse(&self) -> Self {
         self.with_state(self.state.confuse(self.defending()))
     }
+
+    // end attack in flight
 
     pub fn end_turn(&self) -> Self {
         let mut engine = self.clone();
@@ -557,8 +575,15 @@ impl GameEngine {
         actions
     }
 
-    pub fn retreat_cost(&self, _player: Player, in_play: &InPlayCard) -> usize {
-        in_play.stack[0].card().archetype().retreat()
+    pub fn retreat_cost(&self, in_play: &InPlayCard) -> Vec<Type> {
+        let how_many = in_play.stack[0].card().archetype().retreat();
+
+        let mut cost = vec![];
+        for _ in 0..how_many {
+            cost.push(Type::Colorless);
+        }
+
+        cost
     }
 
     pub fn can_retreat(&self, player: Player, in_play: &InPlayCard) -> bool {
@@ -573,18 +598,12 @@ impl GameEngine {
             }
         }
 
-        let mut cost = vec![];
-        for _ in 0..self.retreat_cost(player, in_play) {
-            cost.push(Type::Colorless);
-        }
+        let cost = self.retreat_cost(in_play);
 
         self.is_energy_cost_met(&cost, energy)
     }
 
-    pub fn retreat(&self, player: Player, in_play: &InPlayCard, dm: &mut dyn DecisionMaker) -> Self {
-        let possible_targets = self.state.side(player).bench.clone();
-        let chosen = dm.pick_in_play(player, 1, &possible_targets);
-
+    pub fn discard_attached_energies(&self, _player: Player, in_play: &InPlayCard, _cost: &[Type], _dm: &mut dyn DecisionMaker) -> Self {
         // TODO: pick energies to discard instead of discarding everything
         let mut state = self.state.clone();
         for attached in in_play.attached.iter() {
@@ -593,7 +612,22 @@ impl GameEngine {
             }
         }
 
-        self.with_state(state.switch_active_with(&chosen[0]))
+        self.with_state(state)
+    }
+
+    pub fn retreat(&self, player: Player, in_play: &InPlayCard, dm: &mut dyn DecisionMaker) -> Self {
+        let possible_targets = self.state.side(player).bench.clone();
+        let chosen = dm.pick_in_play(player, 1, &possible_targets);
+
+        let cost = self.retreat_cost(in_play);
+
+        self
+            .discard_attached_energies(player, in_play, &cost, dm)
+            .switch(player, in_play, &chosen[0])
+    }
+
+    pub fn switch(&self, _player: Player, _this: &InPlayCard, with: &InPlayCard) -> Self {
+        self.with_state(self.state.switch_active_with(with))
     }
 
     pub fn in_play_actions(&self, player: Player, in_play: &InPlayCard, active: bool) -> Vec<Action> {
