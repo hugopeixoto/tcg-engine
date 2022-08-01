@@ -481,7 +481,7 @@ impl CardArchetype for DoubleColorlessEnergy {
     }
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let targets = engine.attachment_from_hand_targets(player, card);
-        let target = dm.pick_target(player, &targets);
+        let target = dm.pick_in_play(player, 1, &targets)[0];
 
         engine
             .attach_from_hand(player, card, target)
@@ -543,7 +543,7 @@ impl CardArchetype for BasicEnergy {
 
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let targets = engine.attachment_from_hand_targets(player, card);
-        let target = dm.pick_target(player, &targets);
+        let target = dm.pick_in_play(player, 1, &targets)[0];
 
         engine
             .attach_from_hand(player, card, target)

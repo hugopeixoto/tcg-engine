@@ -77,10 +77,10 @@ pub trait DecisionMaker {
     fn confirm_mulligan_draw(&mut self, p: Player, upto: usize) -> usize;
     fn confirm_setup_bench_selection(&mut self, p: Player, cards: &Vec<Card>) -> Vec<Card>;
     fn pick_action<'a>(&mut self, p: Player, actions: &'a Vec<Action>) -> &'a Action;
-    fn pick_target<'a>(&mut self, p: Player, actions: &'a Vec<InPlayID>) -> &'a InPlayID;
     fn pick_from_hand<'a>(&mut self, p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card>;
     fn pick_from_discard<'a>(&mut self, p: Player, whose: Player, how_many: usize, discard: &Vec<Card>, searchable: &'a Vec<Card>) -> Vec<&'a Card>;
     fn pick_in_play<'a>(&mut self, p: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard>;
+    fn pick_from_prizes<'a>(&mut self, who: Player, whose: Player, how_many: usize, searchable: &'a Vec<PrizeCard>) -> Vec<&'a PrizeCard>;
     fn search_deck<'a>(&mut self, p: Player, whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card>;
 }
 
@@ -162,6 +162,13 @@ impl std::fmt::Debug for Action {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct PrizeAward {
+    player: Player,
+    how_many: usize,
+}
+
+
 impl GameEngine {
     pub fn from_state(state: GameState) -> Self {
         Self {
@@ -201,12 +208,7 @@ impl GameEngine {
                 }
             },
             GameStage::Turn(player) => {
-                println!("available actions for {:?}:", player);
                 let actions = self.available_actions(player);
-                for (i, action) in actions.iter().enumerate() {
-                    println!(" {}. {:?}", i + 1, action);
-                }
-
                 let action = dm.pick_action(player, &actions);
 
                 match &action {
@@ -237,22 +239,54 @@ impl GameEngine {
                     Action::BenchFromHand(_, card) => {
                         self.with_state(self.state.bench_from_hand(player, card))
                     },
-                }
+                }.check_for_knockouts(dm)
             },
             GameStage::PokemonCheckup(player) => {
                 self.with_state(self.state.with_stage(GameStage::StartOfTurn(player)))
             }
         };
 
+        engine = engine.check_promotion_needed(dm);
+        engine = engine.check_win_conditions();
+        engine
+    }
+
+    pub fn check_win_conditions(&self) -> Self {
+        // Well, if one of you has a Benched Pokémon to replace your Active Pokémon and
+        // the other player doesn't, then the person who can replace his or her Active
+        // Pokémon wins. Otherwise, you play Sudden Death. This is explained in the
+        // Pokémon rules in the Expert Rules section under "What Happens if Both Players
+        // Win at the Same Time?"
+        // https://compendium.pokegym.net/ruling/882/
+        let [a, b] = [Player::One, Player::Two].map(|player| {
+            let prize_done = self.state.side(player).prizes.is_empty();
+            let no_active = self.state.side(player.opponent()).active.is_empty();
+
+            (if prize_done { 1 } else { 0 }) + (if no_active { 1 } else { 0 })
+        });
+
+        if a > 0 && a > b {
+            self.with_state(self.state.with_stage(GameStage::Winner(Player::One)))
+        } else if b > 0 && b > a {
+            self.with_state(self.state.with_stage(GameStage::Winner(Player::Two)))
+        } else if b > 0 && b == a {
+            self.with_state(self.state.with_stage(GameStage::Tie))
+        } else {
+            self.clone()
+        }
+    }
+
+    pub fn check_promotion_needed(&self, dm: &mut dyn DecisionMaker) -> Self {
         // Q. When both active Pokémon are knocked out, who places a new active first?
         // A. The player whose turn would be next.
         // https://compendium.pokegym.net/ruling/818/
-        let who_first = match engine.state.stage {
+        let who_first = match self.state.stage {
             GameStage::Turn(player) => player.opponent(),
             GameStage::StartOfTurn(player) => player.opponent(),
             _ => Player::One,
         };
 
+        let mut engine = self.clone();
         for who in [who_first, who_first.opponent()] {
             // TODO: 2v2 games
             while engine.state.side(who).active.len() < 1 && !engine.state.side(who).bench.is_empty() {
@@ -261,32 +295,73 @@ impl GameEngine {
             }
         }
 
-        // Well, if one of you has a Benched Pokémon to replace your Active Pokémon and
-        // the other player doesn't, then the person who can replace his or her Active
-        // Pokémon wins. Otherwise, you play Sudden Death. This is explained in the
-        // Pokémon rules in the Expert Rules section under "What Happens if Both Players
-        // Win at the Same Time?"
-        // https://compendium.pokegym.net/ruling/882/
-        let [a, b] = [Player::One, Player::Two].map(|player| {
-            let prize_done = engine.state.side(player).prizes.is_empty();
-            let no_active = engine.state.side(player.opponent()).active.is_empty();
+        engine
+    }
 
-            (if prize_done { 1 } else { 0 }) + (if no_active { 1 } else { 0 })
-        });
+    pub fn check_for_knockouts(&self, dm: &mut dyn DecisionMaker) -> Self {
+        let mut engine = self.clone();
+        // attack:
+        //   damage calculation
+        //   damage counters
+        //   attack effects
+        //   hp check: check for pokemon with more damage counters than HP
+        //   knock out:
+        //     discard cards
+        //     take prizes
+        //   promote active
 
-        if a > 0 && a > b {
-            engine.state.stage = GameStage::Winner(Player::One);
-        } else if b > 0 && b > a {
-            engine.state.stage = GameStage::Winner(Player::Two);
-        } else if b > 0 && b == a {
-            engine.state.stage = GameStage::Tie;
+        // TODO: (billowing smoke) how do I know that the damage was from an attack?
+        let mut prizes = vec![];
+
+        loop {
+            let mut at_zero = engine.state.all_in_play().into_iter().filter(|in_play| engine.remaining_hp(in_play) == 0);
+            match at_zero.next() {
+                None => { break; },
+                Some(in_play) => {
+                    println!("knocked out: {:?}", in_play);
+                    let (p, e) = engine.knock_out(in_play);
+                    engine = e;
+                    prizes.push(p);
+                },
+            }
+
+            break;
+        }
+
+        // take n prizes
+        for prize in prizes {
+            engine = engine.take_prize_card(prize.player, prize.how_many, dm);
         }
 
         engine
     }
 
-    pub fn attach_from_hand(&self, player: Player, card: &Card, target: &InPlayID) -> Self {
-        self.with_state(self.state.attach_from_hand(player, card, target))
+    pub fn take_prize_card(&self, player: Player, how_many: usize, dm: &mut dyn DecisionMaker) -> Self {
+        // TODO: intercept for greedy dice, treasure energy, dream ball
+
+        let prizes = self.state.side(player).prizes.clone();
+        let choices = dm.pick_from_prizes(player, player, how_many, &prizes);
+
+        let mut engine = self.clone();
+        for chosen in choices {
+            engine = engine.with_state(engine.state.prize_to_hand(player, &chosen));
+        }
+
+        engine
+    }
+
+    pub fn knock_out(&self, in_play: &InPlayCard) -> (PrizeAward, Self) {
+        // calculate prizes
+        let mut engine = self.clone();
+        for card in in_play.cards() {
+            engine = engine.with_state(engine.state.move_card_to_discard(card));
+        }
+
+        (PrizeAward { player: in_play.owner.opponent(), how_many: 1 }, engine)
+    }
+
+    pub fn attach_from_hand(&self, player: Player, card: &Card, target: &InPlayCard) -> Self {
+        self.with_state(self.state.attach_from_hand(player, card, &target.id))
     }
 
     // attack in flight
@@ -340,6 +415,8 @@ impl GameEngine {
     }
 
     pub fn apply_weakness(&self, mut damage: usize) -> usize {
+        // TODO: +X weaknesses instead of *X
+        // TODO: Super effective glasses changing weakness to *3
         let (multiplier, types) = self.defending().stack[0].card().archetype().weakness();
         for weakness in types {
             if self.attacking().stack[0].card().archetype().pokemon_type().contains(&weakness) {
@@ -618,7 +695,7 @@ impl GameEngine {
         true
     }
 
-    pub fn attachment_from_hand_targets(&self, player: Player, _card: &Card) -> Vec<InPlayID> {
+    pub fn attachment_from_hand_targets(&self, player: Player, _card: &Card) -> Vec<InPlayCard> {
         let blocks = self.state.effects.iter()
             .filter(|e| e.consequence == EffectConsequence::BlockAttachmentFromHand)
             .filter(|e| e.target.is_player(player))
@@ -627,11 +704,11 @@ impl GameEngine {
         let mut targets = vec![];
 
         for active in self.state.side(player).active.iter() {
-            targets.push(active.id.clone());
+            targets.push(active.clone());
         }
 
         for benched in self.state.side(player).bench.iter() {
-            targets.push(benched.id.clone());
+            targets.push(benched.clone());
         }
 
         for block in blocks {
@@ -640,7 +717,7 @@ impl GameEngine {
                     return vec![];
                 },
                 EffectTarget::InPlay(_, id) => {
-                    targets.retain(|x| x != id);
+                    targets.retain(|x| x.id != *id);
                 },
             }
         }

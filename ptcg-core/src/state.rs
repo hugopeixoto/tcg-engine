@@ -234,13 +234,21 @@ impl InPlayCard {
     }
 }
 
+type PrizeCardID = usize;
+
+#[derive(Clone)]
+pub struct PrizeCard {
+    pub id: PrizeCardID,
+    pub card: FaceCard,
+}
+
 #[derive(Default, Clone)]
 pub struct PlayerSide {
     pub deck: Deck,
     pub hand: Vec<Card>,
     pub discard: Vec<Card>,
     pub lost_zone: Vec<Card>,
-    pub prizes: Vec<FaceCard>,
+    pub prizes: Vec<PrizeCard>,
     pub gx_available: bool,
     pub vstar_available: bool,
     pub active: Vec<InPlayCard>,
@@ -476,9 +484,19 @@ impl GameState {
 
         let (deck, card) = side.deck.draw(dm);
         let mut prizes = side.prizes.clone();
-        if let Some(card) = card { prizes.push(FaceCard::Down(card)); }
+        if let Some(card) = card { prizes.push(PrizeCard { id: prizes.len() + 1, card: FaceCard::Down(card) }); }
 
         self.with_player_side(player, PlayerSide { deck, prizes, ..side.clone() })
+    }
+
+    pub fn prize_to_hand(&self, player: Player, prize: &PrizeCard) -> Self {
+        let mut side = self.side(player).clone();
+
+        let p = side.prizes.iter().position(|c| c.id == prize.id).unwrap();
+        let prize = side.prizes.remove(p);
+        side.hand.push(prize.card.card().clone());
+
+        self.with_player_side(player, side)
     }
 
     pub fn draw_n_to_hand(&self, player: Player, n: usize, dm: &mut dyn Shuffler) -> Self {
@@ -569,7 +587,7 @@ impl GameState {
         state.p1.discard.retain(|c| c != card);
         state.p1.hand.retain(|c| c != card);
         state.p1.lost_zone.retain(|c| c != card);
-        state.p1.prizes.retain(|c| c.card() != card);
+        state.p1.prizes.retain(|c| c.card.card() != card);
         state.p1.deck = state.p1.deck.remove_card(card).1;
         if state.p1.stadium == Some(card.clone()) {
             state.p1.stadium = None;
@@ -591,7 +609,7 @@ impl GameState {
         state.p2.discard.retain(|c| c != card);
         state.p2.hand.retain(|c| c != card);
         state.p2.lost_zone.retain(|c| c != card);
-        state.p2.prizes.retain(|c| c.card() != card);
+        state.p2.prizes.retain(|c| c.card.card() != card);
         state.p2.deck = state.p2.deck.remove_card(card).1;
         if state.p2.stadium == Some(card.clone()) {
             state.p2.stadium = None;
@@ -722,6 +740,15 @@ impl GameState {
 
     pub fn in_play(&self, id: &InPlayID) -> Option<&InPlayCard> {
         self.p1.in_play(id).or(self.p2.in_play(id))
+    }
+
+    pub fn all_in_play(&self) -> Vec<&InPlayCard> {
+        let mut mons = vec![];
+
+        mons.extend(self.p1.all_in_play());
+        mons.extend(self.p2.all_in_play());
+
+        mons
     }
 
     pub fn next_turn(&self) -> Self {

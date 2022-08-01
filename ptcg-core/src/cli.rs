@@ -38,6 +38,12 @@ pub trait CLIDrawable {
     fn draw(&self, x: usize, y: usize, target: &mut CLIDrawTarget);
 }
 
+impl CLIDrawable for PrizeCard {
+    fn draw(&self, x: usize, y: usize, target: &mut CLIDrawTarget) {
+        self.card.draw(x, y, target)
+    }
+}
+
 impl CLIDrawable for FaceCard {
     fn draw(&self, x: usize, y: usize, target: &mut CLIDrawTarget) {
         match &self {

@@ -54,8 +54,13 @@ impl DecisionMaker for CLI {
         cards.clone()
     }
 
-    fn pick_action<'a>(&mut self, _p: Player, actions: &'a Vec<Action>) -> &'a Action {
+    fn pick_action<'a>(&mut self, player: Player, actions: &'a Vec<Action>) -> &'a Action {
         let mut choice = None;
+
+        println!("available actions for {:?}:", player);
+        for (i, action) in actions.iter().enumerate() {
+            println!(" {}. {:?}", i + 1, action);
+        }
 
         while choice.is_none() {
             let mut input = String::new();
@@ -64,20 +69,6 @@ impl DecisionMaker for CLI {
         }
 
         &actions[choice.unwrap() - 1]
-    }
-
-    fn pick_target<'a>(&mut self, _p: Player, targets: &'a Vec<InPlayID>) -> &'a InPlayID {
-        let mut choice = None;
-
-        println!("available targets: {:?}", targets);
-
-        while choice.is_none() || !targets.contains(&choice.unwrap()) {
-            let mut input = String::new();
-            std::io::stdin().read_line(&mut input).expect("Failed to read input");
-            choice = input.trim().parse::<InPlayID>().ok();
-        }
-
-        targets.iter().find(|&&x| x == choice.unwrap()).unwrap()
     }
 
     fn pick_from_hand<'a>(&mut self, _p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card> {
@@ -106,6 +97,26 @@ impl DecisionMaker for CLI {
         println!("Pick {} cards from {:?}'s hand:", how_many, whose);
         for (i, card) in searchable.iter().enumerate() {
             println!("{}. {}", i + 1, card.archetype);
+        }
+
+        while choice.is_none() {
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+            let chosen = input.trim().split(",").filter_map(|c| c.parse::<usize>().ok()).collect::<Vec<_>>();
+            if chosen.len() == how_many && chosen.iter().all(|&x| 1 <= x && x <= searchable.len()) {
+                choice = Some(chosen.iter().map(|i| &searchable[i - 1]).collect());
+            }
+        }
+
+        choice.unwrap()
+    }
+
+    fn pick_from_prizes<'a>(&mut self, _who: Player, whose: Player, how_many: usize, searchable: &'a Vec<PrizeCard>) -> Vec<&'a PrizeCard> {
+        let mut choice = None;
+
+        println!("Pick {} cards from {:?}'s hand:", how_many, whose);
+        for (i, card) in searchable.iter().enumerate() {
+            println!("{}. {:?}", i + 1, card.card);
         }
 
         while choice.is_none() {
