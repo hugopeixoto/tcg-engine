@@ -452,7 +452,9 @@ impl Nidoking {
         }
     }
     pub fn toxic(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+        engine
+            .damage(20)
+            .severe_poison(2)
     }
 }
 
@@ -643,7 +645,9 @@ impl Zapdos {
           .then_if(ouchie, |e| e.damage_self(30))
     }
     pub fn thunderbolt(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+        engine
+          .discard_all_attached_energies(engine.player(), engine.attacking(), dm)
+          .damage(100)
     }
 }
 

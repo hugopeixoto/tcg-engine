@@ -615,6 +615,18 @@ impl GameEngine {
         self.with_state(state)
     }
 
+    pub fn discard_all_attached_energies(&self, _player: Player, in_play: &InPlayCard, _dm: &mut dyn DecisionMaker) -> Self {
+        let mut state = self.state.clone();
+        for attached in in_play.attached.iter() {
+            if self.is_energy(attached.card()) {
+                state = state.move_card_to_discard(attached.card());
+            }
+        }
+
+        self.with_state(state)
+    }
+
+
     pub fn retreat(&self, player: Player, in_play: &InPlayCard, dm: &mut dyn DecisionMaker) -> Self {
         let possible_targets = self.state.side(player).bench.clone();
         let chosen = dm.pick_in_play(player, 1, &possible_targets);
