@@ -454,13 +454,11 @@ impl GameEngine {
     }
 
     pub fn paralyze(&self) -> Self {
-        match self.resolving_actions.last() {
-            Some(Action::Attack(player, _, _, _)) => {
-                let defending = &self.state.side(player.opponent()).active[0];
-                self.with_state(self.state.paralyze(defending))
-            },
-            _ => { panic!("wat"); },
-        }
+        self.with_state(self.state.paralyze(self.defending()))
+    }
+
+    pub fn confuse(&self) -> Self {
+        self.with_state(self.state.confuse(self.defending()))
     }
 
     pub fn end_turn(&self) -> Self {

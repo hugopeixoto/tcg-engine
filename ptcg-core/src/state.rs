@@ -700,6 +700,14 @@ impl GameState {
         self.with_player_side(in_play.owner, side)
     }
 
+    pub fn confuse(&self, in_play: &InPlayCard) -> Self {
+        let mut side = self.side(in_play.owner).clone();
+
+        side.in_play_mut(&in_play.id).unwrap().rotational_status = RotationalStatus::Confused;
+
+        self.with_player_side(in_play.owner, side)
+    }
+
     pub fn paralyze(&self, in_play: &InPlayCard) -> Self {
         let mut side = self.side(in_play.owner).clone();
 

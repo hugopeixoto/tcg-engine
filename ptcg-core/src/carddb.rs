@@ -67,6 +67,38 @@ impl Pokemon {
     }
 }
 
+struct Attacks<'a> {
+    player: Player,
+    in_play: &'a InPlayCard,
+    engine: &'a GameEngine,
+    attacks: Vec<Action>,
+}
+
+impl<'a> Attacks<'a> {
+    pub fn new(player: Player, in_play: &'a InPlayCard, engine: &'a GameEngine) -> Self {
+        Attacks {
+            player,
+            in_play,
+            engine: engine,
+            attacks: vec![],
+        }
+    }
+
+    pub fn register(mut self, name: &str, energy_requirements: &[Type], f: fn(&GameEngine, &mut dyn DecisionMaker) -> GameEngine) -> Attacks<'a> {
+        if self.engine.is_attack_energy_cost_met(self.in_play, energy_requirements) {
+            self.attacks.push(Action::Attack(self.player, self.in_play.clone(), name.into(), Box::new(RFA::new(f))));
+        }
+
+        self
+    }
+}
+
+impl<'a> From<Attacks<'a>> for Vec<Action> {
+    fn from(attacks: Attacks<'a>) -> Self {
+        attacks.attacks
+    }
+}
+
 #[derive(Default)]
 struct Alakazam {}
 impl CardArchetype for Alakazam {
@@ -84,11 +116,25 @@ impl CardArchetype for Alakazam {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
-        vec![]
+    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
+        Attacks::new(player, in_play, engine)
+            .register("Confuse Ray", &[Type::Psychic, Type::Psychic, Type::Psychic], Self::confuse_ray)
+            .into()
     }
+
     fn provides(&self) -> Vec<Type> {
         vec![]
+    }
+}
+impl Alakazam {
+    pub fn confuse_ray(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let confused = dm.flip(1).heads() == 1;
+
+        engine.damage(30).then_if(confused, GameEngine::confuse)
+    }
+
+    pub fn damage_swap(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        unimplemented!();
     }
 }
 
@@ -110,13 +156,9 @@ impl CardArchetype for Growlithe {
         engine.clone()
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        let mut attacks = vec![];
-
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Fire, Type::Colorless]) {
-            attacks.push(Action::Attack(player, in_play.clone(), "Flare".into(), Box::new(RFA::new(Self::flare))));
-        }
-
-        attacks
+        Attacks::new(player, in_play, engine)
+            .register("Flare", &[Type::Fire, Type::Colorless], Self::flare)
+            .into()
     }
     fn provides(&self) -> Vec<Type> {
         vec![]
@@ -146,16 +188,10 @@ impl CardArchetype for Wartortle {
         engine.clone()
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        let mut attacks = vec![];
-
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Water, Type::Colorless]) {
-            attacks.push(Action::Attack(player, in_play.clone(), "Withdraw".into(), Box::new(RFA::new(Self::withdraw))));
-        }
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Water, Type::Colorless, Type::Colorless]) {
-            attacks.push(Action::Attack(player, in_play.clone(), "Bite".into(), Box::new(RFA::new(Self::bite))));
-        }
-
-        attacks
+        Attacks::new(player, in_play, engine)
+            .register("Withdraw", &[Type::Water, Type::Colorless], Self::withdraw)
+            .register("Bite", &[Type::Water, Type::Colorless, Type::Colorless], Self::bite)
+            .into()
     }
     fn provides(&self) -> Vec<Type> {
         vec![]
@@ -197,16 +233,10 @@ impl CardArchetype for Squirtle {
         engine.clone()
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        let mut attacks = vec![];
-
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Water]) {
-            attacks.push(Action::Attack(player, in_play.clone(), "Bubble".into(), Box::new(RFA::new(Self::bubble))));
-        }
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Water, Type::Colorless]) {
-            attacks.push(Action::Attack(player, in_play.clone(), "Withdraw".into(), Box::new(RFA::new(Self::withdraw))));
-        }
-
-        attacks
+        Attacks::new(player, in_play, engine)
+            .register("Bubble", &[Type::Water], Self::bubble)
+            .register("Withdraw", &[Type::Water, Type::Colorless], Self::withdraw)
+            .into()
     }
     fn provides(&self) -> Vec<Type> {
         vec![]
@@ -250,13 +280,9 @@ impl CardArchetype for Voltorb {
         engine.clone()
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        let mut attacks = vec![];
-
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Colorless]) {
-            attacks.push(Action::Attack(player, in_play.clone(), "Tackle".into(), Box::new(RFA::new(Self::tackle))));
-        }
-
-        attacks
+        Attacks::new(player, in_play, engine)
+            .register("Tackle", &[Type::Colorless], Self::tackle)
+            .into()
     }
     fn provides(&self) -> Vec<Type> {
         vec![]
@@ -286,16 +312,10 @@ impl CardArchetype for Articuno {
         engine.clone()
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        let mut attacks = vec![];
-
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Water, Type::Water, Type::Water]) {
-            attacks.push(Action::Attack(player, in_play.clone(), "Freeze Dry".into(), Box::new(RFA::new(Self::freeze_dry))));
-        }
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Water, Type::Water, Type::Water, Type::Water]) {
-            attacks.push(Action::Attack(player, in_play.clone(), "Blizzard".into(), Box::new(RFA::new(Self::blizzard))));
-        }
-
-        attacks
+        Attacks::new(player, in_play, engine)
+            .register("Freeze Dry", &[Type::Water, Type::Water, Type::Water], Self::freeze_dry)
+            .register("Blizzard", &[Type::Water, Type::Water, Type::Water, Type::Water], Self::blizzard)
+            .into()
     }
     fn provides(&self) -> Vec<Type> {
         vec![]
@@ -339,16 +359,10 @@ impl CardArchetype for Psyduck {
         engine.clone()
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        let mut attacks = vec![];
-
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Psychic]) {
-            attacks.push(Action::Attack(player, in_play.clone(), "Headache".into(), Box::new(RFA::new(Self::headache))));
-        }
-        if engine.is_attack_energy_cost_met(in_play, &[Type::Water]) {
-            attacks.push(Action::Attack(player, in_play.clone(), "Fury Swipes".into(), Box::new(RFA::new(Self::fury_swipes))));
-        }
-
-        attacks
+        Attacks::new(player, in_play, engine)
+            .register("Headache", &[Type::Psychic], Self::headache)
+            .register("Fury Swipes", &[Type::Water], Self::fury_swipes)
+            .into()
     }
     fn provides(&self) -> Vec<Type> {
         vec![]
