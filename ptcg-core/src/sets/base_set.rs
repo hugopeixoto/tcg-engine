@@ -130,16 +130,20 @@ impl CardArchetype for Chansey {
 }
 impl Chansey {
     pub fn scrunch(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let worked = dm.flip(1).heads() == 1;
+
         // TODO: this should only activate on the opponent's next turn, not right now.
-        // If there's anything that triggers after attacking or during Pokémon Checkup,
-        // this ability shouldn't be considered.
-        engine.with_effect(Effect {
-            name: "CHANSEY_BS_NO_DAMAGE".into(),
-            source: EffectSource::Attack(engine.player(), engine.attacking().id),
-            target: EffectTarget::InPlay(engine.player(), engine.attacking().id),
-            consequence: EffectConsequence::BlockDamage,
-            expires: EffectExpiration::EndOfTurn(engine.opponent(), 0),
-        })
+        // If there's anything that triggers immediately after attacking or
+        // during Pokémon Checkup, this ability shouldn't be considered.
+        engine.then_if(worked, |e|
+            e.with_effect(Effect {
+                name: "CHANSEY_BS_NO_DAMAGE".into(),
+                source: EffectSource::Attack(e.player(), e.attacking().id),
+                target: EffectTarget::InPlay(e.player(), e.attacking().id),
+                consequence: EffectConsequence::BlockDamage,
+                expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
+            })
+        )
     }
     pub fn double_edge(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
@@ -439,7 +443,7 @@ impl CardArchetype for Nidoking {
 }
 impl Nidoking {
     pub fn thrash(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let extra = dm.flip(1).heads() == 0;
+        let extra = dm.flip(1).heads() == 1;
 
         if extra {
             engine.damage(30 + 10)
@@ -797,7 +801,7 @@ impl Electabuzz {
         engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
     }
     pub fn thunderpunch(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let extra = dm.flip(1).heads() == 0;
+        let extra = dm.flip(1).heads() == 1;
 
         if extra {
             engine.damage(30 + 10)
@@ -1285,16 +1289,20 @@ impl CardArchetype for Kakuna {
 }
 impl Kakuna {
     pub fn stiffen(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let worked = dm.flip(1).heads() == 1;
+
         // TODO: this should only activate on the opponent's next turn, not right now.
-        // If there's anything that triggers after attacking or during Pokémon Checkup,
-        // this ability shouldn't be considered.
-        engine.with_effect(Effect {
-            name: "KAKUNA_BS_NO_DAMAGE".into(),
-            source: EffectSource::Attack(engine.player(), engine.attacking().id),
-            target: EffectTarget::InPlay(engine.player(), engine.attacking().id),
-            consequence: EffectConsequence::BlockDamage,
-            expires: EffectExpiration::EndOfTurn(engine.opponent(), 0),
-        })
+        // If there's anything that triggers immediately after attacking or
+        // during Pokémon Checkup, this ability shouldn't be considered.
+        engine.then_if(worked, |e|
+            e.with_effect(Effect {
+                name: "KAKUNA_BS_NO_DAMAGE".into(),
+                source: EffectSource::Attack(e.player(), e.attacking().id),
+                target: EffectTarget::InPlay(e.player(), e.attacking().id),
+                consequence: EffectConsequence::BlockDamage,
+                expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
+            })
+        )
     }
     pub fn poisonpowder(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let poisoned = dm.flip(1).heads() == 1;
@@ -1633,16 +1641,20 @@ impl CardArchetype for Wartortle {
 }
 impl Wartortle {
     pub fn withdraw(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let worked = dm.flip(1).heads() == 1;
+
         // TODO: this should only activate on the opponent's next turn, not right now.
-        // If there's anything that triggers after attacking or during Pokémon Checkup,
-        // this ability shouldn't be considered.
-        engine.with_effect(Effect {
-            name: "WARTORTLE_BS_NO_DAMAGE".into(),
-            source: EffectSource::Attack(engine.player(), engine.attacking().id),
-            target: EffectTarget::InPlay(engine.player(), engine.attacking().id),
-            consequence: EffectConsequence::BlockDamage,
-            expires: EffectExpiration::EndOfTurn(engine.opponent(), 0),
-        })
+        // If there's anything that triggers immediately after attacking or
+        // during Pokémon Checkup, this ability shouldn't be considered.
+        engine.then_if(worked, |e|
+            e.with_effect(Effect {
+                name: "WARTORTLE_BS_NO_DAMAGE".into(),
+                source: EffectSource::Attack(e.player(), e.attacking().id),
+                target: EffectTarget::InPlay(e.player(), e.attacking().id),
+                consequence: EffectConsequence::BlockDamage,
+                expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
+            })
+        )
     }
     pub fn bite(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(40)
@@ -2085,16 +2097,20 @@ impl CardArchetype for Metapod {
 }
 impl Metapod {
     pub fn stiffen(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let worked = dm.flip(1).heads() == 1;
+
         // TODO: this should only activate on the opponent's next turn, not right now.
-        // If there's anything that triggers after attacking or during Pokémon Checkup,
-        // this ability shouldn't be considered.
-        engine.with_effect(Effect {
-            name: "METAPOD_BS_NO_DAMAGE".into(),
-            source: EffectSource::Attack(engine.player(), engine.attacking().id),
-            target: EffectTarget::InPlay(engine.player(), engine.attacking().id),
-            consequence: EffectConsequence::BlockDamage,
-            expires: EffectExpiration::EndOfTurn(engine.opponent(), 0),
-        })
+        // If there's anything that triggers immediately after attacking or
+        // during Pokémon Checkup, this ability shouldn't be considered.
+        engine.then_if(worked, |e|
+            e.with_effect(Effect {
+                name: "METAPOD_BS_NO_DAMAGE".into(),
+                source: EffectSource::Attack(e.player(), e.attacking().id),
+                target: EffectTarget::InPlay(e.player(), e.attacking().id),
+                consequence: EffectConsequence::BlockDamage,
+                expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
+            })
+        )
     }
     pub fn stun_spore(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let paralyzed = dm.flip(1).heads() == 1;
@@ -2418,16 +2434,20 @@ impl Squirtle {
         engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
     }
     pub fn withdraw(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let worked = dm.flip(1).heads() == 1;
+
         // TODO: this should only activate on the opponent's next turn, not right now.
-        // If there's anything that triggers after attacking or during Pokémon Checkup,
-        // this ability shouldn't be considered.
-        engine.with_effect(Effect {
-            name: "SQUIRTLE_BS_NO_DAMAGE".into(),
-            source: EffectSource::Attack(engine.player(), engine.attacking().id),
-            target: EffectTarget::InPlay(engine.player(), engine.attacking().id),
-            consequence: EffectConsequence::BlockDamage,
-            expires: EffectExpiration::EndOfTurn(engine.opponent(), 0),
-        })
+        // If there's anything that triggers immediately after attacking or
+        // during Pokémon Checkup, this ability shouldn't be considered.
+        engine.then_if(worked, |e|
+            e.with_effect(Effect {
+                name: "SQUIRTLE_BS_NO_DAMAGE".into(),
+                source: EffectSource::Attack(e.player(), e.attacking().id),
+                target: EffectTarget::InPlay(e.player(), e.attacking().id),
+                consequence: EffectConsequence::BlockDamage,
+                expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
+            })
+        )
     }
 }
 
