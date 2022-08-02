@@ -262,7 +262,8 @@ impl CardArchetype for Trainer {
 #[derive(Default)]
 struct ClefairyDoll {}
 impl TrainerCardArchetype for ClefairyDoll {
-    fn name(&self) -> String { "Clefairy Doll".into() }
+    card_name!("Clefairy Doll");
+
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_bench(player, card)
     }
@@ -317,7 +318,7 @@ impl TrainerCardArchetype for DevolutionSpray {
 #[derive(Default)]
 struct ImpostorProfessorOak {}
 impl TrainerCardArchetype for ImpostorProfessorOak {
-    fn name(&self) -> String { "Impostor Professor Oak".into() }
+    card_name!("Impostor Professor Oak");
 
     // effect: shuffle(hand, to: deck); draw(7)
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
@@ -335,7 +336,8 @@ impl TrainerCardArchetype for ImpostorProfessorOak {
 #[derive(Default)]
 struct ItemFinder {}
 impl TrainerCardArchetype for ItemFinder {
-    fn name(&self) -> String { "Item Finder".into() }
+    card_name!("Item Finder");
+
     // cost: discard(2, from: hand)
     // effect: me.search(1.item, from: discard); move(it, to: hand)
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
@@ -365,45 +367,49 @@ impl TrainerCardArchetype for ItemFinder {
 #[derive(Default)]
 struct Lass {}
 impl TrainerCardArchetype for Lass {
-    fn name(&self) -> String { "Lass".into() }
+    card_name!("Lass");
+
     // effect: me.reveal(all.trainer, from: hand); me.shuffle(it, to: deck)
     // effect: opp.reveal(all.trainer, from: hand); opp.shuffle(it, to: deck)
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
     fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        panic!("not implemented");
+        unimplemented!();
     }
 }
 
 #[derive(Default)]
 struct PokemonBreeder {}
 impl TrainerCardArchetype for PokemonBreeder {
-    fn name(&self) -> String { "Pokémon Breeder".into() }
+    card_name!("Pokémon Breeder");
+
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true // todo: bunch of checks
     }
     fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        panic!("not implemented");
+        unimplemented!();
     }
 }
 
 #[derive(Default)]
 struct PokemonTrader {}
 impl TrainerCardArchetype for PokemonTrader {
-    fn name(&self) -> String { "Pokémon Trader".into() }
+    card_name!("Pokémon Trader");
+
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true // TODO: pokemon communication
     }
     fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        panic!("not implemented");
+        unimplemented!();
     }
 }
 
 #[derive(Default)]
 struct ScoopUp {}
 impl TrainerCardArchetype for ScoopUp {
-    fn name(&self) -> String { "Scoop Up".into() }
+    card_name!("Scoop Up");
+
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         engine.state.side(player).all_in_play().iter().any(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic)))
     }
@@ -428,19 +434,21 @@ impl TrainerCardArchetype for ScoopUp {
 #[derive(Default)]
 struct Defender {}
 impl TrainerCardArchetype for Defender {
-    fn name(&self) -> String { "Defender".into() }
+    card_name!("Defender");
+
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
     fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        panic!("not implemented");
+        unimplemented!();
     }
 }
 
 #[derive(Default)]
 struct EnergyRetrieval {}
 impl TrainerCardArchetype for EnergyRetrieval {
-    fn name(&self) -> String { "Energy Retrieval".into() }
+    card_name!("Energy Retrieval");
+
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
         engine.can_discard_other(player, card, 1) && engine.discard_pile_has_basic_energy(player, card)
     }
@@ -492,7 +500,7 @@ impl TrainerCardArchetype for PlusPower {
         true
     }
     fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        panic!("not implemented");
+        unimplemented!();
     }
 }
 
@@ -504,7 +512,7 @@ impl TrainerCardArchetype for Pokedex {
         !engine.state.side(player).deck.is_empty()
     }
     fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        panic!("not implemented");
+        unimplemented!();
     }
 }
 
@@ -578,7 +586,7 @@ impl CardArchetype for NOOP {
         vec![]
     }
     fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        panic!("not implemented");
+        unimplemented!();
     }
     fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
         vec![]
