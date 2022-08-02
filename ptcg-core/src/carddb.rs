@@ -84,22 +84,22 @@ impl CardDB for Card {
             "Pokemon Breeder (BS 76)"           => Trainer::create::<PokemonBreeder>(),
             "Pokemon Trader (BS 77)"            => Trainer::create::<PokemonTrader>(),
             "Scoop Up (BS 78)"                  => Trainer::create::<ScoopUp>(),
-            //"Super Energy Removal (BS 79)"    => Trainer::create::<SuperEnergyRemoval>(),
+            "Super Energy Removal (BS 79)"      => Trainer::create::<SuperEnergyRemoval>(),
             "Defender (BS 80)"                  => Trainer::create::<Defender>(),
             "Energy Retrieval (BS 81)"          => Trainer::create::<EnergyRetrieval>(),
-            //"Full Heal (BS 82)"               => Trainer::create::<FullHeal>(),
+            "Full Heal (BS 82)"                 => Trainer::create::<FullHeal>(),
             "Maintenance (BS 83)"               => Trainer::create::<Maintenance>(),
             "PlusPower (BS 84)"                 => Trainer::create::<PlusPower>(),
-            //"Pokemon Center (BS 85)"          => Trainer::create::<PokemonCenter>(),
-            //"Pokemon Flute (BS 86)"           => Trainer::create::<PokemonFlute>(),
+            "Pokemon Center (BS 85)"            => Trainer::create::<PokemonCenter>(),
+            "Pokemon Flute (BS 86)"             => Trainer::create::<PokemonFlute>(),
             "Pokedex (BS 87)"                   => Trainer::create::<Pokedex>(),
             "Professor Oak (BS 88)"             => Trainer::create::<ProfessorOak>(),
-            //"Revive (BS 89)"                  => Trainer::create::<Revive>(),
-            //"Super Potion (BS 90)"            => Trainer::create::<SuperPotion>(),
+            "Revive (BS 89)"                    => Trainer::create::<Revive>(),
+            "Super Potion (BS 90)"              => Trainer::create::<SuperPotion>(),
             "Bill (BS 91)"                      => Trainer::create::<Bill>(),
-            //"Energy Removal (BS 92)"          => Trainer::create::<EnergyRemoval>(),
+            "Energy Removal (BS 92)"            => Trainer::create::<EnergyRemoval>(),
             "Gust of Wind (BS 93)"              => Trainer::create::<GustOfWind>(),
-            //"Potion (BS 94)"                  => Trainer::create::<Potion>(),
+            "Potion (BS 94)"                    => Trainer::create::<Potion>(),
             "Switch (BS 95)"                    => Trainer::create::<Switch>(),
             "Double Colorless Energy (BS 96)"   => Box::new(DoubleColorlessEnergy::default()),
             "Fighting Energy (BS 97)"           => BasicEnergy::create("Fighting Energy", Type::Fighting),
@@ -418,13 +418,15 @@ struct Lass {}
 impl TrainerCardArchetype for Lass {
     card_name!("Lass");
 
-    // effect: me.reveal(all.trainer, from: hand); me.shuffle(it, to: deck)
-    // effect: opp.reveal(all.trainer, from: hand); opp.shuffle(it, to: deck)
-    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
-        true
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .ensure(|e| !e.state.side(e.player()).hand.is_empty() || e.state.side(e.opponent()).hand.is_empty())
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        self
+            .cost(engine, dm)
+            .shuffle_all_from_hand_into_deck(player, |e, c| e.is_trainer(c), dm)
+            .shuffle_all_from_hand_into_deck(player.opponent(), |e, c| e.is_trainer(c), dm)
     }
 }
 
@@ -473,6 +475,20 @@ impl TrainerCardArchetype for ScoopUp {
 }
 
 #[derive(Default)]
+struct SuperEnergyRemoval {}
+impl TrainerCardArchetype for SuperEnergyRemoval {
+    card_name!("Super Energy Removal");
+
+    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
+        true
+    }
+
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        unimplemented!();
+    }
+}
+
+#[derive(Default)]
 struct Defender {}
 impl TrainerCardArchetype for Defender {
     card_name!("Defender");
@@ -505,6 +521,19 @@ impl TrainerCardArchetype for EnergyRetrieval {
 }
 
 #[derive(Default)]
+struct FullHeal {}
+impl TrainerCardArchetype for FullHeal {
+    card_name!("Full Heal");
+
+    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.clone()
+    }
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        unimplemented!();
+    }
+}
+
+#[derive(Default)]
 struct Maintenance {}
 impl TrainerCardArchetype for Maintenance {
     card_name!("Maintenance");
@@ -524,6 +553,32 @@ impl TrainerCardArchetype for Maintenance {
 struct PlusPower {}
 impl TrainerCardArchetype for PlusPower {
     card_name!("Plus Power");
+
+    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
+        true
+    }
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        unimplemented!();
+    }
+}
+
+#[derive(Default)]
+struct PokemonCenter {}
+impl TrainerCardArchetype for PokemonCenter {
+    card_name!("Pokémon Center");
+
+    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
+        true
+    }
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        unimplemented!();
+    }
+}
+
+#[derive(Default)]
+struct PokemonFlute {}
+impl TrainerCardArchetype for PokemonFlute {
+    card_name!("Pokémon Flute");
 
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
@@ -564,9 +619,51 @@ impl TrainerCardArchetype for ProfessorOak {
 }
 
 #[derive(Default)]
+struct Revive {}
+impl TrainerCardArchetype for Revive {
+    card_name!("Revive");
+
+    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.clone()
+    }
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        unimplemented!();
+    }
+}
+
+#[derive(Default)]
+struct SuperPotion {}
+impl TrainerCardArchetype for SuperPotion {
+    card_name!("Super Potion");
+
+    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.clone()
+    }
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        unimplemented!();
+    }
+}
+
+#[derive(Default)]
 struct Bill {}
 impl TrainerCardArchetype for Bill {
     card_name!("Bill");
+
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .ensure_deck_not_empty(engine.player())
+    }
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        self
+            .cost(engine, dm)
+            .draw(player, 2, dm)
+    }
+}
+
+#[derive(Default)]
+struct EnergyRemoval {}
+impl TrainerCardArchetype for EnergyRemoval {
+    card_name!("Energy Removal");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
@@ -592,6 +689,19 @@ impl TrainerCardArchetype for GustOfWind {
         self
             .cost(engine, dm)
             .gust(player, dm)
+    }
+}
+
+#[derive(Default)]
+struct Potion {}
+impl TrainerCardArchetype for Potion {
+    card_name!("Potion");
+
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.clone()
+    }
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        unimplemented!();
     }
 }
 

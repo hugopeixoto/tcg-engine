@@ -792,8 +792,21 @@ impl GameEngine {
     }
 
 
-    pub fn shuffle_hand_into_deck(&self, player: Player, dm: &mut dyn DecisionMaker) -> Self {
+    pub fn shuffle_hand_into_deck(&self, player: Player, _dm: &mut dyn DecisionMaker) -> Self {
         self.with_state(self.state.shuffle_hand_into_deck(player))
+    }
+
+    pub fn shuffle_all_from_hand_into_deck<F>(&self, player: Player, filter: F, _dm: &mut dyn DecisionMaker) -> Self where F: Fn(&GameEngine, &Card) -> bool {
+        // TODO: reveal all!
+        let mut engine = self.clone();
+
+        let selected = engine.state.side(player).hand.iter().filter(|c| filter(&engine, c)).cloned().collect::<Vec<_>>();
+
+        for card in selected {
+            engine.state = engine.state.shuffle_from_hand_into_deck(player, &card);
+        }
+
+        engine
     }
 
     pub fn retreat(&self, player: Player, in_play: &InPlayCard, dm: &mut dyn DecisionMaker) -> Self {
