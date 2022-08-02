@@ -278,7 +278,7 @@ impl GameEngine {
                             .end_turn()
                     },
                     Action::BenchFromHand(_, card) => {
-                        self.with_state(self.state.bench_from_hand(player, card))
+                        self.bench_from_hand(player, card)
                     },
                 }.check_for_knockouts(dm)
             },
@@ -898,6 +898,10 @@ impl GameEngine {
         }
 
         targets
+    }
+
+    pub fn bench_from_hand(&self, player: Player, card: &Card) -> Self {
+        self.with_state(self.state.bench_from_hand(player, card))
     }
 
     pub fn bench(&self, player: Player) -> Vec<InPlayCard> {

@@ -297,8 +297,15 @@ impl TrainerCardArchetype for ClefairyDoll {
         engine.can_bench(player, card)
     }
 
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        panic!("not implemented");
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.bench_from_hand(player, card)
+    }
+
+    fn hp(&self, card: &Card, engine: &GameEngine) -> Option<usize> {
+        match engine.zone(card) {
+            Zone::InPlay(_) => Some(10),
+            _ => None,
+        }
     }
 }
 
