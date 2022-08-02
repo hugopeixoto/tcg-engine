@@ -1144,6 +1144,10 @@ impl GameEngine {
         card.archetype().stage()
     }
 
+    pub fn zone(&self, card: &Card) -> Zone {
+        self.state.zone(card)
+    }
+
     pub fn then_if<F>(&self, condition: bool, f: F) -> Self where F: FnOnce(&Self) -> Self {
         if condition {
             f(self)

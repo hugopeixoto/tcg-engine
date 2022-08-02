@@ -39,6 +39,17 @@ pub enum RotationalStatus {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Zone {
+    Unknown,
+    Hand(Player),
+    Deck(Player),
+    Prize(Player),
+    Discard(Player),
+    InPlay(Player),
+    LostZone(Player),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Poison {
     pub counters: usize,
 }
@@ -83,6 +94,13 @@ impl DeckSlice {
                     }
                 }
             }
+        }
+    }
+
+    pub fn contains(&self, card: &Card) -> bool {
+        match self {
+            DeckSlice::Shuffled(cards) => cards.contains(card),
+            DeckSlice::Ordered(cards) => cards.contains(card),
         }
     }
 }
@@ -155,6 +173,10 @@ impl Deck {
 
     pub fn len(&self) -> usize {
         self.slices.iter().map(|s| match s { DeckSlice::Ordered(x) => x.len(), DeckSlice::Shuffled(x) => x.len() }).sum()
+    }
+
+    pub fn contains(&self, card: &Card) -> bool {
+        self.slices.iter().any(|slice| slice.contains(card))
     }
 
     pub fn put_on_top(&self, card: Card) -> Self {
@@ -320,6 +342,30 @@ impl PlayerSide {
         cards.extend(self.bench.iter());
 
         cards
+    }
+
+    pub fn zone(&self, card: &Card) -> Zone {
+        if self.discard.contains(card) {
+            Zone::Discard(self.owner)
+        } else if self.hand.contains(card) {
+            Zone::Hand(self.owner)
+        } else if self.lost_zone.contains(card) {
+            Zone::LostZone(self.owner)
+        } else if self.prizes.iter().any(|p| p.card.card() == card) {
+            Zone::Prize(self.owner)
+        } else if self.deck.contains(card) {
+            Zone::Deck(self.owner)
+        } else if self.stadium.as_ref() == Some(card) {
+            Zone::InPlay(self.owner)
+        } else if self.supporter.as_ref() == Some(card) {
+            Zone::InPlay(self.owner)
+        } else if self.active.iter().any(|p| p.stack.iter().any(|c| c.card() == card) || p.attached.iter().any(|c| c.card() == card)) {
+            Zone::InPlay(self.owner)
+        } else if self.bench.iter().any(|p| p.stack.iter().any(|c| c.card() == card) || p.attached.iter().any(|c| c.card() == card)) {
+            Zone::InPlay(self.owner)
+        } else {
+            Zone::Unknown
+        }
     }
 }
 
@@ -646,6 +692,16 @@ impl GameState {
         state.p2.bench.retain(|c| !c.stack.is_empty());
 
         state
+    }
+
+    pub fn zone(&self, card: &Card) -> Zone {
+        let zone = self.p1.zone(card);
+
+        if zone != Zone::Unknown {
+            zone
+        } else {
+            self.p2.zone(card)
+        }
     }
 
     pub fn move_card_to_discard(&self, card: &Card) -> Self {
