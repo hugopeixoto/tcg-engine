@@ -77,7 +77,7 @@ impl CardDB for Card {
             "Weedle (BS 69)"                    => Pokemon::create::<base_set::Weedle>(),
             "Clefairy Doll (BS 70)"             => Trainer::create::<ClefairyDoll>(),
             "Computer Search (BS 71)"           => Trainer::create::<ComputerSearch>(),
-            //"Devolution Spray (BS 72)"        => Trainer::create::<DevolutionSpray>(),
+            "Devolution Spray (BS 72)"          => Trainer::create::<DevolutionSpray>(),
             "Impostor Professor Oak (BS 73)"    => Trainer::create::<ImpostorProfessorOak>(),
             "Item Finder (BS 74)"               => Trainer::create::<ItemFinder>(),
             "Lass (BS 75)"                      => Trainer::create::<Lass>(),
@@ -306,16 +306,11 @@ struct DevolutionSpray {}
 impl TrainerCardArchetype for DevolutionSpray {
     card_name!("Devolution Spray");
 
-    // effect: shuffle(hand, to: deck); draw(7)
-    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
-        !engine.state.side(player.opponent()).deck.is_empty() || engine.state.side(player.opponent()).hand.len() > 7
+    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
+        true
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let opponent = player.opponent();
-
-        engine.with_state(engine.state
-            .shuffle_hand_into_deck(opponent)
-            .draw_n_to_hand(opponent, 7, dm.shuffler()))
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        unimplemented!();
     }
 }
 
