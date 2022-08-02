@@ -175,55 +175,43 @@ impl DecisionMaker for CLI {
     }
 }
 
+use std::io::BufRead;
+fn load_deck(filename: &str) -> Result<Vec<String>, std::io::Error> {
+    let file = std::fs::File::open(filename)?;
+
+    let mut lines = vec![];
+    for line in std::io::BufReader::new(file).lines() {
+        match line {
+            Ok(line) => {
+                match line.split_once(" ") {
+                    None => { return Err(std::io::Error::new(std::io::ErrorKind::Other, "")); },
+                    Some((how_many, who)) => {
+                        match how_many.parse::<usize>() {
+                            Err(_) => { return Err(std::io::Error::new(std::io::ErrorKind::Other, "")); },
+                            Ok(how_many) => {
+                                for _ in 0..how_many {
+                                    lines.push(who.into());
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            Err(err) => {
+                return Err(err);
+            },
+        }
+    }
+
+    Ok(lines)
+}
+
 fn main() {
-    let state = GameState::initial(
-        &[
-            "Psyduck (FO 53)", "Psyduck (FO 53)", "Psyduck (FO 53)", "Psyduck (FO 53)",
-            "Voltorb (BS 67)", "Voltorb (BS 67)", "Voltorb (BS 67)", "Voltorb (BS 67)",
-            "Electrode (BS 21)", "Electrode (BS 21)", "Electrode (BS 21)", "Electrode (BS 21)",
-            "Growlithe (BS 28)", "Growlithe (BS 28)", "Growlithe (BS 28)",
-            "Arcanine (BS 23)", "Arcanine (BS 23)", "Arcanine (BS 23)",
-            "Gastly (FO 33)",
-            "Bill (BS 91)", "Bill (BS 91)", "Bill (BS 91)", "Bill (BS 91)",
-            "Computer Search (BS 71)", "Computer Search (BS 71)", "Computer Search (BS 71)", "Computer Search (BS 71)",
-            "Item Finder (BS 74)", "Item Finder (BS 74)", "Item Finder (BS 74)", "Item Finder (BS 74)",
-            "Professor Oak (BS 88)", "Professor Oak (BS 88)", "Professor Oak (BS 88)", "Professor Oak (BS 88)",
-            "Lass (BS 75)", "Lass (BS 75)", "Lass (BS 75)",
-            "Switch (BS 95)", "Switch (BS 95)",
-            "Pokemon Trader (BS 77)", "Pokemon Trader (BS 77)",
-            "Maintenance (BS 83)", "Maintenance (BS 83)",
-            "Defender (BS 80)", "Defender (BS 80)",
-            "Energy Removal (BS 92)", "Energy Removal (BS 92)",
-            "PlusPower (BS 84)",
-            "Scoop Up (BS 78)",
-            "Psychic Energy (BS 101)", "Psychic Energy (BS 101)", "Psychic Energy (BS 101)", "Psychic Energy (BS 101)",
-            "Psychic Energy (BS 101)", "Psychic Energy (BS 101)",
-            "Double Colorless Energy (BS 96)", "Double Colorless Energy (BS 96)", "Double Colorless Energy (BS 96)", "Double Colorless Energy (BS 96)",
-        ],
-        &[
-            "Squirtle (BS 63)", "Squirtle (BS 63)", "Squirtle (BS 63)", "Squirtle (BS 63)",
-            "Wartortle (BS 42)",
-            "Blastoise (BS 2)", "Blastoise (BS 2)", "Blastoise (BS 2)",
-            "Articuno (FO 17)", "Articuno (FO 17)", "Articuno (FO 17)", "Articuno (FO 17)",
-            "Bill (BS 91)", "Bill (BS 91)", "Bill (BS 91)", "Bill (BS 91)",
-            "Computer Search (BS 71)", "Computer Search (BS 71)", "Computer Search (BS 71)", "Computer Search (BS 71)",
-            "Energy Retrieval (BS 81)", "Energy Retrieval (BS 81)", "Energy Retrieval (BS 81)", "Energy Retrieval (BS 81)",
-            "Pokemon Breeder (BS 76)", "Pokemon Breeder (BS 76)", "Pokemon Breeder (BS 76)", "Pokemon Breeder (BS 76)",
-            "Professor Oak (BS 88)", "Professor Oak (BS 88)", "Professor Oak (BS 88)", "Professor Oak (BS 88)",
-            "Item Finder (BS 74)", "Item Finder (BS 74)", "Item Finder (BS 74)",
-            "Maintenance (BS 83)", "Maintenance (BS 83)",
-            "Super Energy Removal (BS 79)", "Super Energy Removal (BS 79)",
-            "Super Potion (BS 90)", "Super Potion (BS 90)",
-            "Switch (BS 95)", "Switch (BS 95)",
-            "PlusPower (BS 84)",
-            "Gust of Wind (BS 93)",
-            "Lass (BS 75)",
-            "Water Energy (BS 102)", "Water Energy (BS 102)", "Water Energy (BS 102)", "Water Energy (BS 102)",
-            "Water Energy (BS 102)", "Water Energy (BS 102)", "Water Energy (BS 102)", "Water Energy (BS 102)",
-            "Water Energy (BS 102)", "Water Energy (BS 102)", "Water Energy (BS 102)", "Water Energy (BS 102)",
-            "Water Energy (BS 102)", "Water Energy (BS 102)",
-        ],
-    );
+    let raindance = load_deck("base-fossil-rain-dance.deck").unwrap();
+    let arcanine_electrode = load_deck("base-fossil-arcanine-electrode.deck").unwrap();
+    let random_cards = load_deck("base-fossil-random-cards.deck").unwrap();
+
+    let state = GameState::initial(&random_cards, &random_cards);
 
     GameEngine::from_state(state).play(&mut CLI { });
 }
