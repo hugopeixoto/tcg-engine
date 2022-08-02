@@ -567,11 +567,12 @@ impl GameEngine {
     }
 
     pub fn ensure_discard_other(&self, player: Player, how_many: usize, dm: &mut dyn DecisionMaker) -> Self {
-        if !self.can_discard_other(player, self.trainer_card(), how_many) {
+        let discardable_cards = self.state.side(player).hand.iter().filter(|&c| c != self.trainer_card()).cloned().collect::<Vec<_>>();
+
+        if discardable_cards.is_empty() {
             self.bad()
         } else {
-            let discardable_cards = self.state.side(player).hand.iter().filter(|&c| c != self.trainer_card()).cloned().collect();
-            let discarded = dm.pick_from_hand(player, player, 2, &discardable_cards);
+            let discarded = dm.pick_from_hand(player, player, how_many, &discardable_cards);
 
             let mut state = self.state.clone();
             for card in discarded {
@@ -579,6 +580,33 @@ impl GameEngine {
             }
 
             self.with_state(state)
+        }
+    }
+
+    pub fn ensure_discard_all(&self, player: Player, _dm: &mut dyn DecisionMaker) -> Self {
+        let mut engine = self.clone();
+        for card in self.state.side(player).hand.iter() {
+            engine.state = engine.state.discard_from_hand(player, card);
+        }
+
+        engine
+    }
+
+
+    pub fn ensure_shuffle_other(&self, player: Player, how_many: usize, dm: &mut dyn DecisionMaker) -> Self {
+        let shuffleable_cards = self.state.side(player).hand.iter().filter(|&c| c != self.trainer_card()).cloned().collect::<Vec<_>>();
+
+        if shuffleable_cards.is_empty() {
+            self.bad()
+        } else {
+            let mut engine = self.clone();
+
+            let cost = dm.pick_from_hand(player, player, how_many, &shuffleable_cards);
+            for shuffled in cost {
+                engine.state = engine.state.shuffle_from_hand_into_deck(player, shuffled);
+            }
+
+            engine
         }
     }
 
@@ -643,8 +671,7 @@ impl GameEngine {
         engine
     }
 
-    // TODO: this should be removed, it's a temporary thing
-    pub fn with_state(&self, state: GameState) -> Self {
+    fn with_state(&self, state: GameState) -> Self {
         Self {
             state,
             ..self.clone()
@@ -757,6 +784,14 @@ impl GameEngine {
         self.with_state(state)
     }
 
+    pub fn discard_from_hand(&self, player: Player, card: &Card, _dm: &mut dyn DecisionMaker) -> Self {
+        self.with_state(self.state.discard_from_hand(player, card))
+    }
+
+
+    pub fn shuffle_hand_into_deck(&self, player: Player, dm: &mut dyn DecisionMaker) -> Self {
+        self.with_state(self.state.shuffle_hand_into_deck(player))
+    }
 
     pub fn retreat(&self, player: Player, in_play: &InPlayCard, dm: &mut dyn DecisionMaker) -> Self {
         let possible_targets = self.state.side(player).bench.clone();
@@ -766,10 +801,11 @@ impl GameEngine {
 
         self
             .discard_attached_energies(player, in_play, &cost, dm)
-            .switch(player, in_play, &chosen[0])
+            .just_switch(player, in_play, &chosen[0])
     }
 
-    pub fn switch(&self, _player: Player, _this: &InPlayCard, with: &InPlayCard) -> Self {
+    pub fn just_switch(&self, _player: Player, _this: &InPlayCard, with: &InPlayCard) -> Self {
+        // TODO: clear effects
         self.with_state(self.state.switch_active_with(with))
     }
 
@@ -898,6 +934,36 @@ impl GameEngine {
         }
 
         targets
+    }
+
+    pub fn scoop_up<F>(&self, in_play: &InPlayCard, filter: F) -> Self where F: Fn(&GameEngine, &Card) -> bool {
+        let mut engine = self.clone();
+        for card in in_play.cards() {
+            if filter(&engine, card) {
+                engine.state = engine.state.move_card_to_hand(card);
+            } else {
+                engine.state = engine.state.move_card_to_discard(card);
+            }
+        }
+
+        engine
+    }
+
+    pub fn gust(&self, player: Player, dm: &mut dyn DecisionMaker) -> Self {
+        let target = player.opponent();
+        let chosen = dm.pick_in_play(player, 1, &self.state.side(target).bench);
+
+        self.just_switch(target, &self.state.side(target).active[0], &chosen[0])
+    }
+
+    pub fn switch(&self, player: Player, dm: &mut dyn DecisionMaker) -> Self {
+        let chosen = dm.pick_in_play(player, 1, &self.state.side(player).bench);
+
+        self.just_switch(player, &self.state.side(player).active[0], &chosen[0])
+    }
+
+    pub fn draw(&self, player: Player, how_many: usize, dm: &mut dyn DecisionMaker) -> Self {
+        self.with_state(self.state.draw_n_to_hand(player, how_many, dm.shuffler()))
     }
 
     pub fn bench_from_hand(&self, player: Player, card: &Card) -> Self {

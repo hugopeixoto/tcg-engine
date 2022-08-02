@@ -257,7 +257,9 @@ impl CardArchetype for Trainer {
     }
 
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.with_state(self.archetype.execute(player, card, engine, dm).state.discard_from_hand(player, card))
+        self.archetype
+            .execute(player, card, engine, dm)
+            .discard_from_hand(player, card, dm)
     }
 
     fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
@@ -318,8 +320,8 @@ impl TrainerCardArchetype for ComputerSearch {
     // effect: search(1, from: deck); move(it, to: hand)
     fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
-            .ensure_deck_not_empty(engine.player())
             .ensure_discard_other(engine.player(), 2, dm)
+            .ensure_deck_not_empty(engine.player())
     }
 
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -354,12 +356,10 @@ impl TrainerCardArchetype for ImpostorProfessorOak {
     }
 
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let opponent = player.opponent();
-
-        self.cost(engine, dm).with_state(
-            engine.state
-                .shuffle_hand_into_deck(opponent)
-                .draw_n_to_hand(opponent, 7, dm.shuffler()))
+        self
+            .cost(engine, dm)
+            .shuffle_hand_into_deck(player.opponent(), dm)
+            .draw(player.opponent(), 7, dm)
     }
 }
 
@@ -377,6 +377,7 @@ impl TrainerCardArchetype for ItemFinder {
     }
 
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        // TODO: searchable_cards happening before calling cost avoids recycling discarded cards
         let searchable_cards = engine.state.side(player).discard.iter().filter(|c| engine.is_trainer(c)).cloned().collect::<Vec<_>>();
 
         self.cost(engine, dm)
@@ -430,24 +431,16 @@ struct ScoopUp {}
 impl TrainerCardArchetype for ScoopUp {
     card_name!("Scoop Up");
 
-    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
-        engine.state.side(player).all_in_play().iter().any(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic)))
+    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
+        true
     }
+
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let choices = engine.state.side(player).all_in_play().into_iter().filter(|p| p.stack.iter().any(|card| engine.stage(card.card()) == Some(Stage::Basic))).cloned().collect();
+        let choices = engine.state.side(player).all_in_play().into_iter().cloned().collect();
 
         let chosen = dm.pick_in_play(player, 1, &choices);
 
-        let mut state = engine.state.clone();
-        for card in chosen[0].cards() {
-            if engine.stage(card) == Some(Stage::Basic) {
-                state = state.move_card_to_hand(card);
-            } else {
-                state = state.move_card_to_discard(card);
-            }
-        }
-
-        engine.with_state(state)
+        engine.scoop_up(chosen[0], |e, c| e.stage(c) == Some(Stage::Basic))
     }
 }
 
@@ -469,53 +462,41 @@ struct EnergyRetrieval {}
 impl TrainerCardArchetype for EnergyRetrieval {
     card_name!("Energy Retrieval");
 
-    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
-        engine.can_discard_other(player, card, 1) && engine.discard_pile_has_basic_energy(player, card)
+    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .ensure_discard_contains(engine.player(), 1, |e, c| e.is_basic_energy(c))
+            .ensure_discard_other(engine.player(), 1, dm)
     }
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let mut state = engine.state.clone();
+        // TODO: searchable_cards happening before calling cost avoids recycling discarded cards
+        let searchable_cards = engine.state.side(player).discard.iter().filter(|c| engine.is_basic_energy(c)).cloned().collect::<Vec<_>>();
 
-        let discard_cards = engine.state.side(player).discard.clone();
-        let searchable_cards = discard_cards.iter().filter(|c| engine.is_basic_energy(c)).cloned().collect();
-
-        let cost = dm.pick_from_hand(player, player, 2, &engine.state.side(player).hand); // TODO: can't pick used card
-
-        for discarded in cost {
-            state = state.discard_from_hand(player, discarded);
-        }
-
-        let chosen = dm.pick_from_discard(player, player, 1, &searchable_cards);
-        for searched in chosen {
-            state = state.discard_to_hand(player, searched);
-        }
-
-        engine.with_state(state)
+        self.cost(engine, dm)
+            .search_discard_to_hand(player, 1, |c| searchable_cards.contains(c), dm)
     }
 }
 
 #[derive(Default)]
 struct Maintenance {}
 impl TrainerCardArchetype for Maintenance {
-    fn name(&self) -> String { "Maintenance".into() }
-    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
-        engine.can_discard_other(player, card, 2) // TODO: not discard but shuffle
+    card_name!("Maintenance");
+
+    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.ensure_shuffle_other(engine.player(), 2, dm)
     }
+
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let mut state = engine.state.clone();
-
-        let cost = dm.pick_from_hand(player, player, 2, &engine.state.side(player).hand); // TODO: can't pick used card
-        for shuffled in cost {
-            state = state.shuffle_from_hand_into_deck(player, shuffled);
-        }
-
-        engine.with_state(state.draw_n_to_hand(player, 1, dm.shuffler()))
+        self
+            .cost(engine, dm)
+            .draw(player, 1, dm)
     }
 }
 
 #[derive(Default)]
 struct PlusPower {}
 impl TrainerCardArchetype for PlusPower {
-    fn name(&self) -> String { "Plus Power".into() }
+    card_name!("Plus Power");
+
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
@@ -527,7 +508,8 @@ impl TrainerCardArchetype for PlusPower {
 #[derive(Default)]
 struct Pokedex {}
 impl TrainerCardArchetype for Pokedex {
-    fn name(&self) -> String { "Pokédex".into() }
+    card_name!("Pokédex");
+
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
         !engine.state.side(player).deck.is_empty()
     }
@@ -539,60 +521,65 @@ impl TrainerCardArchetype for Pokedex {
 #[derive(Default)]
 struct ProfessorOak {}
 impl TrainerCardArchetype for ProfessorOak {
-    fn name(&self) -> String { "Professor Oak".into() }
-    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
-        !engine.state.side(player).deck.is_empty()
+    card_name!("Professor Oak");
+
+    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .ensure_discard_all(engine.player(), dm)
+            .ensure_deck_not_empty(engine.player())
     }
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let mut state = engine.state.clone();
-
-        for discarded in engine.state.side(player).hand.iter() {
-            state = state.discard_from_hand(player, discarded);
-        }
-
-        engine.with_state(state.draw_n_to_hand(player, 7, dm.shuffler()))
+        self
+            .cost(engine, dm)
+            .draw(player, 7, dm)
     }
 }
 
 #[derive(Default)]
 struct Bill {}
 impl TrainerCardArchetype for Bill {
-    fn name(&self) -> String { "Bill".into() }
-    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
-        !engine.state.side(player).deck.is_empty()
+    card_name!("Bill");
+
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .ensure_deck_not_empty(engine.player())
     }
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.with_state(engine.state.draw_n_to_hand(player, 2, dm.shuffler()))
+        self
+            .cost(engine, dm)
+            .draw(player, 2, dm)
     }
 }
 
 #[derive(Default)]
 struct GustOfWind {}
 impl TrainerCardArchetype for GustOfWind {
-    fn name(&self) -> String { "Gust of Wind".into() }
-    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
-        !engine.state.side(player.opponent()).bench.is_empty()
+    card_name!("Gust of Wind");
+
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .ensure(|e| !e.state.side(engine.opponent()).bench.is_empty())
     }
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let chosen = dm.pick_in_play(player, 1, &engine.state.side(player.opponent()).bench);
-
-        // TODO: clear effects on defending
-        engine.with_state(engine.state.switch_active_with(&chosen[0]))
+        self
+            .cost(engine, dm)
+            .gust(player, dm)
     }
 }
 
 #[derive(Default)]
 struct Switch {}
 impl TrainerCardArchetype for Switch {
-    fn name(&self) -> String { "Switch".into() }
-    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
-        !engine.state.side(player).bench.is_empty()
+    card_name!("Switch");
+
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .ensure(|e| !e.state.side(engine.player()).bench.is_empty())
     }
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let chosen = dm.pick_in_play(player, 1, &engine.state.side(player).bench);
-
-        // TODO: clear effects on defending
-        engine.with_state(engine.state.switch_active_with(&chosen[0]))
+        self
+            .cost(engine, dm)
+            .switch(player, dm)
     }
 }
 
