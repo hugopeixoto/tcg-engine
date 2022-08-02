@@ -247,8 +247,9 @@ pub struct PrizeCard {
     pub card: FaceCard,
 }
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct PlayerSide {
+    pub owner: Player,
     pub deck: Deck,
     pub hand: Vec<Card>,
     pub discard: Vec<Card>,
@@ -263,6 +264,23 @@ pub struct PlayerSide {
 }
 
 impl PlayerSide {
+    pub fn new(cards: &[String], player: Player, base_id: usize) -> Self {
+        Self {
+            deck: Deck::new(&cards.iter().enumerate().map(|(n, x)| Card { owner: player, in_game_id: base_id + n, archetype: x.clone() }).collect::<Vec<_>>()),
+            owner: player,
+            hand: vec![],
+            discard: vec![],
+            lost_zone: vec![],
+            prizes: vec![],
+            gx_available: true,
+            vstar_available: true,
+            active: vec![],
+            bench: vec![],
+            stadium: None,
+            supporter: None,
+        }
+    }
+
     pub fn in_play(&self, id: &InPlayID) -> Option<&InPlayCard> {
         for p in self.active.iter() {
             if p.id == *id {
@@ -305,9 +323,8 @@ impl PlayerSide {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub enum GameStage {
-    #[default]
     Uninitialized,
     StartOfTurn(Player),
     Turn(Player),
@@ -369,11 +386,10 @@ impl Effect {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct GameState {
     pub p1: PlayerSide,
     pub p2: PlayerSide,
-    // player effects, in play effects, etc
 
     // whose turn is it, what stage of the turn are we, etc
     pub stage: GameStage,
@@ -384,17 +400,13 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn initial(a: &[&str], b: &[&str]) -> Self {
+    pub fn initial(a: &[String], b: &[String]) -> Self {
         Self {
-            p1: PlayerSide {
-                deck: Deck::new(&a.iter().enumerate().map(|(n, x)| Card { owner: Player::One, in_game_id: n, archetype: x.to_string() }).collect::<Vec<_>>()),
-                ..Default::default()
-            },
-            p2: PlayerSide {
-                deck: Deck::new(&b.iter().enumerate().map(|(n, x)| Card { owner: Player::Two, in_game_id: a.len() + n, archetype: x.to_string() }).collect::<Vec<_>>()),
-                ..Default::default()
-            },
-            ..Default::default()
+            p1: PlayerSide::new(a, Player::One, 0),
+            p2: PlayerSide::new(b, Player::Two, a.len()),
+            stage: GameStage::Uninitialized,
+            turn: 0,
+            effects: vec![],
         }
     }
 
