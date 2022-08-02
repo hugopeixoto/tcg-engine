@@ -46,7 +46,7 @@ macro_rules! color {
 #[macro_export]
 macro_rules! hp {
     ($hp:literal) => {
-        fn hp(&self) -> Option<usize> { Some($hp) }
+        fn hp(&self, _card: &Card, _engine: &GameEngine) -> Option<usize> { Some($hp) }
     }
 }
 
@@ -84,7 +84,7 @@ macro_rules! not_a_pokemon {
         fn stage(&self) -> Option<Stage> {
             None
         }
-        fn hp(&self) -> Option<usize> {
+        fn hp(&self, _card: &Card, _engine: &GameEngine) -> Option<usize> {
             None
         }
         fn weakness(&self) -> Weakness {

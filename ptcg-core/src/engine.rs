@@ -11,7 +11,7 @@ pub trait CardArchetype {
     fn stage(&self) -> Option<Stage>;
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action>;
     fn provides(&self) -> Vec<Type>;
-    fn hp(&self) -> Option<usize>;
+    fn hp(&self, card: &Card, engine: &GameEngine) -> Option<usize>;
     fn weakness(&self) -> Weakness;
     fn resistance(&self) -> Resistance;
     fn pokemon_type(&self) -> Vec<Type>;
@@ -1126,7 +1126,7 @@ impl GameEngine {
     }
 
     pub fn remaining_hp(&self, in_play: &InPlayCard) -> usize {
-        in_play.stack[0].card().archetype().hp().unwrap_or(0).saturating_sub(in_play.damage_counters * 10)
+        in_play.stack[0].card().archetype().hp(in_play.stack[0].card(), self).unwrap_or(0).saturating_sub(in_play.damage_counters * 10)
     }
     pub fn is_energy(&self, card: &Card) -> bool {
         self.is_basic_energy(card) || card.archetype == "Double Colorless Energy (BS 96)"

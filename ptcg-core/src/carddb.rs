@@ -229,6 +229,10 @@ trait TrainerCardArchetype {
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
+
+    fn hp(&self, _card: &Card, _engine: &GameEngine) -> Option<usize> {
+        None
+    }
 }
 
 struct Trainer {
@@ -240,7 +244,6 @@ impl Trainer {
     }
 }
 impl CardArchetype for Trainer {
-    not_a_pokemon!();
     fn name(&self) -> String {
         self.archetype.name()
     }
@@ -263,6 +266,25 @@ impl CardArchetype for Trainer {
 
     fn provides(&self) -> Vec<Type> {
         vec![]
+    }
+
+    fn hp(&self, card: &Card, engine: &GameEngine) -> Option<usize> {
+        self.archetype.hp(card, engine)
+    }
+    fn stage(&self) -> Option<Stage> {
+        None
+    }
+    fn weakness(&self) -> Weakness {
+        (0, vec![])
+    }
+    fn resistance(&self) -> Resistance {
+        (0, vec![])
+    }
+    fn pokemon_type(&self) -> Vec<Type> {
+        vec![]
+    }
+    fn retreat(&self) -> usize {
+        0
     }
 }
 
