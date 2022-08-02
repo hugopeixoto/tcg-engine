@@ -276,6 +276,9 @@ impl CardArchetype for Trainer {
     fn stage(&self) -> Option<Stage> {
         None
     }
+    fn evolves_from(&self) -> Option<String> {
+        None
+    }
     fn weakness(&self) -> Weakness {
         (0, vec![])
     }
@@ -316,8 +319,6 @@ struct ComputerSearch {}
 impl TrainerCardArchetype for ComputerSearch {
     card_name!("Computer Search");
 
-    // cost: discard(2, from: hand)
-    // effect: search(1, from: deck); move(it, to: hand)
     fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
             .ensure_discard_other(engine.player(), 2, dm)
@@ -332,16 +333,46 @@ impl TrainerCardArchetype for ComputerSearch {
 }
 
 #[derive(Default)]
-//#[card_named("Devolution Spray")]
 struct DevolutionSpray {}
 impl TrainerCardArchetype for DevolutionSpray {
     card_name!("Devolution Spray");
 
-    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
-        true
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.ensure(|e| !self.evolutions_in_play(e.player(), e).is_empty())
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let choices = self.evolutions_in_play(player, engine);
+        let chosen = dm.pick_in_play(player, 1, &choices);
+
+        let mut stages = self.stages(&chosen[0], engine);
+        stages.remove(0);
+
+        let stage = dm.pick_stage(player, &stages);
+
+        self
+            .cost(engine, dm)
+            .devolve(&chosen[0], stage, &Zone::Discard(player))
+    }
+}
+impl DevolutionSpray {
+    fn evolutions_in_play(&self, player: Player, engine: &GameEngine) -> Vec<InPlayCard> {
+        engine
+            .state.side(player)
+            .all_in_play().into_iter()
+            .filter(|in_play| match engine.stage(in_play.stack[0].card()) {
+                Some(Stage::Stage1 | Stage::Stage2) => true,
+                _ => false,
+            })
+            .cloned().collect()
+    }
+
+    fn stages(&self, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Stage> {
+        engine
+            .state.side(in_play.owner)
+            .in_play(&in_play.id).unwrap()
+            .stack.iter()
+            .map(|c| engine.stage(c.card()))
+            .filter(Option::is_some).map(|x| x.unwrap()).collect()
     }
 }
 
@@ -350,7 +381,6 @@ struct ImpostorProfessorOak {}
 impl TrainerCardArchetype for ImpostorProfessorOak {
     card_name!("Impostor Professor Oak");
 
-    // effect: shuffle(hand, to: deck); draw(7)
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.ensure(|e| !e.state.side(e.opponent()).deck.is_empty() || !e.state.side(e.opponent()).hand.is_empty())
     }
@@ -368,8 +398,6 @@ struct ItemFinder {}
 impl TrainerCardArchetype for ItemFinder {
     card_name!("Item Finder");
 
-    // cost: discard(2, from: hand)
-    // effect: me.search(1.item, from: discard); move(it, to: hand)
     fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
             .ensure_discard_contains(engine.player(), 1, |e, c| e.is_trainer(c))
@@ -406,7 +434,7 @@ impl TrainerCardArchetype for PokemonBreeder {
     card_name!("Pokémon Breeder");
 
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
-        true // todo: bunch of checks
+        true // TODO: bunch of checks
     }
     fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();

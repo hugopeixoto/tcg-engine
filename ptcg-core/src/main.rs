@@ -65,13 +65,39 @@ impl DecisionMaker for CLI {
             println!(" {}. {:?}", i + 1, action);
         }
 
+        println!("  d. Print my discard");
+        println!("  D. Print opponent's discard");
+        println!("  h. Print my hand");
+
+        while choice.is_none() {
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+            match input.trim() {
+                "d" => {},
+                "D" => {},
+                "h" => {},
+                text => { choice = text.parse::<usize>().ok(); },
+            }
+        }
+
+        &actions[choice.unwrap() - 1]
+    }
+
+    fn pick_stage<'a>(&mut self, player: Player, items: &'a Vec<Stage>) -> &'a Stage {
+        let mut choice = None;
+
+        println!("available stages for {:?}:", player);
+        for (i, item) in items.iter().enumerate() {
+            println!(" {}. {:?}", i + 1, item);
+        }
+
         while choice.is_none() {
             let mut input = String::new();
             std::io::stdin().read_line(&mut input).expect("Failed to read input");
             choice = input.trim().parse::<usize>().ok();
         }
 
-        &actions[choice.unwrap() - 1]
+        &items[choice.unwrap() - 1]
     }
 
     fn pick_from_hand<'a>(&mut self, _p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card> {

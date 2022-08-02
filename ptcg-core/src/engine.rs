@@ -9,6 +9,7 @@ pub trait CardArchetype {
     fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action>;
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
     fn stage(&self) -> Option<Stage>;
+    fn evolves_from(&self) -> Option<String>;
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action>;
     fn provides(&self) -> Vec<Type>;
     fn hp(&self, card: &Card, engine: &GameEngine) -> Option<usize>;
@@ -90,6 +91,7 @@ pub trait DecisionMaker {
     fn confirm_mulligan_draw(&mut self, p: Player, upto: usize) -> usize;
     fn confirm_setup_bench_selection(&mut self, p: Player, cards: &Vec<Card>) -> Vec<Card>;
     fn pick_action<'a>(&mut self, p: Player, actions: &'a Vec<Action>) -> &'a Action;
+    fn pick_stage<'a>(&mut self, p: Player, items: &'a Vec<Stage>) -> &'a Stage;
     fn pick_from_hand<'a>(&mut self, p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card>;
     fn pick_from_discard<'a>(&mut self, p: Player, whose: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card>;
     fn pick_in_play<'a>(&mut self, p: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard>;
@@ -114,6 +116,7 @@ impl DecisionMaker for FakeDM {
     fn confirm_mulligan_draw(&mut self, _p: Player, upto: usize) -> usize { upto }
     fn confirm_setup_bench_selection(&mut self, _p: Player, _cards: &Vec<Card>) -> Vec<Card> { vec![] }
     fn pick_action<'a>(&mut self, _p: Player, actions: &'a Vec<Action>) -> &'a Action { &actions[0] }
+    fn pick_stage<'a>(&mut self, p: Player, items: &'a Vec<Stage>) -> &'a Stage { &items[0] }
     fn pick_from_hand<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card> { hand[0..how_many].iter().collect() }
     fn pick_from_discard<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card> { searchable[0..how_many].iter().collect() }
     fn pick_in_play<'a>(&mut self, _p: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard> { searchable[0..how_many].iter().collect() }
@@ -128,7 +131,7 @@ pub enum Maybe {
     Maybe,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Stage {
     // Baby,
     Basic,
@@ -137,8 +140,8 @@ pub enum Stage {
     // LevelUp,
     // Mega,
     // Restored,
-    Stage1(String),
-    Stage2(String),
+    Stage1,
+    Stage2,
     // VStar,
     // VUnion,
 }
@@ -836,18 +839,39 @@ impl GameEngine {
     }
 
     pub fn evolve(&self, player: Player, card: &Card, dm: &mut dyn DecisionMaker) -> Self {
-        let possible_targets = self.evolve_targets(card);
+        let possible_targets = self.evolution_targets(card);
         let target = dm.pick_in_play(player, 1, &possible_targets);
 
+        // TODO: clear effects and special conditions
         self.with_state(self.state.evolve_from_hand(player, card, &target[0].id))
     }
 
-    pub fn evolve_targets(&self, card: &Card) -> Vec<InPlayCard> {
+    pub fn devolve(&self, in_play: &InPlayCard, stage: &Stage, destination_zone: &Zone) -> Self {
+        let mut engine = self.clone();
+        loop {
+            let top_card = engine.state.in_play(&in_play.id).unwrap().stack[0].card();
+            if engine.stage(top_card) == Some(Stage::Basic) {
+                break;
+            }
+            if engine.stage(top_card) == Some(stage.clone()) {
+                break;
+            }
+
+            match destination_zone {
+                Zone::Discard(_) => { engine = engine.with_state(engine.state.move_card_to_discard(top_card)); },
+                _ => { unimplemented!(); }
+            }
+        }
+
+        // TODO: clear effects and special conditions
+        engine
+    }
+
+    pub fn evolution_targets(&self, card: &Card) -> Vec<InPlayCard> {
         let mut targets = vec![];
 
-        let name_to_find = match self.stage(card) {
-            Some(Stage::Stage2(name)) => name,
-            Some(Stage::Stage1(name)) => name,
+        let name_to_find = match self.evolves_from(card) {
+            Some(name) => name,
             _ => { return targets; },
         };
 
@@ -863,7 +887,7 @@ impl GameEngine {
     }
 
     pub fn can_evolve(&self, card: &Card) -> bool {
-        !self.evolve_targets(card).is_empty()
+        !self.evolution_targets(card).is_empty()
     }
 
     pub fn can_play_trainer_from_hand(&self, card: &Card) -> bool {
@@ -1212,6 +1236,10 @@ impl GameEngine {
 
     pub fn stage(&self, card: &Card) -> Option<Stage> {
         card.archetype().stage()
+    }
+
+    pub fn evolves_from(&self, card: &Card) -> Option<String> {
+        card.archetype().evolves_from()
     }
 
     pub fn zone(&self, card: &Card) -> Zone {

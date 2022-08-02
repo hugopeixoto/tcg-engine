@@ -16,20 +16,23 @@ macro_rules! retreat {
 macro_rules! basic {
     () => {
         fn stage(&self) -> Option<Stage> { Some(Stage::Basic) }
+        fn evolves_from(&self) -> Option<String> { None }
     }
 }
 
 #[macro_export]
 macro_rules! stage1 {
     ($from:literal) => {
-        fn stage(&self) -> Option<Stage> { Some(Stage::Stage1($from.into())) }
+        fn stage(&self) -> Option<Stage> { Some(Stage::Stage1) }
+        fn evolves_from(&self) -> Option<String> { Some($from.into()) }
     }
 }
 
 #[macro_export]
 macro_rules! stage2 {
     ($from:literal) => {
-        fn stage(&self) -> Option<Stage> { Some(Stage::Stage2($from.into())) }
+        fn stage(&self) -> Option<Stage> { Some(Stage::Stage2) }
+        fn evolves_from(&self) -> Option<String> { Some($from.into()) }
     }
 }
 
@@ -82,6 +85,9 @@ macro_rules! no_resistance {
 macro_rules! not_a_pokemon {
     () => {
         fn stage(&self) -> Option<Stage> {
+            None
+        }
+        fn evolves_from(&self) -> Option<String> {
             None
         }
         fn hp(&self, _card: &Card, _engine: &GameEngine) -> Option<usize> {
