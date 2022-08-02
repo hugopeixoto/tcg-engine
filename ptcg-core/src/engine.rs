@@ -91,7 +91,7 @@ pub trait DecisionMaker {
     fn confirm_setup_bench_selection(&mut self, p: Player, cards: &Vec<Card>) -> Vec<Card>;
     fn pick_action<'a>(&mut self, p: Player, actions: &'a Vec<Action>) -> &'a Action;
     fn pick_from_hand<'a>(&mut self, p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card>;
-    fn pick_from_discard<'a>(&mut self, p: Player, whose: Player, how_many: usize, discard: &Vec<Card>, searchable: &'a Vec<Card>) -> Vec<&'a Card>;
+    fn pick_from_discard<'a>(&mut self, p: Player, whose: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card>;
     fn pick_in_play<'a>(&mut self, p: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard>;
     fn pick_from_prizes<'a>(&mut self, who: Player, whose: Player, how_many: usize, searchable: &'a Vec<PrizeCard>) -> Vec<&'a PrizeCard>;
     fn search_deck<'a>(&mut self, p: Player, whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card>;
@@ -115,7 +115,7 @@ impl DecisionMaker for FakeDM {
     fn confirm_setup_bench_selection(&mut self, _p: Player, _cards: &Vec<Card>) -> Vec<Card> { vec![] }
     fn pick_action<'a>(&mut self, _p: Player, actions: &'a Vec<Action>) -> &'a Action { &actions[0] }
     fn pick_from_hand<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card> { hand[0..how_many].iter().collect() }
-    fn pick_from_discard<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, _discard: &Vec<Card>, searchable: &'a Vec<Card>) -> Vec<&'a Card> { searchable[0..how_many].iter().collect() }
+    fn pick_from_discard<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card> { searchable[0..how_many].iter().collect() }
     fn pick_in_play<'a>(&mut self, _p: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard> { searchable[0..how_many].iter().collect() }
     fn pick_from_prizes<'a>(&mut self, _who: Player, _whose: Player, how_many: usize, searchable: &'a Vec<PrizeCard>) -> Vec<&'a PrizeCard> { searchable[0..how_many].iter().collect() }
     fn search_deck<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card> { deck[0..how_many].iter().collect() }
@@ -359,7 +359,6 @@ impl GameEngine {
             match at_zero.next() {
                 None => { break; },
                 Some(in_play) => {
-                    println!("knocked out: {:?}", in_play);
                     let (p, e) = engine.knock_out(in_play);
                     engine = e;
                     prizes.push(p);
@@ -417,7 +416,8 @@ impl GameEngine {
     pub fn opponent(&self) -> Player {
         match self.resolving_actions.last() {
             Some(Action::Attack(player, _, _, _)) => player.opponent(),
-            _ => { panic!("Error accessing GameEngine::opponent() while not attacking"); }
+            Some(Action::TrainerFromHand(player, _)) => player.opponent(),
+            _ => { panic!("Error accessing GameEngine::opponent() while not attacking or using a trainer card"); }
         }
     }
 
@@ -540,6 +540,14 @@ impl GameEngine {
         self.good
     }
 
+    pub fn ensure<F>(&self, pred: F) -> Self where F: Fn(&GameEngine) -> bool {
+        if pred(self) {
+            self.clone()
+        } else {
+            self.bad()
+        }
+    }
+
     pub fn ensure_deck_not_empty(&self, player: Player) -> Self {
         if !self.good { return self.clone(); }
 
@@ -547,6 +555,14 @@ impl GameEngine {
             self.bad()
         } else {
             self.clone()
+        }
+    }
+
+    pub fn ensure_discard_contains<F>(&self, player: Player, how_many: usize, filter: F) -> Self where F: Fn(&GameEngine, &Card) -> bool {
+        if self.state.side(player).discard.iter().filter(|c| filter(self, c)).count() >= how_many {
+            self.clone()
+        } else {
+            self.bad()
         }
     }
 
@@ -576,6 +592,18 @@ impl GameEngine {
         }
 
         engine.state = engine.state.shuffle_deck(who);
+        engine
+    }
+
+    pub fn search_discard_to_hand<F>(&self, who: Player, how_many: usize, filter: F, dm: &mut dyn DecisionMaker) -> Self where F: Fn(&Card) -> bool {
+        let mut engine = self.clone();
+
+        let searchable_cards = self.state.side(who).discard.iter().filter(|&c| filter(c)).cloned().collect();
+        let chosen = dm.pick_from_discard(who, who, how_many, &searchable_cards);
+        for searched in chosen {
+            engine.state = engine.state.discard_to_hand(who, searched);
+        }
+
         engine
     }
 
@@ -884,7 +912,7 @@ impl GameEngine {
         5
     }
 
-    pub fn can_discard_other(&self, player: Player, card: &Card, n: usize) -> bool {
+    pub fn can_discard_other(&self, player: Player, _card: &Card, n: usize) -> bool {
         self.state.side(player).hand.len() - 1 >= n
     }
 

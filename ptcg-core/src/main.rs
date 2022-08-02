@@ -94,7 +94,7 @@ impl DecisionMaker for CLI {
         choice.unwrap()
     }
 
-    fn pick_from_discard<'a>(&mut self, _p: Player, whose: Player, how_many: usize, _discard: &Vec<Card>, searchable: &'a Vec<Card>) -> Vec<&'a Card> {
+    fn pick_from_discard<'a>(&mut self, _p: Player, whose: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card> {
         let mut choice = None;
 
         println!("Pick {} cards from {:?}'s hand:", how_many, whose);

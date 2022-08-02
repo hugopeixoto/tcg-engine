@@ -216,10 +216,17 @@ impl CardArchetype for BasicEnergy {
 }
 
 trait TrainerCardArchetype {
-    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool;
+    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
+        engine
+            .push_action(Action::TrainerFromHand(player, card.clone()))
+            .then(|e| self.cost(e, &mut FakeDM::default()))
+            .pop_action()
+            .is_good()
+    }
+
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
     fn name(&self) -> String;
-    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
 }
@@ -278,14 +285,6 @@ struct ComputerSearch {}
 impl TrainerCardArchetype for ComputerSearch {
     card_name!("Computer Search");
 
-    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
-        engine
-            .push_action(Action::TrainerFromHand(player, card.clone()))
-            .then(|e| self.cost(e, &mut FakeDM::default()))
-            .pop_action()
-            .is_good()
-    }
-
     // cost: discard(2, from: hand)
     // effect: search(1, from: deck); move(it, to: hand)
     fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -321,15 +320,17 @@ impl TrainerCardArchetype for ImpostorProfessorOak {
     card_name!("Impostor Professor Oak");
 
     // effect: shuffle(hand, to: deck); draw(7)
-    fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
-        !engine.state.side(player.opponent()).deck.is_empty() || engine.state.side(player.opponent()).hand.len() > 7
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.ensure(|e| !e.state.side(e.opponent()).deck.is_empty() || !e.state.side(e.opponent()).hand.is_empty())
     }
+
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let opponent = player.opponent();
 
-        engine.with_state(engine.state
-            .shuffle_hand_into_deck(opponent)
-            .draw_n_to_hand(opponent, 7, dm.shuffler()))
+        self.cost(engine, dm).with_state(
+            engine.state
+                .shuffle_hand_into_deck(opponent)
+                .draw_n_to_hand(opponent, 7, dm.shuffler()))
     }
 }
 
@@ -340,27 +341,17 @@ impl TrainerCardArchetype for ItemFinder {
 
     // cost: discard(2, from: hand)
     // effect: me.search(1.item, from: discard); move(it, to: hand)
-    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
-        engine.can_discard_other(player, card, 2) && engine.discard_pile_has_trainer(player, card)
+    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .ensure_discard_contains(engine.player(), 1, |e, c| e.is_trainer(c))
+            .ensure_discard_other(engine.player(), 2, dm)
     }
+
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let mut state = engine.state.clone();
+        let searchable_cards = engine.state.side(player).discard.iter().filter(|c| engine.is_trainer(c)).cloned().collect::<Vec<_>>();
 
-        let discard_cards = engine.state.side(player).discard.clone();
-        let searchable_cards = discard_cards.iter().filter(|c| engine.is_trainer(c)).cloned().collect();
-
-        let cost = dm.pick_from_hand(player, player, 2, &engine.state.side(player).hand); // TODO: can't pick used card
-
-        for discarded in cost {
-            state = state.discard_from_hand(player, discarded);
-        }
-
-        let chosen = dm.pick_from_discard(player, player, 1, &discard_cards, &searchable_cards);
-        for searched in chosen {
-            state = state.discard_to_hand(player, searched);
-        }
-
-        engine.with_state(state)
+        self.cost(engine, dm)
+            .search_discard_to_hand(player, 1, |c| searchable_cards.contains(c), dm)
     }
 }
 
@@ -464,7 +455,7 @@ impl TrainerCardArchetype for EnergyRetrieval {
             state = state.discard_from_hand(player, discarded);
         }
 
-        let chosen = dm.pick_from_discard(player, player, 1, &discard_cards, &searchable_cards);
+        let chosen = dm.pick_from_discard(player, player, 1, &searchable_cards);
         for searched in chosen {
             state = state.discard_to_hand(player, searched);
         }
