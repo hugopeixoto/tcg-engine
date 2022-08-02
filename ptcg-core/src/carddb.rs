@@ -219,6 +219,9 @@ trait TrainerCardArchetype {
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool;
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
     fn name(&self) -> String;
+    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.clone()
+    }
 }
 
 struct Trainer {
@@ -274,26 +277,26 @@ struct ComputerSearch {}
 impl TrainerCardArchetype for ComputerSearch {
     card_name!("Computer Search");
 
+    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
+        engine
+            .push_action(Action::TrainerFromHand(player, card.clone()))
+            .then(|e| self.cost(e, &mut FakeDM::default()))
+            .pop_action()
+            .is_good()
+    }
+
     // cost: discard(2, from: hand)
     // effect: search(1, from: deck); move(it, to: hand)
-    fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
-        engine.can_discard_other(player, card, 2) && !engine.state.side(player).deck.is_empty()
+    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .ensure_deck_not_empty(engine.player())
+            .ensure_discard_other(engine.player(), 2, dm)
     }
+
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let mut state = engine.state.clone();
-
-        let cost = dm.pick_from_hand(player, player, 2, &engine.state.side(player).hand); // TODO: can't pick used card
-        for discarded in cost {
-            state = state.discard_from_hand(player, discarded);
-        }
-
-        let deck_cards = engine.state.side(player).deck.cards();
-        let chosen = dm.search_deck(player, player, 1, &deck_cards);
-        for searched in chosen {
-            state = state.tutor_to_hand(player, searched);
-        }
-
-        engine.with_state(state.shuffle_deck(player))
+        self
+            .cost(engine, dm)
+            .search_deck_to_hand(player, 1, |_c| true, dm)
     }
 }
 

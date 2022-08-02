@@ -50,6 +50,7 @@ pub struct GameEngine {
     pub state: GameState,
     pub resolving_actions: Vec<Action>,
     pub attack_target_stack: Vec<(InPlayID, InPlayID)>,
+    pub good: bool,
 }
 
 #[derive(Default)]
@@ -62,8 +63,20 @@ impl Flips {
         Flips { results }
     }
 
+    pub fn is_heads(&self) -> bool {
+        *self.results.first().unwrap()
+    }
+
+    pub fn is_tails(&self) -> bool {
+        !*self.results.first().unwrap()
+    }
+
     pub fn heads(&self) -> usize {
         self.results.iter().filter(|&x| *x).count()
+    }
+
+    pub fn tails(&self) -> usize {
+        self.results.iter().filter(|&x| !*x).count()
     }
 }
 
@@ -82,6 +95,30 @@ pub trait DecisionMaker {
     fn pick_in_play<'a>(&mut self, p: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard>;
     fn pick_from_prizes<'a>(&mut self, who: Player, whose: Player, how_many: usize, searchable: &'a Vec<PrizeCard>) -> Vec<&'a PrizeCard>;
     fn search_deck<'a>(&mut self, p: Player, whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card>;
+}
+
+#[derive(Default)]
+pub struct FakeDM {}
+impl Shuffler for FakeDM {
+    fn random_card(&mut self, _n: usize) -> usize { 0 }
+}
+impl DecisionMaker for FakeDM {
+    fn shuffler(&mut self) -> &mut dyn Shuffler { self }
+    fn flip(&mut self, _number_of_coins: usize) -> Flips {
+        Flips::from_results(vec![])
+    }
+
+    fn confirm_setup_mulligan(&mut self, _p: Player) {}
+    fn confirm_setup_active_or_mulligan(&mut self, _p: Player, _maybe: &Vec<Card>) -> SetupActiveSelection { SetupActiveSelection::Mulligan }
+    fn confirm_setup_active(&mut self, _p: Player, yes: &Vec<Card>, maybe: &Vec<Card>) -> Card { if !yes.is_empty() { yes[0].clone() } else { maybe[0].clone() } }
+    fn confirm_mulligan_draw(&mut self, _p: Player, upto: usize) -> usize { upto }
+    fn confirm_setup_bench_selection(&mut self, _p: Player, _cards: &Vec<Card>) -> Vec<Card> { vec![] }
+    fn pick_action<'a>(&mut self, _p: Player, actions: &'a Vec<Action>) -> &'a Action { &actions[0] }
+    fn pick_from_hand<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card> { hand[0..how_many].iter().collect() }
+    fn pick_from_discard<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, _discard: &Vec<Card>, searchable: &'a Vec<Card>) -> Vec<&'a Card> { searchable[0..how_many].iter().collect() }
+    fn pick_in_play<'a>(&mut self, _p: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard> { searchable[0..how_many].iter().collect() }
+    fn pick_from_prizes<'a>(&mut self, _who: Player, _whose: Player, how_many: usize, searchable: &'a Vec<PrizeCard>) -> Vec<&'a PrizeCard> { searchable[0..how_many].iter().collect() }
+    fn search_deck<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card> { deck[0..how_many].iter().collect() }
 }
 
 #[derive(PartialEq, Eq)]
@@ -175,6 +212,7 @@ impl GameEngine {
             attack_target_stack: vec![],
             resolving_actions: vec![],
             state,
+            good: true,
         }
     }
 
@@ -216,7 +254,10 @@ impl GameEngine {
                         self.end_turn()
                     },
                     Action::TrainerFromHand(_, card) => {
-                        card.archetype().execute(player, card, &self, dm)
+                        self
+                            .push_action(action.clone())
+                            .then(|e| card.archetype().execute(player, card, &e, dm))
+                            .pop_action()
                     },
                     Action::AttachFromHand(_, card) => {
                         card.archetype().execute(player, card, &self, dm)
@@ -367,8 +408,9 @@ impl GameEngine {
     // attack in flight
     pub fn player(&self) -> Player {
         match self.resolving_actions.last() {
-            Some(Action::Attack(player, _, _, _)) => player.clone(),
-            _ => { panic!("Error accessing GameEngine::player() while not attacking"); }
+            Some(Action::Attack(player, _, _, _)) => *player,
+            Some(Action::TrainerFromHand(player, _)) => *player,
+            _ => { panic!("Error accessing GameEngine::player() while not attacking or using a trainer card"); }
         }
     }
 
@@ -478,6 +520,67 @@ impl GameEngine {
     }
 
     // end attack in flight
+
+    // trainer in flight?
+    pub fn trainer_card(&self) -> &Card {
+        match self.resolving_actions.last() {
+            Some(Action::TrainerFromHand(_player, card)) => card,
+            _ => { panic!("Error accessing GameEngine::trainer_card() while not playing a trainer"); }
+        }
+    }
+
+    pub fn bad(&self) -> Self {
+        Self {
+            good: false,
+            ..self.clone()
+        }
+    }
+
+    pub fn is_good(&self) -> bool {
+        self.good
+    }
+
+    pub fn ensure_deck_not_empty(&self, player: Player) -> Self {
+        if !self.good { return self.clone(); }
+
+        if self.state.side(player).deck.is_empty() {
+            self.bad()
+        } else {
+            self.clone()
+        }
+    }
+
+    pub fn ensure_discard_other(&self, player: Player, how_many: usize, dm: &mut dyn DecisionMaker) -> Self {
+        if !self.can_discard_other(player, self.trainer_card(), how_many) {
+            self.bad()
+        } else {
+            let discardable_cards = self.state.side(player).hand.iter().filter(|&c| c != self.trainer_card()).cloned().collect();
+            let discarded = dm.pick_from_hand(player, player, 2, &discardable_cards);
+
+            let mut state = self.state.clone();
+            for card in discarded {
+                state = state.discard_from_hand(player, card);
+            }
+
+            self.with_state(state)
+        }
+    }
+
+    pub fn search_deck_to_hand<F>(&self, who: Player, how_many: usize, filter: F, dm: &mut dyn DecisionMaker) -> Self where F: FnMut(&Card) -> bool {
+        let mut engine = self.ensure_deck_not_empty(who);
+
+        let deck_cards = engine.state.side(who).deck.cards().into_iter().filter(filter).collect();
+        let chosen = dm.search_deck(who, who, how_many, &deck_cards);
+        for searched in chosen {
+            engine.state = engine.state.tutor_to_hand(who, searched);
+        }
+
+        engine.state = engine.state.shuffle_deck(who);
+        engine
+    }
+
+    // end trainer in flight?
+
 
     pub fn end_turn(&self) -> Self {
         let mut engine = self.clone();
@@ -782,10 +885,7 @@ impl GameEngine {
     }
 
     pub fn can_discard_other(&self, player: Player, card: &Card, n: usize) -> bool {
-        let this_card = self.state.side(player).hand.iter().filter(|c| *c == card).count();
-        let other_cards = self.state.side(player).hand.iter().filter(|c| *c != card).count();
-
-        this_card - 1 + other_cards >= n
+        self.state.side(player).hand.len() - 1 >= n
     }
 
     pub fn discard_pile_has_trainer(&self, player: Player, _card: &Card) -> bool {
