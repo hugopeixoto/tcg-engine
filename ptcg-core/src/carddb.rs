@@ -319,7 +319,7 @@ impl TrainerCardArchetype for ComputerSearch {
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         self
             .cost(engine, dm)
-            .search_deck_to_hand(player, 1, |_c| true, dm)
+            .search_any_deck_to_hand(player, 1, dm)
     }
 }
 
@@ -530,7 +530,8 @@ impl TrainerCardArchetype for Maintenance {
     card_name!("Maintenance");
 
     fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.ensure_shuffle_other(engine.player(), 2, dm)
+        engine
+            .ensure_shuffle_any_other(engine.player(), 2, dm)
     }
 
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {

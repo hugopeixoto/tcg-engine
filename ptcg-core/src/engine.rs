@@ -596,8 +596,30 @@ impl GameEngine {
     }
 
 
-    pub fn ensure_shuffle_other(&self, player: Player, how_many: usize, dm: &mut dyn DecisionMaker) -> Self {
+    pub fn ensure_shuffle_any_other(&self, player: Player, how_many: usize, dm: &mut dyn DecisionMaker) -> Self {
         let shuffleable_cards = self.state.side(player).hand.iter().filter(|&c| c != self.trainer_card()).cloned().collect::<Vec<_>>();
+
+        if shuffleable_cards.is_empty() {
+            self.bad()
+        } else {
+            let mut engine = self.clone();
+
+            let cost = dm.pick_from_hand(player, player, how_many, &shuffleable_cards);
+
+            // TODO: reveal
+            for shuffled in cost {
+                engine.state = engine.state.shuffle_from_hand_into_deck(player, shuffled);
+            }
+
+            engine
+        }
+    }
+
+    pub fn ensure_shuffle_other<F>(&self, player: Player, how_many: usize, filter: F, dm: &mut dyn DecisionMaker) -> Self where F: Fn(&GameEngine, &Card) -> bool {
+        let shuffleable_cards = self.state.side(player).hand.iter()
+            .filter(|&card| card != self.trainer_card())
+            .filter(|card| filter(self, card))
+            .cloned().collect::<Vec<_>>();
 
         if shuffleable_cards.is_empty() {
             self.bad()
@@ -613,10 +635,28 @@ impl GameEngine {
         }
     }
 
-    pub fn search_deck_to_hand<F>(&self, who: Player, how_many: usize, filter: F, dm: &mut dyn DecisionMaker) -> Self where F: FnMut(&Card) -> bool {
+    pub fn search_any_deck_to_hand(&self, who: Player, how_many: usize, dm: &mut dyn DecisionMaker) -> Self {
         let mut engine = self.ensure_deck_not_empty(who);
 
-        let deck_cards = engine.state.side(who).deck.cards().into_iter().filter(filter).collect();
+        let deck_cards = engine.state.side(who).deck.cards().into_iter()
+            .collect();
+
+        let chosen = dm.search_deck(who, who, how_many, &deck_cards);
+        for searched in chosen {
+            engine.state = engine.state.tutor_to_hand(who, searched);
+        }
+
+        engine.state = engine.state.shuffle_deck(who);
+        engine
+    }
+
+    pub fn search_deck_to_hand<F>(&self, who: Player, how_many: usize, filter: F, dm: &mut dyn DecisionMaker) -> Self where F: Fn(&GameEngine, &Card) -> bool {
+        let mut engine = self.ensure_deck_not_empty(who);
+
+        let deck_cards = engine.state.side(who).deck.cards().into_iter()
+            .filter(|card| filter(&engine, card))
+            .collect();
+
         let chosen = dm.search_deck(who, who, how_many, &deck_cards);
         for searched in chosen {
             engine.state = engine.state.tutor_to_hand(who, searched);
