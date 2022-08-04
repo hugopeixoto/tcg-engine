@@ -112,15 +112,6 @@ impl CardDB for Card {
             "Articuno (FO 17)"                  => Pokemon::create::<fossil::Articuno>(),
             "Psyduck (FO 53)"                   => Pokemon::create::<fossil::Psyduck>(),
             _                                   => Box::new(NOOP::default()),
-            //"Devolution Spray (BS 72)" => mine.in_play.any(is_evolution),
-            //"Super Energy Removal (BS 79)" => mine.in_play.any(energy_attached(1..)) && opp.in_play.any(energy_attached(1..)),
-            //"Full Heal (BS 82)" => self.active.any(asleep|confused|paralyzed|poisoned),
-            //"Pokemon Center (BS 85)" => mine.in_play.any((has_damage_counters|energy_attached(1..))&can_damage_counters_be_removed),
-            //"Pokemon Flute (BS 86)" => self.discard_pile_has_basic_pokemon(opp) && !opp.can_bench
-            //"Revive (BS 89)" => same as pokeflute but for ourselves,
-            //"Super Potion (BS 90)" => mine.in_play.any(has_damage_counters&energy_attached(1..)),
-            //"Energy Removal (BS 92)" => opp.in_play.any(energy_attached(1..))
-            //"Potion (BS 94)" => mine.in_play.any(has_damage_counters),
         }
     }
 }
@@ -479,11 +470,11 @@ struct SuperEnergyRemoval {}
 impl TrainerCardArchetype for SuperEnergyRemoval {
     card_name!("Super Energy Removal");
 
-    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
-        true
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine.clone()
     }
 
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -525,10 +516,10 @@ struct FullHeal {}
 impl TrainerCardArchetype for FullHeal {
     card_name!("Full Heal");
 
-    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -623,10 +614,10 @@ struct Revive {}
 impl TrainerCardArchetype for Revive {
     card_name!("Revive");
 
-    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -636,10 +627,10 @@ struct SuperPotion {}
 impl TrainerCardArchetype for SuperPotion {
     card_name!("Super Potion");
 
-    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }

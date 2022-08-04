@@ -116,7 +116,7 @@ impl DecisionMaker for FakeDM {
     fn confirm_mulligan_draw(&mut self, _p: Player, upto: usize) -> usize { upto }
     fn confirm_setup_bench_selection(&mut self, _p: Player, _cards: &Vec<Card>) -> Vec<Card> { vec![] }
     fn pick_action<'a>(&mut self, _p: Player, actions: &'a Vec<Action>) -> &'a Action { &actions[0] }
-    fn pick_stage<'a>(&mut self, p: Player, items: &'a Vec<Stage>) -> &'a Stage { &items[0] }
+    fn pick_stage<'a>(&mut self, _p: Player, items: &'a Vec<Stage>) -> &'a Stage { &items[0] }
     fn pick_from_hand<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card> { hand[0..how_many].iter().collect() }
     fn pick_from_discard<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card> { searchable[0..how_many].iter().collect() }
     fn pick_in_play<'a>(&mut self, _p: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard> { searchable[0..how_many].iter().collect() }
