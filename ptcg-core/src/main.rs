@@ -233,9 +233,9 @@ fn load_deck(filename: &str) -> Result<Vec<String>, std::io::Error> {
 }
 
 fn main() {
-    let raindance = load_deck("base-fossil-rain-dance.deck").unwrap();
-    let arcanine_electrode = load_deck("base-fossil-arcanine-electrode.deck").unwrap();
-    let random_cards = load_deck("base-fossil-random-cards.deck").unwrap();
+    let raindance = load_deck("decks/base-fossil-rain-dance.deck").unwrap();
+    let arcanine_electrode = load_deck("decks/base-fossil-arcanine-electrode.deck").unwrap();
+    let random_cards = load_deck("decks/base-fossil-random-cards.deck").unwrap();
 
     let state = GameState::initial(&random_cards, &random_cards);
 
