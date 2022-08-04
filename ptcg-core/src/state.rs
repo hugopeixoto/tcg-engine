@@ -773,6 +773,15 @@ impl GameState {
         self.with_player_side(in_play.owner, side)
     }
 
+    pub fn remove_damage_counters(&self, in_play: &InPlayCard, counters: usize) -> Self {
+        let mut side = self.side(in_play.owner).clone();
+
+        let c = &mut side.in_play_mut(&in_play.id).unwrap().damage_counters;
+        *c = c.saturating_sub(counters);
+
+        self.with_player_side(in_play.owner, side)
+    }
+
     pub fn confuse(&self, in_play: &InPlayCard) -> Self {
         let mut side = self.side(in_play.owner).clone();
 

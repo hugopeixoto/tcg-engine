@@ -439,11 +439,13 @@ struct PokemonTrader {}
 impl TrainerCardArchetype for PokemonTrader {
     card_name!("Pokémon Trader");
 
-    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
-        true // TODO: pokemon communication
+    fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+         engine
+            .ensure_shuffle_other(engine.player(), 1, GameEngine::is_pokemon, dm)
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        self.cost(engine, dm)
+            .search_deck_to_hand(player, 1, GameEngine::is_pokemon, dm)
     }
 }
 
@@ -691,9 +693,14 @@ impl TrainerCardArchetype for Potion {
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
+
+        // at least one in play must have damage counters
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let targets = engine.attachment_from_hand_targets(player, card);
+        let target = dm.pick_in_play(player, 1, &targets)[0];
+
+        engine.heal(target, 20)
     }
 }
 

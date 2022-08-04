@@ -18,6 +18,9 @@ pub trait CardArchetype {
     fn pokemon_type(&self) -> Vec<Type>;
     fn name(&self) -> String;
     fn retreat(&self) -> usize;
+    fn is_pokemon(&self, _card: &Card, _engine: &GameEngine) -> bool {
+        self.stage().is_some()
+    }
 }
 
 pub trait CardDB {
@@ -1047,6 +1050,10 @@ impl GameEngine {
         self.with_state(self.state.bench_from_hand(player, card))
     }
 
+    pub fn heal(&self, in_play: &InPlayCard, damage: usize) -> Self {
+        self.with_state(self.state.remove_damage_counters(in_play, damage/10))
+    }
+
     pub fn bench(&self, player: Player) -> Vec<InPlayCard> {
         self.state.side(player).bench.clone()
     }
@@ -1238,6 +1245,10 @@ impl GameEngine {
         } else {
             false
         }
+    }
+
+    pub fn is_pokemon(&self, card: &Card) -> bool {
+        card.archetype().is_pokemon(card, self)
     }
 
     pub fn is_trainer(&self, card: &Card) -> bool {
