@@ -945,6 +945,18 @@ impl GameEngine {
         targets
     }
 
+    pub fn healable_targets(&self, player: Player) -> Vec<InPlayCard> {
+        let mut targets = vec![];
+
+        for in_play in self.state.side(player).all_in_play() {
+            if in_play.damage_counters > 0 {
+                targets.push(in_play.clone());
+            }
+        }
+
+        targets
+    }
+
     pub fn can_evolve(&self, card: &Card) -> bool {
         !self.evolution_targets(card).is_empty()
     }

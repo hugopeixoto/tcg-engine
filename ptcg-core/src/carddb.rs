@@ -710,12 +710,11 @@ impl TrainerCardArchetype for Potion {
     card_name!("Potion");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
-
-        // at least one in play must have damage counters
+        engine
+            .ensure(|e| !e.healable_targets(e.player()).is_empty())
     }
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let targets = engine.attachment_from_hand_targets(player, card);
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let targets = engine.healable_targets(player);
         let target = dm.pick_in_play(player, 1, &targets)[0];
 
         engine.heal(target, 20)
