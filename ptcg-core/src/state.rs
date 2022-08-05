@@ -837,6 +837,17 @@ impl GameState {
         self.with_player_side(side)
     }
 
+    pub fn remove_special_conditions(&self, in_play: &InPlayCard) -> Self {
+        let mut side = self.side(in_play.owner).clone();
+
+        let mut in_play = side.in_play_mut(&in_play.id).unwrap();
+        in_play.rotational_status = RotationalStatus::None;
+        in_play.poisoned = None;
+        in_play.burned = false;
+
+        self.with_player_side(side)
+    }
+
     pub fn with_stage(&self, stage: GameStage) -> Self {
         Self {
             stage,

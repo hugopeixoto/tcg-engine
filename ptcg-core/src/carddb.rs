@@ -519,10 +519,18 @@ impl TrainerCardArchetype for FullHeal {
     card_name!("Full Heal");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
+        engine.ensure(|e| !self.affected_in_play(e.player(), e).is_empty())
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let targets = self.affected_in_play(player, engine);
+        let target = dm.pick_in_play(player, 1, &targets)[0];
+
+        engine.remove_special_conditions(&target)
+    }
+}
+impl FullHeal {
+    fn affected_in_play(&self, player: Player, engine: &GameEngine) -> Vec<InPlayCard> {
+        engine.state.side(player).all_in_play().into_iter().filter(|p| GameEngine::has_special_condition(engine, p)).cloned().collect()
     }
 }
 

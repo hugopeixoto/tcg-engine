@@ -1057,6 +1057,10 @@ impl GameEngine {
         self.with_state(self.state.remove_damage_counters(in_play, damage/10))
     }
 
+    pub fn remove_special_conditions(&self, in_play: &InPlayCard) -> Self {
+        self.with_state(self.state.remove_special_conditions(in_play))
+    }
+
     pub fn bench(&self, player: Player) -> Vec<InPlayCard> {
         self.state.side(player).bench.clone()
     }
@@ -1256,6 +1260,12 @@ impl GameEngine {
 
     pub fn is_pokemon(&self, card: &Card) -> bool {
         card.archetype().is_pokemon(card, self)
+    }
+
+    pub fn has_special_condition(&self, in_play: &InPlayCard) -> bool {
+        let in_play = self.state.in_play(&in_play.id).unwrap();
+
+        in_play.rotational_status == RotationalStatus::None || in_play.poisoned.is_some() || in_play.burned
     }
 
     pub fn is_trainer(&self, card: &Card) -> bool {
