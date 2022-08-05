@@ -427,7 +427,7 @@ impl TrainerCardArchetype for PokemonBreeder {
     card_name!("Pokémon Breeder");
 
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
-        true // TODO: bunch of checks
+        true
     }
     fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();

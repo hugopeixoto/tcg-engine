@@ -489,8 +489,8 @@ impl GameState {
         }
     }
 
-    pub fn with_player_side(&self, player: Player, side: PlayerSide) -> Self {
-        match player {
+    pub fn with_player_side(&self, side: PlayerSide) -> Self {
+        match side.owner {
             Player::One => Self { p1: side, ..self.clone() },
             Player::Two => Self { p2: side, ..self.clone() },
         }
@@ -499,7 +499,7 @@ impl GameState {
     fn put_on_top_of_deck(&self, player: Player, card: Card) -> Self {
         let side = self.side(player);
 
-        self.with_player_side(player, PlayerSide {
+        self.with_player_side(PlayerSide {
             deck: side.deck.put_on_top(card),
             ..side.clone()
         })
@@ -520,13 +520,13 @@ impl GameState {
         let p = side.hand.iter().position(|c| c == card).unwrap();
         side.hand.remove(p);
 
-        self.with_player_side(player, side).put_on_top_of_deck(player, card.clone()).shuffle_deck(player)
+        self.with_player_side(side).put_on_top_of_deck(player, card.clone()).shuffle_deck(player)
     }
 
     pub fn shuffle_deck(&self, player: Player) -> Self {
         let side = self.side(player);
 
-        self.with_player_side(player, PlayerSide {
+        self.with_player_side(PlayerSide {
             deck: side.deck.shuffle(),
             ..side.clone()
         })
@@ -539,7 +539,7 @@ impl GameState {
         let mut hand = side.hand.clone();
         if let Some(card) = card { hand.push(card); }
 
-        self.with_player_side(player, PlayerSide { deck, hand, ..side.clone() })
+        self.with_player_side(PlayerSide { deck, hand, ..side.clone() })
     }
 
     pub fn draw_to_prizes(&self, player: Player, dm: &mut dyn Shuffler) -> Self {
@@ -549,7 +549,7 @@ impl GameState {
         let mut prizes = side.prizes.clone();
         if let Some(card) = card { prizes.push(PrizeCard { id: prizes.len() + 1, card: FaceCard::Down(card) }); }
 
-        self.with_player_side(player, PlayerSide { deck, prizes, ..side.clone() })
+        self.with_player_side(PlayerSide { deck, prizes, ..side.clone() })
     }
 
     pub fn prize_to_hand(&self, player: Player, prize: &PrizeCard) -> Self {
@@ -559,7 +559,7 @@ impl GameState {
         let prize = side.prizes.remove(p);
         side.hand.push(prize.card.card().clone());
 
-        self.with_player_side(player, side)
+        self.with_player_side(side)
     }
 
     pub fn draw_n_to_hand(&self, player: Player, n: usize, dm: &mut dyn Shuffler) -> Self {
@@ -584,7 +584,7 @@ impl GameState {
             ..Default::default()
         });
 
-        self.with_player_side(player, side)
+        self.with_player_side(side)
     }
 
     pub fn play_from_hand_to_bench_face_down(&self, player: Player, card: &Card) -> Self {
@@ -601,7 +601,7 @@ impl GameState {
             ..Default::default()
         });
 
-        self.with_player_side(player, side)
+        self.with_player_side(side)
     }
 
     pub fn attach_from_hand(&self, player: Player, card: &Card, target: &InPlayID) -> Self {
@@ -612,7 +612,7 @@ impl GameState {
 
         side.in_play_mut(target).unwrap().attached.push(FaceCard::Up(card.clone()));
 
-        self.with_player_side(player, side)
+        self.with_player_side(side)
     }
 
     pub fn evolve_from_hand(&self, player: Player, card: &Card, target: &InPlayID) -> Self {
@@ -624,7 +624,7 @@ impl GameState {
         side.in_play_mut(target).unwrap().stack.insert(0, FaceCard::Up(card.clone()));
         side.in_play_mut(target).unwrap().put_in_play_turn = self.turn;
 
-        self.with_player_side(player, side)
+        self.with_player_side(side)
     }
 
     pub fn bench_from_hand(&self, player: Player, card: &Card) -> Self {
@@ -641,7 +641,7 @@ impl GameState {
             ..Default::default()
         });
 
-        self.with_player_side(player, side)
+        self.with_player_side(side)
     }
 
     fn without_card(&self, card: &Card) -> Self {
@@ -728,7 +728,7 @@ impl GameState {
             side.discard.push(card.clone());
         }
 
-        self.with_player_side(player, side)
+        self.with_player_side(side)
     }
 
     pub fn tutor_to_hand(&self, player: Player, card: &Card) -> Self {
@@ -739,7 +739,7 @@ impl GameState {
             side.deck = deck;
         }
 
-        self.with_player_side(player, side)
+        self.with_player_side(side)
     }
 
     pub fn discard_to_hand(&self, player: Player, card: &Card) -> Self {
@@ -750,7 +750,7 @@ impl GameState {
             side.hand.push(card.clone());
         }
 
-        self.with_player_side(player, side)
+        self.with_player_side(side)
     }
 
     pub fn switch_active_with(&self, in_play: &InPlayCard) -> Self {
@@ -762,7 +762,7 @@ impl GameState {
         side.bench.retain(|x| x.id != in_play.id);
         side.active.push(in_play.clone());
 
-        self.with_player_side(in_play.owner, side)
+        self.with_player_side(side)
     }
 
     pub fn add_damage_counters(&self, in_play: &InPlayCard, counters: usize) -> Self {
@@ -770,7 +770,7 @@ impl GameState {
 
         side.in_play_mut(&in_play.id).unwrap().damage_counters += counters;
 
-        self.with_player_side(in_play.owner, side)
+        self.with_player_side(side)
     }
 
     pub fn remove_damage_counters(&self, in_play: &InPlayCard, counters: usize) -> Self {
@@ -779,7 +779,7 @@ impl GameState {
         let c = &mut side.in_play_mut(&in_play.id).unwrap().damage_counters;
         *c = c.saturating_sub(counters);
 
-        self.with_player_side(in_play.owner, side)
+        self.with_player_side(side)
     }
 
     pub fn confuse(&self, in_play: &InPlayCard) -> Self {
@@ -787,7 +787,7 @@ impl GameState {
 
         side.in_play_mut(&in_play.id).unwrap().rotational_status = RotationalStatus::Confused;
 
-        self.with_player_side(in_play.owner, side)
+        self.with_player_side(side)
     }
 
     pub fn paralyze(&self, in_play: &InPlayCard) -> Self {
@@ -795,7 +795,7 @@ impl GameState {
 
         side.in_play_mut(&in_play.id).unwrap().rotational_status = RotationalStatus::Paralyzed;
 
-        self.with_player_side(in_play.owner, side)
+        self.with_player_side(side)
     }
 
     pub fn poison(&self, in_play: &InPlayCard, counters: usize) -> Self {
@@ -803,7 +803,7 @@ impl GameState {
 
         side.in_play_mut(&in_play.id).unwrap().poisoned = Some(Poison { counters });
 
-        self.with_player_side(in_play.owner, side)
+        self.with_player_side(side)
     }
 
     pub fn asleep(&self, in_play: &InPlayCard) -> Self {
@@ -811,7 +811,7 @@ impl GameState {
 
         side.in_play_mut(&in_play.id).unwrap().rotational_status = RotationalStatus::Asleep;
 
-        self.with_player_side(in_play.owner, side)
+        self.with_player_side(side)
     }
 
     pub fn promote(&self, in_play: &InPlayCard) -> Self {
@@ -820,7 +820,7 @@ impl GameState {
         side.bench.retain(|x| x.id != in_play.id);
         side.active.push(in_play.clone());
 
-        self.with_player_side(in_play.owner, side)
+        self.with_player_side(side)
     }
 
     pub fn reveal_pokemon(&self, player: Player) -> Self {
@@ -834,7 +834,7 @@ impl GameState {
             benched.stack[0] = benched.stack[0].up();
         }
 
-        self.with_player_side(player, side)
+        self.with_player_side(side)
     }
 
     pub fn with_stage(&self, stage: GameStage) -> Self {

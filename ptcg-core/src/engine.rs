@@ -454,6 +454,9 @@ impl GameEngine {
     }
 
     pub fn damage(&self, mut damage: usize) -> Self {
+        // TODO: when targetting benched pokémon, we shouldn't apply weakness and resistance by
+        // default, but leave the door open for some attacks that do apply them.
+
         damage = self.effects_on_attacking(damage);
         damage = self.apply_weakness(damage);
         damage = self.apply_resistance(damage);
@@ -883,7 +886,7 @@ impl GameEngine {
             return card.archetype().card_actions(player, card, self);
         }
 
-        if self.can_bench_from_hand(card) {
+        if  self.can_bench_from_hand(card) && self.can_bench(player, card) {
             return vec![Action::BenchFromHand(player, card.clone())];
         }
 
@@ -1059,6 +1062,10 @@ impl GameEngine {
     }
 
     pub fn can_bench(&self, player: Player, _card: &Card) -> bool {
+        self.has_bench_space(player)
+    }
+
+    pub fn has_bench_space(&self, player: Player) -> bool {
         self.state.side(player).bench.len() < self.bench_size(player)
     }
 
