@@ -644,6 +644,23 @@ impl GameState {
         self.with_player_side(side)
     }
 
+    pub fn bench_from_discard(&self, player: Player, card: &Card) -> Self {
+        let mut side = self.side(player).clone();
+
+        let p = side.discard.iter().position(|c| c == card).unwrap();
+        side.hand.remove(p);
+
+        side.bench.push(InPlayCard {
+            id: self.next_play_id(),
+            owner: player,
+            stack: vec![FaceCard::Up(card.clone())],
+            put_in_play_turn: 1.max(self.turn),
+            ..Default::default()
+        });
+
+        self.with_player_side(side)
+    }
+
     fn without_card(&self, card: &Card) -> Self {
         let mut state = self.clone();
 

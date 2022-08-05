@@ -1053,6 +1053,10 @@ impl GameEngine {
         self.with_state(self.state.bench_from_hand(player, card))
     }
 
+    pub fn bench_from_discard(&self, player: Player, card: &Card) -> Self {
+        self.with_state(self.state.bench_from_discard(player, card))
+    }
+
     pub fn heal(&self, in_play: &InPlayCard, damage: usize) -> Self {
         self.with_state(self.state.remove_damage_counters(in_play, damage/10))
     }

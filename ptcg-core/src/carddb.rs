@@ -582,11 +582,21 @@ struct PokemonFlute {}
 impl TrainerCardArchetype for PokemonFlute {
     card_name!("Pokémon Flute");
 
-    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
-        true
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .ensure(|e| !e.has_bench_space(e.player()))
+            .ensure(|e| !self.discarded_basics(e.player(), e).is_empty())
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let searchable_cards = self.discarded_basics(player, engine);
+        let chosen = dm.pick_from_discard(player, player.opponent(), 1, &searchable_cards);
+
+        engine.bench_from_discard(player, chosen[0])
+    }
+}
+impl PokemonFlute {
+    fn discarded_basics(&self, player: Player, engine: &GameEngine) -> Vec<Card> {
+        engine.state.side(player.opponent()).discard.iter().filter(|&c| engine.stage(c) == Some(Stage::Basic)).cloned().collect()
     }
 }
 
