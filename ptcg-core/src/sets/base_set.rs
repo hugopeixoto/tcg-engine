@@ -95,7 +95,7 @@ impl CardArchetype for Blastoise {
     }
 }
 impl Blastoise {
-    pub fn hydro_pump(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn hydro_pump(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -145,7 +145,7 @@ impl Chansey {
             })
         )
     }
-    pub fn double_edge(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn double_edge(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
             .damage(80)
             .damage_self(80)
@@ -180,7 +180,7 @@ impl CardArchetype for Charizard {
     }
 }
 impl Charizard {
-    pub fn fire_spin(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn fire_spin(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -219,7 +219,7 @@ impl Clefairy {
 
         engine.then_if(asleep, GameEngine::asleep)
     }
-    pub fn metronome(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn metronome(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -253,7 +253,7 @@ impl CardArchetype for Gyarados {
     }
 }
 impl Gyarados {
-    pub fn dragon_rage(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn dragon_rage(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(50)
     }
     pub fn bubblebeam(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -292,10 +292,10 @@ impl CardArchetype for Hitmonchan {
     }
 }
 impl Hitmonchan {
-    pub fn jab(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn jab(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(20)
     }
-    pub fn special_punch(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn special_punch(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(40)
     }
 }
@@ -328,7 +328,7 @@ impl CardArchetype for Machamp {
     }
 }
 impl Machamp {
-    pub fn seismic_toss(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn seismic_toss(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(60)
     }
 }
@@ -367,7 +367,7 @@ impl Magneton {
 
         engine.damage(30).then_if(paralyzed, GameEngine::paralyze)
     }
-    pub fn selfdestruct(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn selfdestruct(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
             .damage(80)
             .then(|e| e.target_all(e.bench(e.player()), |e2| e2.damage(20)))
@@ -405,10 +405,10 @@ impl CardArchetype for Mewtwo {
     }
 }
 impl Mewtwo {
-    pub fn psychic(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn psychic(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
-    pub fn barrier(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn barrier(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -451,7 +451,7 @@ impl Nidoking {
             engine.damage(30).damage_self(10)
         }
     }
-    pub fn toxic(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn toxic(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
             .damage(20)
             .severe_poison(2)
@@ -487,7 +487,7 @@ impl CardArchetype for Ninetales {
     }
 }
 impl Ninetales {
-    pub fn lure(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn lure(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
     pub fn fire_blast(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -526,10 +526,10 @@ impl CardArchetype for Poliwrath {
     }
 }
 impl Poliwrath {
-    pub fn water_gun(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn water_gun(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
-    pub fn whirlpool(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn whirlpool(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -563,7 +563,7 @@ impl CardArchetype for Raichu {
     }
 }
 impl Raichu {
-    pub fn agility(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn agility(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
     pub fn thunder(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -603,7 +603,7 @@ impl CardArchetype for Venusaur {
     }
 }
 impl Venusaur {
-    pub fn solarbeam(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn solarbeam(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(60)
     }
 }
@@ -726,7 +726,7 @@ impl Dragonair {
 
         engine.damage(damage)
     }
-    pub fn hyper_beam(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn hyper_beam(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -760,10 +760,10 @@ impl CardArchetype for Dugtrio {
     }
 }
 impl Dugtrio {
-    pub fn slash(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn slash(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(40)
     }
-    pub fn earthquake(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn earthquake(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
             .damage(70)
             .then(|e| e.target_all(e.bench(e.player()), |e2| e2.damage(10)))
@@ -881,10 +881,10 @@ impl CardArchetype for Pidgeotto {
     }
 }
 impl Pidgeotto {
-    pub fn whirlwind(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn whirlwind(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
-    pub fn mirror_move(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn mirror_move(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -923,7 +923,7 @@ impl Arcanine {
           .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
           .damage(50)
     }
-    pub fn take_down(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn take_down(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
             .damage(80)
             .damage_self(30)
@@ -959,7 +959,7 @@ impl CardArchetype for Charmeleon {
     }
 }
 impl Charmeleon {
-    pub fn slash(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn slash(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(30)
     }
     pub fn flamethrower(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -998,7 +998,7 @@ impl CardArchetype for Dewgong {
     }
 }
 impl Dewgong {
-    pub fn aurora_beam(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn aurora_beam(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(50)
     }
     pub fn ice_beam(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -1036,7 +1036,7 @@ impl CardArchetype for Dratini {
     }
 }
 impl Dratini {
-    pub fn pound(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn pound(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(10)
     }
 }
@@ -1070,10 +1070,10 @@ impl CardArchetype for FarfetchD {
     }
 }
 impl FarfetchD {
-    pub fn leek_slap(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn leek_slap(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
-    pub fn pot_smash(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn pot_smash(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(30)
     }
 }
@@ -1106,7 +1106,7 @@ impl CardArchetype for Growlithe {
     }
 }
 impl Growlithe {
-    pub fn flare(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn flare(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(20)
     }
 }
@@ -1140,10 +1140,10 @@ impl CardArchetype for Haunter {
     }
 }
 impl Haunter {
-    pub fn hypnosis(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn hypnosis(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.asleep()
     }
-    pub fn dream_eater(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn dream_eater(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -1177,10 +1177,10 @@ impl CardArchetype for Ivysaur {
     }
 }
 impl Ivysaur {
-    pub fn vine_whip(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn vine_whip(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(30)
     }
-    pub fn poisonpowder(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn poisonpowder(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
             .damage(20)
             .poison()
@@ -1221,7 +1221,7 @@ impl Jynx {
 
         engine.damage(damage)
     }
-    pub fn meditate(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn meditate(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -1255,10 +1255,10 @@ impl CardArchetype for Kadabra {
     }
 }
 impl Kadabra {
-    pub fn recover(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn recover(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
-    pub fn super_psy(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn super_psy(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(50)
     }
 }
@@ -1344,10 +1344,10 @@ impl CardArchetype for Machoke {
     }
 }
 impl Machoke {
-    pub fn karate_chop(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn karate_chop(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
-    pub fn submission(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn submission(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
             .damage(60)
             .damage_self(20)
@@ -1383,10 +1383,10 @@ impl CardArchetype for Magikarp {
     }
 }
 impl Magikarp {
-    pub fn tackle(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn tackle(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(10)
     }
-    pub fn flail(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn flail(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -1420,7 +1420,7 @@ impl CardArchetype for Magmar {
     }
 }
 impl Magmar {
-    pub fn fire_punch(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn fire_punch(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(30)
     }
     pub fn flamethrower(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -1464,7 +1464,7 @@ impl Nidorino {
 
         engine.damage(damage)
     }
-    pub fn horn_drill(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn horn_drill(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(50)
     }
 }
@@ -1498,7 +1498,7 @@ impl CardArchetype for Poliwhirl {
     }
 }
 impl Poliwhirl {
-    pub fn amnesia(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn amnesia(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
     pub fn doubleslap(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -1537,10 +1537,10 @@ impl CardArchetype for Porygon {
     }
 }
 impl Porygon {
-    pub fn conversion_1(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn conversion_1(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
-    pub fn conversion_2(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn conversion_2(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -1574,10 +1574,10 @@ impl CardArchetype for Raticate {
     }
 }
 impl Raticate {
-    pub fn bite(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn bite(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(20)
     }
-    pub fn super_fang(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn super_fang(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -1610,7 +1610,7 @@ impl CardArchetype for Seel {
     }
 }
 impl Seel {
-    pub fn headbutt(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn headbutt(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(10)
     }
 }
@@ -1660,7 +1660,7 @@ impl Wartortle {
             })
         )
     }
-    pub fn bite(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn bite(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(40)
     }
 }
@@ -1728,7 +1728,7 @@ impl CardArchetype for Bulbasaur {
     }
 }
 impl Bulbasaur {
-    pub fn leech_seed(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn leech_seed(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -1797,7 +1797,7 @@ impl CardArchetype for Charmander {
     }
 }
 impl Charmander {
-    pub fn scratch(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn scratch(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(10)
     }
     pub fn ember(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -1836,10 +1836,10 @@ impl CardArchetype for Diglett {
     }
 }
 impl Diglett {
-    pub fn dig(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn dig(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(10)
     }
-    pub fn mud_slap(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn mud_slap(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(30)
     }
 }
@@ -1908,7 +1908,7 @@ impl CardArchetype for Drowzee {
     }
 }
 impl Drowzee {
-    pub fn pound(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn pound(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(10)
     }
     pub fn confuse_ray(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -1952,7 +1952,7 @@ impl Gastly {
 
         engine.then_if(asleep, GameEngine::asleep)
     }
-    pub fn destiny_bond(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn destiny_bond(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -2023,7 +2023,7 @@ impl CardArchetype for Machop {
     }
 }
 impl Machop {
-    pub fn low_kick(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn low_kick(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(20)
     }
 }
@@ -2062,7 +2062,7 @@ impl Magnemite {
 
         engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
     }
-    pub fn selfdestruct(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn selfdestruct(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
             .damage(40)
             .then(|e| e.target_all(e.bench(e.player()), |e2| e2.damage(10)))
@@ -2151,7 +2151,7 @@ impl CardArchetype for NidoranM {
     }
 }
 impl NidoranM {
-    pub fn horn_hazard(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn horn_hazard(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -2185,10 +2185,10 @@ impl CardArchetype for Onix {
     }
 }
 impl Onix {
-    pub fn rock_throw(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn rock_throw(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(10)
     }
-    pub fn harden(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn harden(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -2221,7 +2221,7 @@ impl CardArchetype for Pidgey {
     }
 }
 impl Pidgey {
-    pub fn whirlwind(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn whirlwind(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -2255,7 +2255,7 @@ impl CardArchetype for Pikachu {
     }
 }
 impl Pikachu {
-    pub fn gnaw(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn gnaw(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(10)
     }
     pub fn thunder_jolt(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -2295,7 +2295,7 @@ impl CardArchetype for Poliwag {
     }
 }
 impl Poliwag {
-    pub fn water_gun(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn water_gun(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -2329,10 +2329,10 @@ impl CardArchetype for Ponyta {
     }
 }
 impl Ponyta {
-    pub fn smash_kick(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn smash_kick(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(20)
     }
-    pub fn flame_tail(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn flame_tail(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(30)
     }
 }
@@ -2365,7 +2365,7 @@ impl CardArchetype for Rattata {
     }
 }
 impl Rattata {
-    pub fn bite(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn bite(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(20)
     }
 }
@@ -2398,7 +2398,7 @@ impl CardArchetype for Sandshrew {
     }
 }
 impl Sandshrew {
-    pub fn sand_attack(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn sand_attack(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
 }
@@ -2484,7 +2484,7 @@ impl CardArchetype for Starmie {
     }
 }
 impl Starmie {
-    pub fn recover(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn recover(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
     pub fn star_freeze(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -2522,7 +2522,7 @@ impl CardArchetype for Staryu {
     }
 }
 impl Staryu {
-    pub fn slap(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn slap(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(20)
     }
 }
@@ -2561,7 +2561,7 @@ impl Tangela {
 
         engine.damage(20).then_if(paralyzed, GameEngine::paralyze)
     }
-    pub fn poisonpowder(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn poisonpowder(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
             .damage(20)
             .poison()
@@ -2596,7 +2596,7 @@ impl CardArchetype for Voltorb {
     }
 }
 impl Voltorb {
-    pub fn tackle(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn tackle(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.damage(10)
     }
 }
