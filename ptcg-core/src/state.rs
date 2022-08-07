@@ -283,6 +283,7 @@ pub struct PlayerSide {
     pub bench: Vec<InPlayCard>,
     pub stadium: Option<Card>,
     pub supporter: Option<Card>,
+    pub working_area: Vec<Card>,
 }
 
 impl PlayerSide {
@@ -300,6 +301,7 @@ impl PlayerSide {
             bench: vec![],
             stadium: None,
             supporter: None,
+            working_area: vec![],
         }
     }
 
@@ -540,6 +542,36 @@ impl GameState {
         if let Some(card) = card { hand.push(card); }
 
         self.with_player_side(PlayerSide { deck, hand, ..side.clone() })
+    }
+
+    pub fn draw_to_working_area(&self, player: Player, dm: &mut dyn Shuffler) -> Self {
+        let mut side = self.side(player).clone();
+        let (deck, card) = side.deck.draw(dm);
+
+        if let Some(card) = card {
+            side.working_area.push(card);
+            side.deck = deck;
+        }
+
+        self.with_player_side(side)
+    }
+
+    pub fn put_working_area_on_top_of_deck(&self, player: Player) -> Self {
+        let mut side = self.side(player).clone();
+
+        while let Some(card) = side.working_area.pop() {
+            side.deck = side.deck.put_on_top(card);
+        }
+
+        self.with_player_side(side)
+    }
+
+    pub fn rearrange_working_area(&self, player: Player, cards: &Vec<&Card>) -> Self {
+        let mut side = self.side(player).clone();
+
+        side.working_area = cards.iter().cloned().cloned().collect();
+
+        self.with_player_side(side)
     }
 
     pub fn draw_to_prizes(&self, player: Player, dm: &mut dyn Shuffler) -> Self {

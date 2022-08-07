@@ -221,6 +221,30 @@ impl DecisionMaker for CLI {
 
         choice.unwrap()
     }
+
+    fn rearrange<'a>(&mut self, _p: Player, cards: &'a Vec<Card>) -> Vec<&'a Card> {
+        let mut choice = vec![];
+
+        println!("Rearrange the following {} cards:", cards.len());
+        for (i, card) in cards.iter().enumerate() {
+            println!("{}. {}", i + 1, card.archetype);
+        }
+
+        while choice.len() < cards.len() {
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+            let chosen = input.trim().parse::<usize>();
+            if let Ok(chosen) = chosen {
+                if 1 <= chosen && chosen <= cards.len() && !choice.contains(&(chosen - 1)) {
+                    choice.push(chosen - 1);
+                } else {
+                    println!("Invalid card.");
+                }
+            }
+        }
+
+        choice.iter().map(|x| &cards[*x]).collect()
+    }
 }
 
 use std::io::BufRead;

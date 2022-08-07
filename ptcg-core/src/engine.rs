@@ -101,6 +101,7 @@ pub trait DecisionMaker {
     fn pick_attached<'a>(&mut self, p: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card>;
     fn pick_from_prizes<'a>(&mut self, who: Player, whose: Player, how_many: usize, searchable: &'a Vec<PrizeCard>) -> Vec<&'a PrizeCard>;
     fn search_deck<'a>(&mut self, p: Player, whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card>;
+    fn rearrange<'a>(&mut self, p: Player, cards: &'a Vec<Card>) -> Vec<&'a Card>;
 }
 
 #[derive(Default)]
@@ -127,6 +128,7 @@ impl DecisionMaker for FakeDM {
     fn pick_attached<'a>(&mut self, _p: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card> { searchable[0..how_many].iter().collect() }
     fn pick_from_prizes<'a>(&mut self, _who: Player, _whose: Player, how_many: usize, searchable: &'a Vec<PrizeCard>) -> Vec<&'a PrizeCard> { searchable[0..how_many].iter().collect() }
     fn search_deck<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card> { deck[0..how_many].iter().collect() }
+    fn rearrange<'a>(&mut self, _p: Player, cards: &'a Vec<Card>) -> Vec<&'a Card> { cards.iter().collect() }
 }
 
 #[derive(PartialEq, Eq)]
@@ -1400,5 +1402,23 @@ impl GameEngine {
         }
 
         None
+    }
+
+    pub fn rearrange_topdeck(&self, who: Player, whose: Player, how_many: usize, dm: &mut dyn DecisionMaker) -> Self {
+        let mut engine = self.clone();
+
+        for _ in 0..how_many {
+            engine.state = engine.state.draw_to_working_area(whose, dm.shuffler());
+        }
+
+        println!("working area before: {:?}", engine.state.side(whose).working_area);
+
+        let rearranged = dm.rearrange(who, &engine.state.side(whose).working_area);
+        engine.state = engine.state.rearrange_working_area(whose, &rearranged);
+
+        println!("working area after: {:?}", engine.state.side(whose).working_area);
+
+        engine.state = engine.state.put_working_area_on_top_of_deck(whose);
+        engine
     }
 }
