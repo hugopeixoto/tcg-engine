@@ -679,12 +679,21 @@ impl TrainerCardArchetype for EnergyRemoval {
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
-            .ensure_deck_not_empty(engine.player())
+            .ensure(|e| !self.energy_removal_targets(e).is_empty())
     }
     fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        self
-            .cost(engine, dm)
-            .draw(player, 2, dm)
+        let targets = self.energy_removal_targets(engine);
+        let target = dm.pick_in_play(player, 1, &targets)[0];
+
+        let cards = target.attached.iter().map(|c| c.card()).cloned().collect();
+        let discarded = dm.pick_attached(player, 1, &cards);
+
+        engine.remove_attached_cards(&discarded)
+    }
+}
+impl EnergyRemoval {
+    pub fn energy_removal_targets(&self, engine: &GameEngine) -> Vec<InPlayCard> {
+        engine.state.side(engine.opponent()).all_in_play().into_iter().filter(|p| GameEngine::has_energy_cards_attached(engine, p)).cloned().collect()
     }
 }
 

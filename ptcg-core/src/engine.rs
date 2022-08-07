@@ -98,6 +98,7 @@ pub trait DecisionMaker {
     fn pick_from_hand<'a>(&mut self, p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card>;
     fn pick_from_discard<'a>(&mut self, p: Player, whose: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card>;
     fn pick_in_play<'a>(&mut self, p: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard>;
+    fn pick_attached<'a>(&mut self, p: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card>;
     fn pick_from_prizes<'a>(&mut self, who: Player, whose: Player, how_many: usize, searchable: &'a Vec<PrizeCard>) -> Vec<&'a PrizeCard>;
     fn search_deck<'a>(&mut self, p: Player, whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card>;
 }
@@ -123,6 +124,7 @@ impl DecisionMaker for FakeDM {
     fn pick_from_hand<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card> { hand[0..how_many].iter().collect() }
     fn pick_from_discard<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card> { searchable[0..how_many].iter().collect() }
     fn pick_in_play<'a>(&mut self, _p: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard> { searchable[0..how_many].iter().collect() }
+    fn pick_attached<'a>(&mut self, _p: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card> { searchable[0..how_many].iter().collect() }
     fn pick_from_prizes<'a>(&mut self, _who: Player, _whose: Player, how_many: usize, searchable: &'a Vec<PrizeCard>) -> Vec<&'a PrizeCard> { searchable[0..how_many].iter().collect() }
     fn search_deck<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, deck: &'a Vec<Card>) -> Vec<&'a Card> { deck[0..how_many].iter().collect() }
 }
@@ -1077,6 +1079,16 @@ impl GameEngine {
         self.with_state(self.state.remove_special_conditions(in_play))
     }
 
+    pub fn remove_attached_cards(&self, cards: &Vec<&Card>) -> Self {
+        let mut engine = self.clone();
+
+        for card in cards.iter() {
+            engine = engine.with_state(engine.state.move_card_to_discard(card));
+        }
+
+        engine
+    }
+
     pub fn bench(&self, player: Player) -> Vec<InPlayCard> {
         self.state.side(player).bench.clone()
     }
@@ -1284,6 +1296,12 @@ impl GameEngine {
         in_play.rotational_status == RotationalStatus::None || in_play.poisoned.is_some() || in_play.burned
     }
 
+    pub fn has_energy_cards_attached(&self, in_play: &InPlayCard) -> bool {
+        let in_play = self.state.in_play(&in_play.id).unwrap();
+
+        in_play.attached.iter().any(|c| self.is_energy(c.card()))
+    }
+
     pub fn is_trainer(&self, card: &Card) -> bool {
         match card.archetype.as_str() {
             "Clefairy Doll (BS 70)" => true,
@@ -1320,6 +1338,7 @@ impl GameEngine {
         in_play.stack[0].card().archetype().hp(in_play.stack[0].card(), self).unwrap_or(0).saturating_sub(in_play.damage_counters * 10)
     }
     pub fn is_energy(&self, card: &Card) -> bool {
+        // TODO: Electrode?
         self.is_basic_energy(card) || card.archetype == "Double Colorless Energy (BS 96)"
     }
 
