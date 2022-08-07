@@ -569,11 +569,19 @@ struct PokemonCenter {}
 impl TrainerCardArchetype for PokemonCenter {
     card_name!("Pokémon Center");
 
-    fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
-        true
+    fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .ensure(|e| !e.healable_targets(e.player()).is_empty())
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        let mut engine = engine.clone();
+
+        for target in engine.healable_targets(engine.player()) {
+            let cards = target.attached.iter().map(|c| c.card()).collect();
+            engine = engine.heal_all(&target).remove_attached_cards(&cards);
+        }
+
+        engine
     }
 }
 

@@ -1075,6 +1075,10 @@ impl GameEngine {
         self.with_state(self.state.remove_damage_counters(in_play, damage/10))
     }
 
+    pub fn heal_all(&self, in_play: &InPlayCard) -> Self {
+        self.with_state(self.state.remove_all_damage_counters(in_play))
+    }
+
     pub fn remove_special_conditions(&self, in_play: &InPlayCard) -> Self {
         self.with_state(self.state.remove_special_conditions(in_play))
     }

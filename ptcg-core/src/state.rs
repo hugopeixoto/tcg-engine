@@ -799,6 +799,14 @@ impl GameState {
         self.with_player_side(side)
     }
 
+    pub fn remove_all_damage_counters(&self, in_play: &InPlayCard) -> Self {
+        let mut side = self.side(in_play.owner).clone();
+
+        side.in_play_mut(&in_play.id).unwrap().damage_counters = 0;
+
+        self.with_player_side(side)
+    }
+
     pub fn confuse(&self, in_play: &InPlayCard) -> Self {
         let mut side = self.side(in_play.owner).clone();
 
