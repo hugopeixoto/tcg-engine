@@ -648,7 +648,7 @@ impl GameState {
         let mut side = self.side(player).clone();
 
         let p = side.discard.iter().position(|c| c == card).unwrap();
-        side.hand.remove(p);
+        side.discard.remove(p);
 
         side.bench.push(InPlayCard {
             id: self.next_play_id(),

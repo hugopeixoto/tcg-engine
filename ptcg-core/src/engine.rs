@@ -1079,6 +1079,10 @@ impl GameEngine {
         self.with_state(self.state.remove_all_damage_counters(in_play))
     }
 
+    pub fn put_damage_counters(&self, in_play: &InPlayCard, counters: usize) -> Self {
+        self.with_state(self.state.add_damage_counters(in_play, counters))
+    }
+
     pub fn remove_special_conditions(&self, in_play: &InPlayCard) -> Self {
         self.with_state(self.state.remove_special_conditions(in_play))
     }
@@ -1338,8 +1342,12 @@ impl GameEngine {
         }
     }
 
+    pub fn full_hp(&self, in_play: &InPlayCard) -> usize {
+        in_play.stack[0].card().archetype().hp(in_play.stack[0].card(), self).unwrap_or(0)
+    }
+
     pub fn remaining_hp(&self, in_play: &InPlayCard) -> usize {
-        in_play.stack[0].card().archetype().hp(in_play.stack[0].card(), self).unwrap_or(0).saturating_sub(in_play.damage_counters * 10)
+        self.full_hp(in_play).saturating_sub(in_play.damage_counters * 10)
     }
     pub fn is_energy(&self, card: &Card) -> bool {
         // TODO: Electrode?
@@ -1376,5 +1384,21 @@ impl GameEngine {
 
     pub fn then<F>(&self, f: F) -> Self where F: FnOnce(&Self) -> Self {
         f(self)
+    }
+
+    pub fn in_play_card(&self, card: &Card) -> Option<InPlayCard> {
+        for in_play in self.state.side(card.owner).active.iter() {
+            if in_play.stack.iter().any(|c| c.card() == card) || in_play.attached.iter().any(|c| c.card() == card) {
+                return Some(in_play.clone());
+            }
+        }
+
+        for in_play in self.state.side(card.owner).bench.iter() {
+            if in_play.stack.iter().any(|c| c.card() == card) || in_play.attached.iter().any(|c| c.card() == card) {
+                return Some(in_play.clone());
+            }
+        }
+
+        None
     }
 }

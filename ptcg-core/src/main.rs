@@ -1,3 +1,5 @@
+#![feature(int_roundings)]
+
 extern crate rand;
 use crate::rand::Rng;
 
@@ -123,7 +125,7 @@ impl DecisionMaker for CLI {
     fn pick_from_discard<'a>(&mut self, _p: Player, whose: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card> {
         let mut choice = None;
 
-        println!("Pick {} cards from {:?}'s hand:", how_many, whose);
+        println!("Pick {} cards from {:?}'s discard:", how_many, whose);
         for (i, card) in searchable.iter().enumerate() {
             println!("{}. {}", i + 1, card.archetype);
         }
@@ -253,8 +255,8 @@ fn load_deck(filename: &str) -> Result<Vec<String>, std::io::Error> {
 }
 
 fn main() {
-    let raindance = load_deck("decks/base-fossil-rain-dance.deck").unwrap();
-    let arcanine_electrode = load_deck("decks/base-fossil-arcanine-electrode.deck").unwrap();
+    let _raindance = load_deck("decks/base-fossil-rain-dance.deck").unwrap();
+    let _arcanine_electrode = load_deck("decks/base-fossil-arcanine-electrode.deck").unwrap();
     let random_cards = load_deck("decks/base-fossil-random-cards.deck").unwrap();
 
     let state = GameState::initial(&random_cards, &random_cards);

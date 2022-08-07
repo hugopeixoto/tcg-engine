@@ -592,19 +592,19 @@ impl TrainerCardArchetype for PokemonFlute {
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
-            .ensure(|e| !e.has_bench_space(e.player()))
-            .ensure(|e| !self.discarded_basics(e.player(), e).is_empty())
+            .ensure(|e| e.has_bench_space(e.opponent()))
+            .ensure(|e| !self.discarded_basics(e.opponent(), e).is_empty())
     }
-    fn execute(&self, player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let searchable_cards = self.discarded_basics(player, engine);
-        let chosen = dm.pick_from_discard(player, player.opponent(), 1, &searchable_cards);
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let searchable_cards = self.discarded_basics(engine.opponent(), engine);
+        let chosen = dm.pick_from_discard(engine.player(), engine.opponent(), 1, &searchable_cards);
 
-        engine.bench_from_discard(player, chosen[0])
+        engine.bench_from_discard(engine.opponent(), chosen[0])
     }
 }
 impl PokemonFlute {
     fn discarded_basics(&self, player: Player, engine: &GameEngine) -> Vec<Card> {
-        engine.state.side(player.opponent()).discard.iter().filter(|&c| engine.stage(c) == Some(Stage::Basic)).cloned().collect()
+        engine.state.side(player).discard.iter().filter(|&c| engine.stage(c) == Some(Stage::Basic)).cloned().collect()
     }
 }
 
@@ -644,10 +644,25 @@ impl TrainerCardArchetype for Revive {
     card_name!("Revive");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
+        engine
+            .ensure(|e| e.has_bench_space(e.player()))
+            .ensure(|e| !self.discarded_basics(e.player(), e).is_empty())
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let searchable_cards = self.discarded_basics(engine.player(), engine);
+        let chosen = dm.pick_from_discard(engine.player(), engine.player(), 1, &searchable_cards);
+
+        engine
+            .bench_from_discard(engine.player(), chosen[0])
+            .then(|e| {
+                let benched = &e.in_play_card(chosen[0]).unwrap();
+                e.put_damage_counters(benched, (e.full_hp(benched) / 10).div_ceil(2))
+            })
+    }
+}
+impl Revive {
+    fn discarded_basics(&self, player: Player, engine: &GameEngine) -> Vec<Card> {
+        engine.state.side(player).discard.iter().filter(|&c| engine.stage(c) == Some(Stage::Basic)).cloned().collect()
     }
 }
 
