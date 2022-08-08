@@ -182,10 +182,10 @@ impl DecisionMaker for CLI {
         choice.unwrap()
     }
 
-    fn pick_attached<'a>(&mut self, _player: Player, how_many: usize, searchable: &'a Vec<Card>) -> Vec<&'a Card> {
+    fn pick_attached<'a>(&mut self, _player: Player, how_many: std::ops::RangeInclusive<usize>, searchable: &'a Vec<Card>) -> Vec<&'a Card> {
         let mut choice = None;
 
-        println!("Pick {} in play pokemon:", how_many);
+        println!("Pick {:?} in play pokemon:", how_many);
         for (i, card) in searchable.iter().enumerate() {
             println!("{}. {:?}", i + 1, card);
         }
@@ -194,7 +194,7 @@ impl DecisionMaker for CLI {
             let mut input = String::new();
             std::io::stdin().read_line(&mut input).expect("Failed to read input");
             let chosen = input.trim().split(",").filter_map(|c| c.parse::<usize>().ok()).collect::<Vec<_>>();
-            if chosen.len() == how_many && chosen.iter().all(|&x| 1 <= x && x <= searchable.len()) {
+            if how_many.contains(&chosen.len()) && chosen.iter().all(|&x| 1 <= x && x <= searchable.len()) { // TODO: all different
                 choice = Some(chosen.iter().map(|i| &searchable[i - 1]).collect());
             }
         }

@@ -473,11 +473,32 @@ impl TrainerCardArchetype for SuperEnergyRemoval {
     card_name!("Super Energy Removal");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
+        engine
+            .ensure(|e| !self.energy_removal_targets(e.player(), e).is_empty())
+            .ensure(|e| !self.energy_removal_targets(e.opponent(), e).is_empty())
     }
 
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let own_targets = self.energy_removal_targets(engine.player(), engine);
+        let own_target = dm.pick_in_play(engine.player(), 1, &own_targets)[0];
+
+        let own_cards = own_target.attached.iter().map(|c| c.card()).cloned().collect();
+        let own_discarded = dm.pick_attached(engine.player(), 1..=1, &own_cards);
+
+        let their_targets = self.energy_removal_targets(engine.opponent(), engine);
+        let their_target = dm.pick_in_play(engine.player(), 1, &their_targets)[0];
+
+        let their_cards = their_target.attached.iter().map(|c| c.card()).cloned().collect();
+        let their_discarded = dm.pick_attached(engine.player(), 1..=2, &their_cards);
+
+        engine
+            .remove_attached_cards(&own_discarded)
+            .remove_attached_cards(&their_discarded)
+    }
+}
+impl SuperEnergyRemoval {
+    pub fn energy_removal_targets(&self, player: Player, engine: &GameEngine) -> Vec<InPlayCard> {
+        engine.state.side(player).all_in_play().into_iter().filter(|p| GameEngine::has_energy_cards_attached(engine, p)).cloned().collect()
     }
 }
 
@@ -709,7 +730,7 @@ impl TrainerCardArchetype for EnergyRemoval {
         let target = dm.pick_in_play(player, 1, &targets)[0];
 
         let cards = target.attached.iter().map(|c| c.card()).cloned().collect();
-        let discarded = dm.pick_attached(player, 1, &cards);
+        let discarded = dm.pick_attached(player, 1..=1, &cards);
 
         engine.remove_attached_cards(&discarded)
     }

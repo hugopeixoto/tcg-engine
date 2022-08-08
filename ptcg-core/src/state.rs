@@ -458,7 +458,7 @@ impl GameState {
         }
     }
 
-    pub fn next_play_id(&self) -> InPlayID {
+    fn next_play_id(&self) -> InPlayID {
         let mut max = 0;
 
         for in_play in self.p1.active.iter() {
@@ -491,7 +491,7 @@ impl GameState {
         }
     }
 
-    pub fn with_player_side(&self, side: PlayerSide) -> Self {
+    fn with_player_side(&self, side: PlayerSide) -> Self {
         match side.owner {
             Player::One => Self { p1: side, ..self.clone() },
             Player::Two => Self { p2: side, ..self.clone() },
