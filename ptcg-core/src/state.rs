@@ -426,6 +426,7 @@ pub struct Effect {
     pub expires: EffectExpiration,
     pub consequence: EffectConsequence,
     pub name: String,
+    pub system: bool
 }
 
 impl Effect {

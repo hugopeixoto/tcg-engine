@@ -142,6 +142,7 @@ impl Chansey {
                 target: EffectTarget::InPlay(e.player(), e.attacking().id),
                 consequence: EffectConsequence::BlockDamage,
                 expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
+                system: false,
             })
         )
     }
@@ -1305,6 +1306,7 @@ impl Kakuna {
                 target: EffectTarget::InPlay(e.player(), e.attacking().id),
                 consequence: EffectConsequence::BlockDamage,
                 expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
+                system: false,
             })
         )
     }
@@ -1657,6 +1659,7 @@ impl Wartortle {
                 target: EffectTarget::InPlay(e.player(), e.attacking().id),
                 consequence: EffectConsequence::BlockDamage,
                 expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
+                system: false,
             })
         )
     }
@@ -2113,6 +2116,7 @@ impl Metapod {
                 target: EffectTarget::InPlay(e.player(), e.attacking().id),
                 consequence: EffectConsequence::BlockDamage,
                 expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
+                system: false,
             })
         )
     }
@@ -2450,6 +2454,7 @@ impl Squirtle {
                 target: EffectTarget::InPlay(e.player(), e.attacking().id),
                 consequence: EffectConsequence::BlockDamage,
                 expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
+                system: false,
             })
         )
     }

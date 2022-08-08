@@ -148,6 +148,7 @@ impl CardArchetype for DoubleColorlessEnergy {
                 expires: EffectExpiration::EndOfTurn(player, 0),
                 consequence: EffectConsequence::BlockAttachmentFromHand,
                 name: "ENERGY_ATTACH_FOR_TURN".into(),
+                system: true,
             })
     }
     fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
@@ -193,6 +194,7 @@ impl CardArchetype for BasicEnergy {
                 expires: EffectExpiration::EndOfTurn(player, 0),
                 consequence: EffectConsequence::BlockAttachmentFromHand,
                 name: "ENERGY_ATTACH_FOR_TURN".into(),
+                system: true,
             })
     }
 

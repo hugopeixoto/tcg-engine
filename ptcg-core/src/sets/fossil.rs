@@ -114,6 +114,7 @@ impl Psyduck {
             target: EffectTarget::Player(engine.opponent()),
             consequence: EffectConsequence::BlockTrainerFromHand,
             expires: EffectExpiration::EndOfTurn(engine.opponent(), 0),
+            system: false,
         })
     }
     pub fn fury_swipes(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
