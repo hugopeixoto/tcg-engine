@@ -47,6 +47,7 @@ pub enum Zone {
     Discard(Player),
     InPlay(Player),
     LostZone(Player),
+    WorkingArea(Player),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -365,6 +366,8 @@ impl PlayerSide {
             Zone::InPlay(self.owner)
         } else if self.bench.iter().any(|p| p.stack.iter().any(|c| c.card() == card) || p.attached.iter().any(|c| c.card() == card)) {
             Zone::InPlay(self.owner)
+        } else if self.working_area.contains(card) {
+            Zone::WorkingArea(self.owner)
         } else {
             Zone::Unknown
         }
@@ -700,6 +703,7 @@ impl GameState {
         state.p1.discard.retain(|c| c != card);
         state.p1.hand.retain(|c| c != card);
         state.p1.lost_zone.retain(|c| c != card);
+        state.p1.working_area.retain(|c| c != card);
         state.p1.prizes.retain(|c| c.card.card() != card);
         state.p1.deck = state.p1.deck.remove_card(card).1;
         if state.p1.stadium == Some(card.clone()) {
@@ -722,6 +726,7 @@ impl GameState {
         state.p2.discard.retain(|c| c != card);
         state.p2.hand.retain(|c| c != card);
         state.p2.lost_zone.retain(|c| c != card);
+        state.p2.working_area.retain(|c| c != card);
         state.p2.prizes.retain(|c| c.card.card() != card);
         state.p2.deck = state.p2.deck.remove_card(card).1;
         if state.p2.stadium == Some(card.clone()) {
