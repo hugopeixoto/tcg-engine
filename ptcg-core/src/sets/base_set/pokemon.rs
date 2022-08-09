@@ -1,36 +1,5 @@
 use crate::*;
-
-struct Attacks<'a> {
-    player: Player,
-    in_play: &'a InPlayCard,
-    engine: &'a GameEngine,
-    attacks: Vec<Action>,
-}
-
-impl<'a> Attacks<'a> {
-    pub fn new(player: Player, in_play: &'a InPlayCard, engine: &'a GameEngine) -> Self {
-        Attacks {
-            player,
-            in_play,
-            engine: engine,
-            attacks: vec![],
-        }
-    }
-
-    pub fn register(mut self, name: &str, energy_requirements: &[Type], f: fn(&GameEngine, &mut dyn DecisionMaker) -> GameEngine) -> Attacks<'a> {
-        if self.engine.is_attack_energy_cost_met(self.in_play, energy_requirements) {
-            self.attacks.push(Action::Attack(self.player, self.in_play.clone(), name.into(), Box::new(RFA::new(f))));
-        }
-
-        self
-    }
-}
-
-impl<'a> From<Attacks<'a>> for Vec<Action> {
-    fn from(attacks: Attacks<'a>) -> Self {
-        attacks.attacks
-    }
-}
+use crate::carddb::Attacks;
 
 #[derive(Default)]
 pub struct Alakazam {}
