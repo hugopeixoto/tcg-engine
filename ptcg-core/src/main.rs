@@ -278,6 +278,26 @@ fn load_deck(filename: &str) -> Result<Vec<String>, std::io::Error> {
     Ok(lines)
 }
 
+#[derive(Clone)]
+struct BaseFossil {
+}
+
+impl Format for BaseFossil {
+    fn behavior(&self, card: &Card) -> Box<dyn CardArchetype> {
+        sets::base_set::find(&card.archetype)
+            .or_else(|| sets::fossil::find(&card.archetype))
+            .unwrap()
+    }
+
+    fn attacking_effects(&self) -> AttackingEffectsWhen {
+        AttackingEffectsWhen::AfterWR
+    }
+
+    fn boxed_clone(&self) -> Box<dyn Format> {
+        Box::new(self.clone())
+    }
+}
+
 fn main() {
     let _raindance = load_deck("decks/base-fossil-rain-dance.deck").unwrap();
     let _arcanine_electrode = load_deck("decks/base-fossil-arcanine-electrode.deck").unwrap();
@@ -285,5 +305,6 @@ fn main() {
 
     let state = GameState::initial(&random_cards, &random_cards);
 
-    GameEngine::from_state(state).play(&mut CLI { });
+    GameEngine::from_state(state, Box::new(BaseFossil {}))
+        .play(&mut CLI { });
 }

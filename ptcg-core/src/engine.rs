@@ -33,7 +33,30 @@ pub trait CardArchetype {
 }
 
 pub trait CardDB {
-    fn archetype(&self) -> Box<dyn CardArchetype>;
+    fn archetype(&self, format: &Box<dyn Format>) -> Box<dyn CardArchetype>;
+}
+
+impl CardDB for Card {
+    fn archetype(&self, format: &Box<dyn Format>) -> Box<dyn CardArchetype> {
+        format.behavior(self)
+    }
+}
+
+pub enum AttackingEffectsWhen {
+    BeforeWR,
+    AfterWR,
+}
+
+pub trait Format {
+    fn behavior(&self, card: &Card) -> Box<dyn CardArchetype>;
+    fn attacking_effects(&self) -> AttackingEffectsWhen;
+    fn boxed_clone(&self) -> Box<dyn Format>;
+}
+
+impl Clone for Box<dyn Format> {
+    fn clone(&self) -> Box<dyn Format> {
+        self.boxed_clone()
+    }
 }
 
 #[derive(Clone)]
@@ -64,6 +87,7 @@ pub struct GameEngine {
     pub resolving_actions: Vec<Action>,
     pub attack_target_stack: Vec<(InPlayID, InPlayID)>,
     pub good: bool,
+    pub format: Box<dyn Format>,
 }
 
 #[derive(Default)]
@@ -226,12 +250,13 @@ pub struct PrizeAward {
 
 
 impl GameEngine {
-    pub fn from_state(state: GameState) -> Self {
+    pub fn from_state(state: GameState, format: Box<dyn Format>) -> Self {
         Self {
             attack_target_stack: vec![],
             resolving_actions: vec![],
             state,
             good: true,
+            format,
         }
     }
 
@@ -275,11 +300,11 @@ impl GameEngine {
                     Action::TrainerFromHand(_, card) => {
                         self
                             .push_action(action.clone())
-                            .then(|e| card.archetype().execute(player, card, &e, dm))
+                            .then(|e| card.archetype(&e.format).execute(player, card, &e, dm))
                             .pop_action()
                     },
                     Action::AttachFromHand(_, card) => {
-                        card.archetype().execute(player, card, &self, dm)
+                        card.archetype(&self.format).execute(player, card, &self, dm)
                     },
                     Action::EvolveFromHand(player, card) => {
                         self.evolve(*player, card, dm)
@@ -495,12 +520,16 @@ impl GameEngine {
         engine
     }
 
+    pub fn archetype(&self, card: &Card) -> Box<dyn CardArchetype> {
+        card.archetype(&self.format)
+    }
+
     pub fn apply_weakness(&self, mut damage: usize) -> usize {
         // TODO: +X weaknesses instead of *X
         // TODO: Super effective glasses changing weakness to *3
-        let (multiplier, types) = self.defending().stack[0].card().archetype().weakness();
+        let (multiplier, types) = self.archetype(self.defending().stack[0].card()).weakness();
         for weakness in types {
-            if self.attacking().stack[0].card().archetype().pokemon_type().contains(&weakness) {
+            if self.archetype(self.attacking().stack[0].card()).pokemon_type().contains(&weakness) {
                 damage = damage * multiplier;
             }
         }
@@ -509,9 +538,9 @@ impl GameEngine {
     }
 
     pub fn apply_resistance(&self, mut damage: usize) -> usize {
-        let (offset, types) = self.defending().stack[0].card().archetype().resistance();
+        let (offset, types) = self.archetype(self.defending().stack[0].card()).resistance();
         for weakness in types {
-            if self.attacking().stack[0].card().archetype().pokemon_type().contains(&weakness) {
+            if self.archetype(self.attacking().stack[0].card()).pokemon_type().contains(&weakness) {
                 damage = damage - offset;
             }
         }
@@ -521,7 +550,7 @@ impl GameEngine {
 
     pub fn effects_on_attacking(&self, mut damage: usize) -> usize {
         for card in self.state.all_cards() {
-            if let Some(new_damage) = card.archetype().attacking_damage_effect(&card, self, damage) {
+            if let Some(new_damage) = self.archetype(&card).attacking_damage_effect(&card, self, damage) {
                 damage = new_damage;
             }
         }
@@ -535,7 +564,7 @@ impl GameEngine {
             .filter(|e| e.consequence == EffectConsequence::BlockDamage)
             .count() == 0 {
                 for card in self.state.all_cards() {
-                    if let Some(new_damage) = card.archetype().defending_damage_effect(&card, self, damage) {
+                    if let Some(new_damage) = self.archetype(&card).defending_damage_effect(&card, self, damage) {
                         damage = new_damage;
                     }
                 }
@@ -759,7 +788,7 @@ impl GameEngine {
         }
 
         for card in engine.state.all_cards() {
-            if let Some(new_engine) = card.archetype().on_turn_end(&card, &engine) {
+            if let Some(new_engine) = self.archetype(&card).on_turn_end(&card, &engine) {
                 engine = new_engine;
             }
         }
@@ -836,7 +865,7 @@ impl GameEngine {
     }
 
     pub fn retreat_cost(&self, in_play: &InPlayCard) -> Vec<Type> {
-        let how_many = in_play.stack[0].card().archetype().retreat();
+        let how_many = self.archetype(in_play.stack[0].card()).retreat();
 
         let mut cost = vec![];
         for _ in 0..how_many {
@@ -854,7 +883,7 @@ impl GameEngine {
         let mut energy = vec![];
         for attached in in_play.attached.iter() {
             if self.is_energy(attached.card()) {
-                energy.extend(attached.card().archetype().provides());
+                energy.extend(self.archetype(attached.card()).provides());
             }
         }
 
@@ -926,7 +955,7 @@ impl GameEngine {
 
     pub fn in_play_actions(&self, player: Player, in_play: &InPlayCard, active: bool) -> Vec<Action> {
         if active && in_play.rotational_status != RotationalStatus::Paralyzed {
-            in_play.stack[0].card().archetype().attacks(player, in_play, self)
+            self.archetype(in_play.stack[0].card()).attacks(player, in_play, self)
         } else {
             vec![]
         }
@@ -934,9 +963,9 @@ impl GameEngine {
 
     pub fn card_actions(&self, player: Player, card: &Card) -> Vec<Action> {
         if self.is_trainer(card) {
-            return card.archetype().card_actions(player, card, self);
+            return self.archetype(card).card_actions(player, card, self);
         } else if self.is_energy(card) {
-            return card.archetype().card_actions(player, card, self);
+            return self.archetype(card).card_actions(player, card, self);
         }
 
         if  self.can_bench_from_hand(card) && self.can_bench(player, card) {
@@ -956,6 +985,10 @@ impl GameEngine {
 
         // TODO: clear effects and special conditions
         self.with_state(self.state.evolve_from_hand(player, card, &target[0].id))
+    }
+
+    pub fn evolve_into(&self, in_play: &InPlayCard, card: &Card) -> Self {
+        self.with_state(self.state.evolve_from_hand(card.owner, card, &in_play.id))
     }
 
     pub fn devolve(&self, in_play: &InPlayCard, stage: &Stage, destination_zone: &Zone) -> Self {
@@ -979,6 +1012,14 @@ impl GameEngine {
         engine
     }
 
+    pub fn can_evolve(&self, card: &Card) -> bool {
+        !self.evolution_targets(card).is_empty()
+    }
+
+    pub fn ready_to_evolve(&self, in_play: &InPlayCard) -> bool {
+        self.state.turns[in_play.put_in_play_turn.saturating_sub(1) ..= self.state.turn.saturating_sub(1)].iter().filter(|&&t| t == in_play.owner).count() > 1
+    }
+
     pub fn evolution_targets(&self, card: &Card) -> Vec<InPlayCard> {
         let mut targets = vec![];
 
@@ -988,8 +1029,8 @@ impl GameEngine {
         };
 
         for in_play in self.state.side(card.owner).all_in_play() {
-            if in_play.stack[0].card().archetype().name() == name_to_find {
-                if self.state.turns[in_play.put_in_play_turn.saturating_sub(1) ..= self.state.turn.saturating_sub(1)].iter().filter(|&&t| t == card.owner).count() > 1 {
+            if self.archetype(in_play.stack[0].card()).name() == name_to_find {
+                if self.ready_to_evolve(in_play) {
                     targets.push(in_play.clone());
                 }
             }
@@ -1014,10 +1055,6 @@ impl GameEngine {
         in_play.damage_counters > 0
     }
 
-    pub fn can_evolve(&self, card: &Card) -> bool {
-        !self.evolution_targets(card).is_empty()
-    }
-
     pub fn can_play_trainer_from_hand(&self, card: &Card) -> bool {
         self.state.effects.iter()
             .filter(|e| e.target == EffectTarget::Player(card.owner))
@@ -1029,7 +1066,7 @@ impl GameEngine {
         let mut energy = vec![];
         for attached in in_play.attached.iter() {
             if self.is_energy(attached.card()) {
-                energy.extend(attached.card().archetype().provides());
+                energy.extend(self.archetype(attached.card()).provides());
             }
         }
 
@@ -1352,7 +1389,7 @@ impl GameEngine {
     }
 
     pub fn is_pokemon(&self, card: &Card) -> bool {
-        card.archetype().is_pokemon(card, self)
+        self.archetype(card).is_pokemon(card, self)
     }
 
     pub fn has_special_condition(&self, in_play: &InPlayCard) -> bool {
@@ -1400,7 +1437,7 @@ impl GameEngine {
     }
 
     pub fn full_hp(&self, in_play: &InPlayCard) -> usize {
-        in_play.stack[0].card().archetype().hp(in_play.stack[0].card(), self).unwrap_or(0)
+        self.archetype(in_play.stack[0].card()).hp(in_play.stack[0].card(), self).unwrap_or(0)
     }
 
     pub fn remaining_hp(&self, in_play: &InPlayCard) -> usize {
@@ -1420,11 +1457,11 @@ impl GameEngine {
     }
 
     pub fn stage(&self, card: &Card) -> Option<Stage> {
-        card.archetype().stage()
+        self.archetype(card).stage()
     }
 
     pub fn evolves_from(&self, card: &Card) -> Option<String> {
-        card.archetype().evolves_from()
+        self.archetype(card).evolves_from()
     }
 
     pub fn zone(&self, card: &Card) -> Zone {
