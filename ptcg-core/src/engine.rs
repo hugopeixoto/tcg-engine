@@ -508,9 +508,14 @@ impl GameEngine {
         // TODO: when targetting benched pokémon, we shouldn't apply weakness and resistance by
         // default, but leave the door open for some attacks that do apply them.
 
+        if self.format.attacking_effects() == AttackingEffectsWhen::BeforeWR {
+            damage = self.effects_on_attacking(damage);
+        }
         damage = self.apply_weakness(damage);
         damage = self.apply_resistance(damage);
-        damage = self.effects_on_attacking(damage); // TODO: newer formats do this before w/r
+        if self.format.attacking_effects() == AttackingEffectsWhen::AfterWR {
+            damage = self.effects_on_attacking(damage);
+        }
         damage = self.effects_on_defending(damage);
 
         self.with_state(self.state.add_damage_counters(self.defending(), damage/10))
