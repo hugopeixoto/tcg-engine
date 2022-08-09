@@ -983,7 +983,7 @@ impl GameEngine {
 
         for in_play in self.state.side(card.owner).all_in_play() {
             if in_play.stack[0].card().archetype().name() == name_to_find {
-                if in_play.put_in_play_turn + 1 <= self.state.turn {
+                if self.state.turns[in_play.put_in_play_turn.saturating_sub(1) ..= self.state.turn.saturating_sub(1)].iter().filter(|&&t| t == card.owner).count() > 1 {
                     targets.push(in_play.clone());
                 }
             }

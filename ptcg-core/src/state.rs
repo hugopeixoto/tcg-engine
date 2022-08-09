@@ -678,7 +678,7 @@ impl GameState {
             id: self.next_play_id(),
             owner: player,
             stack: vec![FaceCard::Down(card.clone())],
-            put_in_play_turn: 1.max(self.turn),
+            put_in_play_turn: 0,
             ..Default::default()
         });
 
@@ -695,7 +695,7 @@ impl GameState {
             id: self.next_play_id(),
             owner: player,
             stack: vec![FaceCard::Down(card.clone())],
-            put_in_play_turn: 1.max(self.turn),
+            put_in_play_turn: 0,
             ..Default::default()
         });
 
@@ -735,7 +735,7 @@ impl GameState {
             id: self.next_play_id(),
             owner: player,
             stack: vec![FaceCard::Up(card.clone())],
-            put_in_play_turn: 1.max(self.turn),
+            put_in_play_turn: self.turn,
             ..Default::default()
         });
 
@@ -752,7 +752,7 @@ impl GameState {
             id: self.next_play_id(),
             owner: player,
             stack: vec![FaceCard::Up(card.clone())],
-            put_in_play_turn: 1.max(self.turn),
+            put_in_play_turn: self.turn,
             ..Default::default()
         });
 
