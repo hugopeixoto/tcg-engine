@@ -801,8 +801,8 @@ impl CardArchetype for NOOP {
     fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> {
         vec![]
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    fn execute(&self, _player: Player, card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        panic!("Tried to run the code in a card that doesn't exist in the database: {:?}", card);
     }
     fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> {
         vec![]
