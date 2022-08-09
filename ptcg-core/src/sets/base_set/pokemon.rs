@@ -147,8 +147,10 @@ impl CardArchetype for Charizard {
     }
 }
 impl Charizard {
-    pub fn fire_spin(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    pub fn fire_spin(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Any, Type::Any], dm)
+            .damage(100)
     }
 }
 
@@ -499,8 +501,10 @@ impl Poliwrath {
     pub fn water_gun(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
     }
-    pub fn whirlpool(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    pub fn whirlpool(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .discard_attached_energies(engine.player(), engine.defending(), &[Type::Any], dm)
+            .damage(40)
     }
 }
 
@@ -696,8 +700,10 @@ impl Dragonair {
         engine
             .damage(30 * flip_results.heads())
     }
-    pub fn hyper_beam(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    pub fn hyper_beam(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .discard_attached_energies(engine.player(), engine.defending(), &[Type::Any], dm)
+            .damage(20)
     }
 }
 
@@ -1197,8 +1203,9 @@ impl Jynx {
         engine
             .damage(10 * flip_results.heads())
     }
-    pub fn meditate(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    pub fn meditate(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .damage(20usize.saturating_add(engine.damage_counters_on(engine.defending()) * 10))
     }
 }
 
@@ -1231,8 +1238,10 @@ impl CardArchetype for Kadabra {
     }
 }
 impl Kadabra {
-    pub fn recover(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    pub fn recover(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Psychic], dm)
+            .heal_all(engine.attacking())
     }
     pub fn super_psy(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
@@ -1558,8 +1567,9 @@ impl Raticate {
         engine
             .damage(20)
     }
-    pub fn super_fang(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    pub fn super_fang(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .damage(engine.remaining_hp(engine.defending()).div_ceil(2))
     }
 }
 
@@ -2472,8 +2482,10 @@ impl CardArchetype for Starmie {
     }
 }
 impl Starmie {
-    pub fn recover(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    pub fn recover(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Water], dm)
+            .heal_all(engine.attacking())
     }
     pub fn star_freeze(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let heads = dm.flip(1).heads() == 1;

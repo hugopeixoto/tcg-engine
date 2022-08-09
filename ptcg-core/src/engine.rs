@@ -205,6 +205,7 @@ pub enum Type {
     Fairy,
     Dragon,
     Colorless,
+    Any,
 }
 
 #[derive(PartialEq, Eq, Debug)]

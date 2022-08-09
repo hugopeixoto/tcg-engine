@@ -163,9 +163,30 @@ class Builder
     self
   end
 
-  def discard_all_attached_energies
+  def discard_defending_attached_energies(energy_requirements)
+    inject_engine!
+
+    energies = energy_requirements.map { |e| "Type::#{e}" }.join(", ")
+
+    @text << ".discard_attached_energies(#{@engine_name}.player(), #{@engine_name}.defending(), &[#{energies}], dm)"
+    self
+  end
+
+  def discard_all_attached_energy_cards
     inject_engine!
     @text << ".discard_all_attached_energies(#{@engine_name}.player(), #{@engine_name}.attacking(), dm)"
+    self
+  end
+
+  def attacking
+    inject_engine!
+    @text << ".attacking()"
+    self
+  end
+
+  def heal_all(&who)
+    inject_engine!
+    @text << ".heal_all(#{Builder.new(@engine_name).instance_eval(&who).to_s(compact: true)})"
     self
   end
 
@@ -205,6 +226,18 @@ class Builder
   def damage_minus_per_damage_counter_on_itself(base_damage, minus)
     inject_engine!
     @text << ".damage(#{base_damage}usize.saturating_sub(#{@engine_name}.damage_counters_on(#{@engine_name}.attacking()) * #{minus}))"
+    self
+  end
+
+  def damage_plus_per_damage_counter_on_defending(base_damage, plus)
+    inject_engine!
+    @text << ".damage(#{base_damage}usize.saturating_add(#{@engine_name}.damage_counters_on(#{@engine_name}.defending()) * #{plus}))"
+    self
+  end
+
+  def damage_half_defending_remaining_hp
+    inject_engine!
+    @text << ".damage(#{@engine_name}.remaining_hp(#{@engine_name}.defending()).div_ceil(2))"
     self
   end
 
@@ -250,22 +283,32 @@ def attack_impl(attack)
     base_damage = $1.to_i
     minus_damage = $2.to_i
     Builder.new.damage_minus_per_damage_counter_on_itself(base_damage, minus_damage)
+  elsif text =~ /^Does (\d+) damage plus (\d+) more damage for each damage counter on the Defending Pokémon\.$/
+    base_damage = $1.to_i
+    plus_damage = $2.to_i
+    Builder.new.damage_plus_per_damage_counter_on_defending(base_damage, plus_damage)
+  elsif text =~ /^Does damage to the Defending Pokémon equal to half the Defending Pokémon's remaining HP\.$/
+    Builder.new.damage_half_defending_remaining_hp
   elsif text =~ /^\w+ does (\d+) damage to itself.$/
     damage_self = $1.to_i
     Builder.new.damage(damage).damage_itself(damage_self)
   elsif text =~ /^Flip a coin\. If heads, prevent all damage done to (.+) during your opponent's next turn\.$/
-    Builder
-      .flip_a_coin
-      .if_heads { prevent_damage_during_opponents_next_turn }
+    Builder.flip_a_coin.if_heads { prevent_damage_during_opponents_next_turn }
   elsif text =~ /^Discard 1 (Fire|Water) Energy card attached to \w+ in order to use this attack\.$/
     energy_type = $1
-    Builder.new
-      .discard_attached_energies([energy_type])
-      .damage(damage)
+    Builder.new.discard_attached_energies([energy_type]).damage(damage)
+  elsif text =~ /^Discard (\d+) Energy cards attached to \w+ in order to use this attack\.$/
+    how_many = $1.to_i
+    Builder.new.discard_attached_energies(["Any"] * how_many).damage(damage)
   elsif text =~ /^Discard all Energy cards attached to \w+ in order to use this attack\.$/
-    Builder.new
-      .discard_all_attached_energies
-      .damage(damage)
+    Builder.new.discard_all_attached_energy_cards.damage(damage)
+  elsif text =~ /^Discard (\d+) (\w+) Energy cards? attached to \w+ in order to use this attack\. Remove all damage counters from \w+\.$/
+    how_many = $1.to_i
+    energy_type = $2
+    Builder.new.discard_attached_energies([energy_type] * how_many).heal_all { attacking }
+  elsif text =~ /^If the Defending Pokémon has any Energy cards attached to it, choose (\d+) of them and discard it\.$/
+    how_many = $1.to_i
+    Builder.new.discard_defending_attached_energies(["Any"] * how_many).damage(damage)
   elsif text =~ /^Flip a coin\. If heads, this attack does (\d+) damage plus (\d+) more damage; if tails, this attack does (\d+) damage (?:plus|and) \w+ does (\d+) damage to itself\.$/
     damage_base1 = $1.to_i
     damage_extra = $2.to_i
