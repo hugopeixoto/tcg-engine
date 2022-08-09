@@ -226,6 +226,9 @@ trait TrainerCardArchetype {
     fn hp(&self, _card: &Card, _engine: &GameEngine) -> Option<usize> {
         None
     }
+    fn attacking_damage_effect(&self, _card: &Card, _engine: &GameEngine, _damage: usize) -> Option<usize> {
+        None
+    }
     fn defending_damage_effect(&self, _card: &Card, _engine: &GameEngine, _damage: usize) -> Option<usize> {
         None
     }
@@ -289,6 +292,9 @@ impl CardArchetype for Trainer {
     }
     fn retreat(&self) -> usize {
         0
+    }
+    fn attacking_damage_effect(&self, card: &Card, engine: &GameEngine, damage: usize) -> Option<usize> {
+        self.archetype.attacking_damage_effect(card, engine, damage)
     }
     fn defending_damage_effect(&self, card: &Card, engine: &GameEngine, damage: usize) -> Option<usize> {
         self.archetype.defending_damage_effect(card, engine, damage)
@@ -616,8 +622,30 @@ impl TrainerCardArchetype for PlusPower {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let targets = engine.state.side(player).active.iter().cloned().collect();
+        let target = dm.pick_in_play(player, 1, &targets)[0];
+
+        engine
+            .attach_from_hand(player, card, target)
+    }
+
+    fn attacking_damage_effect(&self, card: &Card, engine: &GameEngine, damage: usize) -> Option<usize> {
+        if engine.attacking().attached.iter().any(|c| c.card() == card) {
+            if engine.opponents_active_pokemon().contains(&engine.defending()) {
+                if damage > 0 {
+                    return Some(damage.saturating_add(10));
+                }
+            }
+        }
+
+        None
+    }
+
+    fn on_turn_end(&self, card: &Card, engine: &GameEngine) -> Option<GameEngine> {
+        engine
+            .turn_attached(card)
+            .map(|_| engine.remove_attached_cards(&vec![card]))
     }
 }
 

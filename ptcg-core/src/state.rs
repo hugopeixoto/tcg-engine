@@ -216,7 +216,7 @@ impl Deck {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FaceCard {
     Up(Card),
     Down(Card),
@@ -252,7 +252,7 @@ impl FaceCard {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AttachedCard {
     pub card: FaceCard,
     pub attached_turn: usize,
@@ -272,7 +272,7 @@ impl AttachedCard {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct InPlayCard {
     pub id: InPlayID,
     pub owner: Player,

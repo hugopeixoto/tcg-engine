@@ -24,6 +24,9 @@ pub trait CardArchetype {
     fn defending_damage_effect(&self, _card: &Card, _engine: &GameEngine, _damage: usize) -> Option<usize> {
         None
     }
+    fn attacking_damage_effect(&self, _card: &Card, _engine: &GameEngine, _damage: usize) -> Option<usize> {
+        None
+    }
     fn on_turn_end(&self, _card: &Card, _engine: &GameEngine) -> Option<GameEngine> {
         None
     }
@@ -447,6 +450,10 @@ impl GameEngine {
         }
     }
 
+    pub fn opponents_active_pokemon(&self) -> Vec<&InPlayCard> {
+        self.state.side(self.opponent()).active.iter().collect()
+    }
+
     pub fn defending(&self) -> &InPlayCard {
         match self.attack_target_stack.last() {
             Some((_attacking, defending)) => self.state.in_play(defending).unwrap(),
@@ -470,9 +477,9 @@ impl GameEngine {
         // TODO: when targetting benched pokémon, we shouldn't apply weakness and resistance by
         // default, but leave the door open for some attacks that do apply them.
 
-        damage = self.effects_on_attacking(damage);
         damage = self.apply_weakness(damage);
         damage = self.apply_resistance(damage);
+        damage = self.effects_on_attacking(damage); // TODO: newer formats do this before w/r
         damage = self.effects_on_defending(damage);
 
         self.with_state(self.state.add_damage_counters(self.defending(), damage/10))
@@ -506,7 +513,13 @@ impl GameEngine {
         damage
     }
 
-    pub fn effects_on_attacking(&self, damage: usize) -> usize {
+    pub fn effects_on_attacking(&self, mut damage: usize) -> usize {
+        for card in self.state.all_cards() {
+            if let Some(new_damage) = card.archetype().attacking_damage_effect(&card, self, damage) {
+                damage = new_damage;
+            }
+        }
+
         damage
     }
 
