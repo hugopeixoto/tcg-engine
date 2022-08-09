@@ -996,12 +996,16 @@ impl GameEngine {
         let mut targets = vec![];
 
         for in_play in self.state.side(player).all_in_play() {
-            if in_play.damage_counters > 0 {
+            if self.is_healable(in_play) {
                 targets.push(in_play.clone());
             }
         }
 
         targets
+    }
+
+    pub fn is_healable(&self, in_play: &InPlayCard) -> bool {
+        in_play.damage_counters > 0
     }
 
     pub fn can_evolve(&self, card: &Card) -> bool {
@@ -1478,5 +1482,9 @@ impl GameEngine {
 
     pub fn turn_attached(&self, card: &Card) -> Option<usize> {
         self.state.attached_card(card).map(|c| c.attached_turn)
+    }
+
+    pub fn in_play(&self, player: Player) -> Vec<&InPlayCard> {
+        self.state.side(player).all_in_play()
     }
 }

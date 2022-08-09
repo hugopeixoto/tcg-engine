@@ -757,10 +757,30 @@ impl TrainerCardArchetype for SuperPotion {
     card_name!("Super Potion");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.clone()
+        engine
+            .ensure(|e| !self.targets(e).is_empty())
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let own_targets = self.targets(engine);
+        let own_target = dm.pick_in_play(engine.player(), 1, &own_targets)[0];
+
+        let own_cards = own_target.attached.iter().map(|c| c.card()).cloned().collect();
+        let own_discarded = dm.pick_attached(engine.player(), 1..=1, &own_cards);
+
+        engine
+            .remove_attached_cards(&own_discarded)
+            .heal(own_target, 40)
+    }
+}
+impl SuperPotion {
+    fn targets(&self, engine: &GameEngine) -> Vec<InPlayCard> {
+        engine
+            .in_play(engine.player())
+            .into_iter()
+            .filter(|p| engine.has_energy_cards_attached(p))
+            .filter(|p| engine.is_healable(p))
+            .cloned()
+            .collect()
     }
 }
 
