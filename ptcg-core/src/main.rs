@@ -2,7 +2,6 @@
 
 extern crate rand;
 use crate::rand::Rng;
-use std::ops::Deref;
 
 mod state;
 mod cli;
@@ -11,12 +10,12 @@ mod carddb;
 mod card_macros;
 
 mod sets;
+mod formats;
 
 use state::*;
 use engine::*;
 
-struct CLI {
-}
+struct CLI {}
 
 impl Shuffler for CLI {
     fn random_card(&mut self, n: usize) -> usize {
@@ -279,54 +278,6 @@ fn load_deck(filename: &str) -> Result<Vec<String>, std::io::Error> {
     Ok(lines)
 }
 
-#[derive(Clone)]
-struct BaseFossil {
-    archetypes: std::rc::Rc<Vec<(String, Box<dyn CardArchetype>)>>,
-}
-
-impl BaseFossil {
-    pub fn new() -> Self {
-        let mut cards = vec![];
-
-        cards.extend(sets::base_set::build());
-        cards.extend(sets::fossil::build());
-
-        Self { archetypes: std::rc::Rc::new(cards) }
-    }
-}
-
-impl Format for BaseFossil {
-    fn behavior(&self, card: &Card) -> &dyn CardArchetype {
-        for (identifier, archetype) in self.archetypes.iter() {
-            if *identifier == card.archetype {
-                return archetype.deref();
-            }
-        }
-
-        panic!("Couldn't find card {}", card.archetype);
-    }
-
-    fn attacking_effects(&self) -> AttackingEffectsWhen {
-        AttackingEffectsWhen::AfterWR
-    }
-
-    fn basic_for_stage2(&self, card: &Card) -> String {
-        let stage1name = self.behavior(card).evolves_from().unwrap();
-
-        for (_, archetype) in self.archetypes.iter() {
-            if archetype.name() == stage1name {
-                return archetype.evolves_from().unwrap();
-            }
-        }
-
-        panic!("Couldn't find basic that matches card {}", card.archetype);
-    }
-
-    fn boxed_clone(&self) -> Box<dyn Format> {
-        Box::new(self.clone())
-    }
-}
-
 fn main() {
     let _raindance = load_deck("decks/base-fossil-rain-dance.deck").unwrap();
     let _arcanine_electrode = load_deck("decks/base-fossil-arcanine-electrode.deck").unwrap();
@@ -334,6 +285,6 @@ fn main() {
 
     let state = GameState::initial(&random_cards, &random_cards);
 
-    GameEngine::from_state(state, Box::new(BaseFossil::new()))
+    GameEngine::from_state(state, Box::new(formats::BaseFossil::new()))
         .play(&mut CLI { });
 }
