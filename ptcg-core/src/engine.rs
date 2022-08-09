@@ -252,7 +252,7 @@ impl GameEngine {
                 if self.state.side(player).deck.is_empty() {
                     self.with_state(self.state.with_stage(GameStage::Winner(player.opponent())))
                 } else {
-                    self.with_state(self.state.draw_to_hand(player, dm.shuffler()).with_stage(GameStage::Turn(player)).next_turn())
+                    self.with_state(self.state.draw_to_hand(player, dm.shuffler()).with_stage(GameStage::Turn(player)))
                 }
             },
             GameStage::Turn(player) => {
@@ -292,8 +292,11 @@ impl GameEngine {
                     },
                 }.check_for_knockouts(dm)
             },
+            GameStage::EndOfTurn(_) => {
+                self.goto_pokemon_checkup()
+            },
             GameStage::PokemonCheckup(player) => {
-                self.with_state(self.state.with_stage(GameStage::StartOfTurn(player)))
+                self.with_state(self.state.with_stage(GameStage::StartOfTurn(player)).next_turn(player))
             }
         };
 
@@ -691,6 +694,15 @@ impl GameEngine {
     // end trainer in flight?
 
 
+    pub fn goto_pokemon_checkup(&self) -> Self {
+        match &self.state.stage {
+            GameStage::EndOfTurn(player) => {
+                self.with_state(self.state.with_stage(GameStage::PokemonCheckup(player.opponent())))
+            },
+            stage => { panic!("Can't end turn while in stage {:?}", stage); }
+        }
+    }
+
     pub fn end_turn(&self) -> Self {
         let mut engine = self.clone();
         let player = match engine.state.stage {
@@ -698,7 +710,7 @@ impl GameEngine {
             stage => { panic!("Can't end turn while in stage {:?}", stage); }
         };
 
-        engine.state = engine.state.with_stage(GameStage::PokemonCheckup(player.opponent()));
+        engine.state = engine.state.with_stage(GameStage::EndOfTurn(player));
 
         engine.state.effects.retain(|e| match e.expires {
             EffectExpiration::EndOfTurn(p, 0) => p != player,
@@ -1193,7 +1205,9 @@ impl GameEngine {
 
         // TODO: check for abilities that activate on reveal, like Sableye SF 48
 
-        engine.state.stage = GameStage::Turn(Player::One);
+        engine.state = engine.state
+            .with_stage(GameStage::StartOfTurn(Player::One))
+            .next_turn(Player::One);
 
         println!("Hand sizes: {}, {}", engine.state.p1.hand.len(), engine.state.p2.hand.len());
         engine

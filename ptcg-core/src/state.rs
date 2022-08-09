@@ -413,6 +413,7 @@ pub enum GameStage {
     Uninitialized,
     StartOfTurn(Player),
     Turn(Player),
+    EndOfTurn(Player),
     PokemonCheckup(Player),
     Winner(Player),
     Tie,
@@ -480,6 +481,7 @@ pub struct GameState {
     // whose turn is it, what stage of the turn are we, etc
     pub stage: GameStage,
     pub turn: usize,
+    pub turns: Vec<Player>,
 
     // effects
     pub effects: Vec<Effect>,
@@ -492,6 +494,7 @@ impl GameState {
             p2: PlayerSide::new(b, Player::Two, a.len()),
             stage: GameStage::Uninitialized,
             turn: 0,
+            turns: vec![],
             effects: vec![],
         }
     }
@@ -965,9 +968,13 @@ impl GameState {
         mons
     }
 
-    pub fn next_turn(&self) -> Self {
+    pub fn next_turn(&self, player: Player) -> Self {
+        let mut turns = self.turns.clone();
+        turns.push(player);
+
         Self {
             turn: self.turn + 1,
+            turns,
             ..self.clone()
         }
     }

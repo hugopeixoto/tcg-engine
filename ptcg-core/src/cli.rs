@@ -136,6 +136,7 @@ impl CLIDrawable for GameEngine {
                 target.draw_line("x", 3, 25);
             },
             GameStage::StartOfTurn(_) => {},
+            GameStage::EndOfTurn(_) => {},
             GameStage::Turn(Player::One) => {
                 target.draw_line("v", 3, 25);
             },
