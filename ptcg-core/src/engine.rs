@@ -1426,6 +1426,11 @@ impl GameEngine {
     pub fn remaining_hp(&self, in_play: &InPlayCard) -> usize {
         self.full_hp(in_play).saturating_sub(in_play.damage_counters * 10)
     }
+
+    pub fn damage_counters_on(&self, in_play: &InPlayCard) -> usize {
+        in_play.damage_counters
+    }
+
     pub fn is_energy(&self, card: &Card) -> bool {
         // TODO: Electrode?
         self.is_basic_energy(card) || card.archetype == "Double Colorless Energy (BS 96)"

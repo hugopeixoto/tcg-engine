@@ -33,7 +33,7 @@ impl Alakazam {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(30)
-            .then_if(heads, GameEngine::confuse)
+            .then_if(heads, |e| e.confuse())
     }
 }
 
@@ -100,14 +100,10 @@ impl CardArchetype for Chansey {
 }
 impl Chansey {
     pub fn scrunch(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let worked = dm.flip(1).heads() == 1;
-
-        // TODO: this should only activate on the opponent's next turn, not right now.
-        // If there's anything that triggers immediately after attacking or
-        // during Pokémon Checkup, this ability shouldn't be considered.
-        engine.then_if(worked, |e|
-            e.with_effect(Effect {
-                name: "CHANSEY_BS_NO_DAMAGE".into(),
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .then_if(heads, |e| e.with_effect(Effect {
+                name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
                 source: EffectSource::Attack(e.player(), e.attacking().id),
                 target: EffectTarget::InPlay(e.player(), e.attacking().id),
                 consequence: EffectConsequence::BlockDamage,
@@ -188,7 +184,7 @@ impl Clefairy {
     pub fn sing(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let heads = dm.flip(1).heads() == 1;
         engine
-            .then_if(heads, GameEngine::asleep)
+            .then_if(heads, |e| e.asleep())
     }
     pub fn metronome(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
@@ -232,7 +228,7 @@ impl Gyarados {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(40)
-            .then_if(heads, GameEngine::paralyze)
+            .then_if(heads, |e| e.paralyze())
     }
 }
 
@@ -342,7 +338,7 @@ impl Magneton {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(30)
-            .then_if(heads, GameEngine::paralyze)
+            .then_if(heads, |e| e.paralyze())
     }
     pub fn selfdestruct(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
@@ -420,13 +416,10 @@ impl CardArchetype for Nidoking {
 }
 impl Nidoking {
     pub fn thrash(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let extra = dm.flip(1).heads() == 1;
-
-        if extra {
-            engine.damage(30 + 10)
-        } else {
-            engine.damage(30).damage_self(10)
-        }
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .then_if(heads, |e| e.damage(40))
+            .then_if(!heads, |e| e.damage(30).damage_self(10))
     }
     pub fn toxic(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
@@ -469,8 +462,8 @@ impl Ninetales {
     }
     pub fn fire_blast(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
-          .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
-          .damage(80)
+            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
+            .damage(80)
     }
 }
 
@@ -665,7 +658,7 @@ impl Beedrill {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(40)
-            .then_if(heads, GameEngine::poison)
+            .then_if(heads, |e| e.poison())
     }
 }
 
@@ -781,16 +774,13 @@ impl Electabuzz {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(10)
-            .then_if(heads, GameEngine::paralyze)
+            .then_if(heads, |e| e.paralyze())
     }
     pub fn thunderpunch(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let extra = dm.flip(1).heads() == 1;
-
-        if extra {
-            engine.damage(30 + 10)
-        } else {
-            engine.damage(30).damage_self(10)
-        }
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .then_if(heads, |e| e.damage(40))
+            .then_if(!heads, |e| e.damage(30).damage_self(10))
     }
 }
 
@@ -898,8 +888,8 @@ impl CardArchetype for Arcanine {
 impl Arcanine {
     pub fn flamethrower(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
-          .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
-          .damage(50)
+            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
+            .damage(50)
     }
     pub fn take_down(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
@@ -943,8 +933,8 @@ impl Charmeleon {
     }
     pub fn flamethrower(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
-          .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
-          .damage(50)
+            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
+            .damage(50)
     }
 }
 
@@ -985,7 +975,7 @@ impl Dewgong {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(30)
-            .then_if(heads, GameEngine::paralyze)
+            .then_if(heads, |e| e.paralyze())
     }
 }
 
@@ -1280,14 +1270,10 @@ impl CardArchetype for Kakuna {
 }
 impl Kakuna {
     pub fn stiffen(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let worked = dm.flip(1).heads() == 1;
-
-        // TODO: this should only activate on the opponent's next turn, not right now.
-        // If there's anything that triggers immediately after attacking or
-        // during Pokémon Checkup, this ability shouldn't be considered.
-        engine.then_if(worked, |e|
-            e.with_effect(Effect {
-                name: "KAKUNA_BS_NO_DAMAGE".into(),
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .then_if(heads, |e| e.with_effect(Effect {
+                name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
                 source: EffectSource::Attack(e.player(), e.attacking().id),
                 target: EffectTarget::InPlay(e.player(), e.attacking().id),
                 consequence: EffectConsequence::BlockDamage,
@@ -1300,7 +1286,7 @@ impl Kakuna {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(20)
-            .then_if(heads, GameEngine::poison)
+            .then_if(heads, |e| e.poison())
     }
 }
 
@@ -1333,8 +1319,9 @@ impl CardArchetype for Machoke {
     }
 }
 impl Machoke {
-    pub fn karate_chop(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    pub fn karate_chop(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .damage(50usize.saturating_sub(engine.damage_counters_on(engine.attacking()) * 10))
     }
     pub fn submission(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
@@ -1416,8 +1403,8 @@ impl Magmar {
     }
     pub fn flamethrower(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
-          .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
-          .damage(50)
+            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
+            .damage(50)
     }
 }
 
@@ -1639,14 +1626,10 @@ impl CardArchetype for Wartortle {
 }
 impl Wartortle {
     pub fn withdraw(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let worked = dm.flip(1).heads() == 1;
-
-        // TODO: this should only activate on the opponent's next turn, not right now.
-        // If there's anything that triggers immediately after attacking or
-        // during Pokémon Checkup, this ability shouldn't be considered.
-        engine.then_if(worked, |e|
-            e.with_effect(Effect {
-                name: "WARTORTLE_BS_NO_DAMAGE".into(),
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .then_if(heads, |e| e.with_effect(Effect {
+                name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
                 source: EffectSource::Attack(e.player(), e.attacking().id),
                 target: EffectTarget::InPlay(e.player(), e.attacking().id),
                 consequence: EffectConsequence::BlockDamage,
@@ -1693,7 +1676,7 @@ impl Abra {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(10)
-            .then_if(heads, GameEngine::paralyze)
+            .then_if(heads, |e| e.paralyze())
     }
 }
 
@@ -1762,7 +1745,7 @@ impl Caterpie {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(10)
-            .then_if(heads, GameEngine::paralyze)
+            .then_if(heads, |e| e.paralyze())
     }
 }
 
@@ -1801,8 +1784,8 @@ impl Charmander {
     }
     pub fn ember(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
-          .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
-          .damage(30)
+            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
+            .damage(30)
     }
 }
 
@@ -1917,7 +1900,7 @@ impl Drowzee {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(10)
-            .then_if(heads, GameEngine::confuse)
+            .then_if(heads, |e| e.confuse())
     }
 }
 
@@ -1953,7 +1936,7 @@ impl Gastly {
     pub fn sleeping_gas(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let heads = dm.flip(1).heads() == 1;
         engine
-            .then_if(heads, GameEngine::asleep)
+            .then_if(heads, |e| e.asleep())
     }
     pub fn destiny_bond(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
@@ -1992,8 +1975,8 @@ impl Koffing {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(10)
-            .then_if(heads, GameEngine::poison)
-            .then_if(!heads, GameEngine::confuse)
+            .then_if(heads, |e| e.poison())
+            .then_if(!heads, |e| e.confuse())
     }
 }
 
@@ -2064,7 +2047,7 @@ impl Magnemite {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(10)
-            .then_if(heads, GameEngine::paralyze)
+            .then_if(heads, |e| e.paralyze())
     }
     pub fn selfdestruct(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
@@ -2105,14 +2088,10 @@ impl CardArchetype for Metapod {
 }
 impl Metapod {
     pub fn stiffen(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let worked = dm.flip(1).heads() == 1;
-
-        // TODO: this should only activate on the opponent's next turn, not right now.
-        // If there's anything that triggers immediately after attacking or
-        // during Pokémon Checkup, this ability shouldn't be considered.
-        engine.then_if(worked, |e|
-            e.with_effect(Effect {
-                name: "METAPOD_BS_NO_DAMAGE".into(),
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .then_if(heads, |e| e.with_effect(Effect {
+                name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
                 source: EffectSource::Attack(e.player(), e.attacking().id),
                 target: EffectTarget::InPlay(e.player(), e.attacking().id),
                 consequence: EffectConsequence::BlockDamage,
@@ -2125,7 +2104,7 @@ impl Metapod {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(20)
-            .then_if(heads, GameEngine::paralyze)
+            .then_if(heads, |e| e.paralyze())
     }
 }
 
@@ -2446,17 +2425,13 @@ impl Squirtle {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(10)
-            .then_if(heads, GameEngine::paralyze)
+            .then_if(heads, |e| e.paralyze())
     }
     pub fn withdraw(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let worked = dm.flip(1).heads() == 1;
-
-        // TODO: this should only activate on the opponent's next turn, not right now.
-        // If there's anything that triggers immediately after attacking or
-        // during Pokémon Checkup, this ability shouldn't be considered.
-        engine.then_if(worked, |e|
-            e.with_effect(Effect {
-                name: "SQUIRTLE_BS_NO_DAMAGE".into(),
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .then_if(heads, |e| e.with_effect(Effect {
+                name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
                 source: EffectSource::Attack(e.player(), e.attacking().id),
                 target: EffectTarget::InPlay(e.player(), e.attacking().id),
                 consequence: EffectConsequence::BlockDamage,
@@ -2503,7 +2478,7 @@ impl Starmie {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(20)
-            .then_if(heads, GameEngine::paralyze)
+            .then_if(heads, |e| e.paralyze())
     }
 }
 
@@ -2574,7 +2549,7 @@ impl Tangela {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(20)
-            .then_if(heads, GameEngine::paralyze)
+            .then_if(heads, |e| e.paralyze())
     }
     pub fn poisonpowder(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
@@ -2649,7 +2624,7 @@ impl Vulpix {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(10)
-            .then_if(heads, GameEngine::confuse)
+            .then_if(heads, |e| e.confuse())
     }
 }
 
@@ -2685,6 +2660,6 @@ impl Weedle {
         let heads = dm.flip(1).heads() == 1;
         engine
             .damage(10)
-            .then_if(heads, GameEngine::poison)
+            .then_if(heads, |e| e.poison())
     }
 }

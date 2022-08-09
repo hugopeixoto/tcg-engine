@@ -62,9 +62,19 @@ def status_to_verb(status)
 end
 
 class Builder
-  def initialize
+  def initialize(engine_name="engine")
     @text = []
     @is_engining = false
+    @engine_name = engine_name
+  end
+
+  def self.unimplemented
+    Builder.new.unimplemented
+  end
+
+  def unimplemented
+    @text << "unimplemented!();"
+    self
   end
 
   def self.engine
@@ -80,7 +90,7 @@ class Builder
   end
 
   def engine
-    @text << "engine"
+    @text << @engine_name
     @is_engining = true
     self
   end
@@ -91,7 +101,7 @@ class Builder
   end
 
   def damage(amount)
-    if !amount.empty?
+    if !amount.to_s.empty?
       inject_engine!
       @text << ".damage(#{amount})"
     end
@@ -120,15 +130,15 @@ class Builder
     self
   end
 
-  def if_heads(what)
+  def if_heads(&what)
     inject_engine!
-    @text << ".then_if(heads, #{what})"
+    @text << ".then_if(heads, |e| #{Builder.new("e").instance_eval(&what).to_s(compact: true)})"
     self
   end
 
-  def if_tails(what)
+  def if_tails(&what)
     inject_engine!
-    @text << ".then_if(!heads, #{what})"
+    @text << ".then_if(!heads, |e| #{Builder.new("e").instance_eval(&what).to_s(compact: true)})"
     self
   end
 
@@ -144,14 +154,61 @@ class Builder
     self
   end
 
-  def discard_all_attached_energies
+  def discard_attached_energies(energy_requirements)
     inject_engine!
-    @text << ".discard_all_attached_energies(engine.player(), engine.attacking(), dm)"
+
+    energies = energy_requirements.map { |e| "Type::#{e}" }.join(", ")
+
+    @text << ".discard_attached_energies(#{@engine_name}.player(), #{@engine_name}.attacking(), &[#{energies}], dm)"
     self
   end
 
-  def to_s
-    @text.map { |x| if x.start_with?(".") then "    #{x}\n" else "#{x}\n" end }.join
+  def discard_all_attached_energies
+    inject_engine!
+    @text << ".discard_all_attached_energies(#{@engine_name}.player(), #{@engine_name}.attacking(), dm)"
+    self
+  end
+
+  def each_own_benched(&what)
+    inject_engine!
+    @text << ".then(|e| e.target_all(e.bench(e.player()), |e2| #{Builder.new("e2").instance_eval(&what).to_s(compact: true)}))"
+    self
+  end
+
+  def each_opponents_benched(&what)
+    inject_engine!
+    @text << ".then(|e| e.target_all(e.bench(e.opponent()), |e2| #{Builder.new("e2").instance_eval(&what).to_s(compact: true)}))"
+    self
+  end
+
+  def prevent_damage_during_opponents_next_turn
+    inject_engine!
+    @text << <<~EOF
+        .with_effect(Effect {
+                name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
+                source: EffectSource::Attack(#{@engine_name}.player(), #{@engine_name}.attacking().id),
+                target: EffectTarget::InPlay(#{@engine_name}.player(), #{@engine_name}.attacking().id),
+                consequence: EffectConsequence::BlockDamage,
+                expires: EffectExpiration::EndOfTurn(#{@engine_name}.opponent(), 0),
+                system: false,
+            })
+    EOF
+    self
+  end
+
+
+  def damage_minus_per_damage_counter_on_itself(base_damage, minus)
+    inject_engine!
+    @text << ".damage(#{base_damage}usize.saturating_sub(#{@engine_name}.damage_counters_on(#{@engine_name}.attacking()) * #{minus}))"
+    self
+  end
+
+  def to_s(compact: false)
+    if compact
+      @text.join
+    else
+      @text.map { |x| if x.start_with?(".") then "    #{x}\n" else "#{x}\n" end }.join
+    end
   end
 end
 
@@ -169,91 +226,63 @@ def attack_impl(attack)
     Builder.new.damage(damage).severe_poison(counters)
   elsif text =~ /^Flip a coin\. If heads, the Defending Pokémon is now (Asleep|Paralyzed|Confused|Poisoned)\.$/
     inflict = status_to_verb($1.downcase)
-    Builder.new.flip_a_coin.damage(damage).if_heads("GameEngine::#{inflict}")
+    Builder.new.flip_a_coin.damage(damage).if_heads{ inflict(inflict) }
   elsif text =~ /^Flip a coin\. If heads, the Defending Pokémon is now (Asleep|Paralyzed|Confused|Poisoned)\; if tails, it is now (Asleep|Paralyzed|Confused|Confused)\.$/
     inflict_yes = status_to_verb($1.downcase)
     inflict_no = status_to_verb($2.downcase)
-    Builder.new.flip_a_coin.damage(damage).if_heads("GameEngine::#{inflict_yes}").if_tails("GameEngine::#{inflict_no}")
+    Builder.new.flip_a_coin.damage(damage).if_heads { inflict(inflict_yes) }.if_tails { inflict(inflict_no) }
   elsif text =~ /^Flip a coin\. If tails, \w+ does (\d+) damage to itself\.$/
     self_damage = $1.to_i
-    Builder.new.flip_a_coin.damage(damage).if_tails("|e| e.damage_self(#{self_damage})")
+    Builder.new.flip_a_coin.damage(damage).if_tails { damage_itself(self_damage) }
   elsif text =~ /^Flip (\d+) coins\. This attack does (\d+) damage times the number of heads\./
     coins = $1.to_i
     damage = $2.to_i
     Builder.new.flip_coins(coins).damage_per_heads(damage)
+  elsif text =~ /^Does (\d+) damage minus (\d+) damage for each damage counter on \w+\.$/
+    base_damage = $1.to_i
+    minus_damage = $2.to_i
+
+    Builder.new.damage_minus_per_damage_counter_on_itself(base_damage, minus_damage)
   elsif text =~ /^\w+ does (\d+) damage to itself.$/
     damage_self = $1.to_i
     Builder.new.damage(damage).damage_itself(damage_self)
   elsif text =~ /^Flip a coin\. If heads, prevent all damage done to (.+) during your opponent's next turn\. \(Any other effects of attacks still happen\.\)$/
-    who = $1.upcase
-
-    <<~EOF
-        let worked = dm.flip(1).heads() == 1;
-
-        // TODO: this should only activate on the opponent's next turn, not right now.
-        // If there's anything that triggers immediately after attacking or
-        // during Pokémon Checkup, this ability shouldn't be considered.
-        engine.then_if(worked, |e|
-            e.with_effect(Effect {
-                name: "#{who}_BS_NO_DAMAGE".into(),
-                source: EffectSource::Attack(e.player(), e.attacking().id),
-                target: EffectTarget::InPlay(e.player(), e.attacking().id),
-                consequence: EffectConsequence::BlockDamage,
-                expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
-                system: false,
-            })
-        )
-    EOF
-  elsif text =~ /^Discard 1 Fire Energy card attached to \w+ in order to use this attack\.$/
-    <<~EOF
-      engine
-        .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
-        .damage(#{damage})
-    EOF
+    Builder
+      .flip_a_coin
+      .if_heads { prevent_damage_during_opponents_next_turn }
+  elsif text =~ /^Discard 1 (Fire|Water) Energy card attached to \w+ in order to use this attack\.$/
+    energy_type = $1
+    Builder.new
+      .discard_attached_energies([energy_type])
+      .damage(damage)
   elsif text =~ /^Discard all Energy cards attached to \w+ in order to use this attack\.$/
-    Builder.new.discard_all_attached_energies.damage(damage)
+    Builder.new
+      .discard_all_attached_energies
+      .damage(damage)
   elsif text =~ /^Flip a coin\. If heads, this attack does (\d+) damage plus (\d+) more damage; if tails, this attack does (\d+) damage (?:plus|and) \w+ does (\d+) damage to itself\.$/
-    damage_base = $1.to_i
+    damage_base1 = $1.to_i
     damage_extra = $2.to_i
     damage_base2 = $3.to_i
     damage_self = $4.to_i
 
-    if damage_base != damage_base2
-      1/0
-    end
-
-    <<~EOF
-      let extra = dm.flip(1).heads() == 1;
-
-      if extra {
-          engine.damage(#{damage_base} + #{damage_extra})
-      } else {
-          engine.damage(#{damage_base}).damage_self(#{damage_self})
-      }
-    EOF
+    Builder.new.flip_a_coin
+      .if_heads{ damage(damage_base1 + damage_extra) }
+      .if_tails{ damage(damage_base2).damage_itself(damage_self) }
   elsif text =~ /^Does (\d+) damage to each of your own Benched Pokémon\. \(Don't apply Weakness and Resistance for Benched Pokémon\.\)$/
     bench_damage = $1
-
-    <<~EOF
-      engine
-          .damage(#{damage})
-          .then(|e| e.target_all(e.bench(e.player()), |e2| e2.damage(#{bench_damage})))
-    EOF
+    Builder.new
+      .damage(damage)
+      .each_own_benched { damage(bench_damage) }
   elsif text =~ /^Does (\d+) damage to each Pokémon on each player's Bench\. \(Don't apply Weakness and Resistance for Benched Pokémon.\) \w+ does (\d+) damage to itself\.$/
     bench_damage = $1.to_i
     self_damage = $2.to_i
-
-    <<~EOF
-      engine
-          .damage(#{damage})
-          .then(|e| e.target_all(e.bench(e.player()), |e2| e2.damage(#{bench_damage})))
-          .then(|e| e.target_all(e.bench(e.opponent()), |e2| e2.damage(#{bench_damage})))
-          .damage_self(#{self_damage})
-    EOF
+    Builder.new
+      .damage(damage)
+      .each_own_benched { damage(bench_damage) }
+      .each_opponents_benched { damage(bench_damage) }
+      .damage_itself(self_damage)
   else
-    <<~EOF
-      unimplemented!();
-    EOF
+    Builder.unimplemented
   end
     .to_s.rstrip.gsub("\n", "\n        ")
 end
