@@ -21,6 +21,12 @@ pub trait CardArchetype {
     fn is_pokemon(&self, _card: &Card, _engine: &GameEngine) -> bool {
         self.stage().is_some()
     }
+    fn defending_damage_effect(&self, _card: &Card, _engine: &GameEngine, _damage: usize) -> Option<usize> {
+        None
+    }
+    fn on_turn_end(&self, _card: &Card, _engine: &GameEngine) -> Option<GameEngine> {
+        None
+    }
 }
 
 pub trait CardDB {
@@ -504,11 +510,17 @@ impl GameEngine {
         damage
     }
 
-    pub fn effects_on_defending(&self, damage: usize) -> usize {
+    pub fn effects_on_defending(&self, mut damage: usize) -> usize {
         if self.state.effects.iter()
             .filter(|e| e.target == EffectTarget::InPlay(self.defending().owner, self.defending().id))
             .filter(|e| e.consequence == EffectConsequence::BlockDamage)
             .count() == 0 {
+                for card in self.state.all_cards() {
+                    if let Some(new_damage) = card.archetype().defending_damage_effect(&card, self, damage) {
+                        damage = new_damage;
+                    }
+                }
+
                 damage
             } else {
                 0
@@ -724,6 +736,12 @@ impl GameEngine {
                     }
                 },
                 _ => {},
+            }
+        }
+
+        for card in engine.state.all_cards() {
+            if let Some(new_engine) = card.archetype().on_turn_end(&card, &engine) {
+                engine = new_engine;
             }
         }
 
@@ -1434,5 +1452,18 @@ impl GameEngine {
 
         engine.state = engine.state.put_working_area_on_top_of_deck(whose);
         engine
+    }
+
+    pub fn is_end_of_opponents_next_turn(&self, started_on: usize) -> bool {
+        match self.state.stage {
+            GameStage::EndOfTurn(player) => {
+                self.state.turns[started_on - 1] == player.opponent()
+            },
+            _ => false,
+        }
+    }
+
+    pub fn turn_attached(&self, card: &Card) -> Option<usize> {
+        self.state.attached_card(card).map(|c| c.attached_turn)
     }
 }

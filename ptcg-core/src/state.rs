@@ -381,6 +381,31 @@ impl PlayerSide {
         cards
     }
 
+    pub fn all_cards(&self) -> Vec<Card> {
+        let mut cards = vec![];
+
+        cards.extend(self.deck.cards());
+        cards.extend(self.hand.clone());
+        cards.extend(self.discard.clone());
+        cards.extend(self.lost_zone.clone());
+        cards.extend(self.working_area.clone());
+        cards.extend(self.prizes.iter().map(|c| c.card.card()).cloned());
+        if let Some(card) = &self.supporter { cards.push(card.clone()); }
+        if let Some(card) = &self.stadium { cards.push(card.clone()); }
+
+        for in_play in self.active.iter() {
+            cards.extend(in_play.stack.iter().map(|c| c.card()).cloned());
+            cards.extend(in_play.attached.iter().map(|c| c.card()).cloned());
+        }
+
+        for in_play in self.bench.iter() {
+            cards.extend(in_play.stack.iter().map(|c| c.card()).cloned());
+            cards.extend(in_play.attached.iter().map(|c| c.card()).cloned());
+        }
+
+        cards
+    }
+
     pub fn zone(&self, card: &Card) -> Zone {
         if self.discard.contains(card) {
             Zone::Discard(self.owner)
@@ -959,6 +984,18 @@ impl GameState {
         self.p1.in_play(id).or(self.p2.in_play(id))
     }
 
+    pub fn attached_card(&self, card: &Card) -> Option<&AttachedCard> {
+        for in_play in self.all_in_play() {
+            for attached in in_play.attached.iter() {
+                if attached.card() == card {
+                    return Some(attached);
+                }
+            }
+        }
+
+        None
+    }
+
     pub fn all_in_play(&self) -> Vec<&InPlayCard> {
         let mut mons = vec![];
 
@@ -966,6 +1003,15 @@ impl GameState {
         mons.extend(self.p2.all_in_play());
 
         mons
+    }
+
+    pub fn all_cards(&self) -> Vec<Card> {
+        let mut cards = vec![];
+
+        cards.extend(self.p1.all_cards());
+        cards.extend(self.p2.all_cards());
+
+        cards
     }
 
     pub fn next_turn(&self, player: Player) -> Self {

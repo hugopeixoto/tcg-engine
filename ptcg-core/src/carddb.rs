@@ -226,6 +226,12 @@ trait TrainerCardArchetype {
     fn hp(&self, _card: &Card, _engine: &GameEngine) -> Option<usize> {
         None
     }
+    fn defending_damage_effect(&self, _card: &Card, _engine: &GameEngine, _damage: usize) -> Option<usize> {
+        None
+    }
+    fn on_turn_end(&self, _card: &Card, _engine: &GameEngine) -> Option<GameEngine> {
+        None
+    }
 }
 
 struct Trainer {
@@ -283,6 +289,12 @@ impl CardArchetype for Trainer {
     }
     fn retreat(&self) -> usize {
         0
+    }
+    fn defending_damage_effect(&self, card: &Card, engine: &GameEngine, damage: usize) -> Option<usize> {
+        self.archetype.defending_damage_effect(card, engine, damage)
+    }
+    fn on_turn_end(&self, card: &Card, engine: &GameEngine) -> Option<GameEngine> {
+        self.archetype.on_turn_end(card, engine)
     }
 }
 
@@ -512,8 +524,30 @@ impl TrainerCardArchetype for Defender {
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
         true
     }
-    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        let targets = engine.state.side(player).all_in_play().into_iter().cloned().collect();
+        let target = dm.pick_in_play(player, 1, &targets)[0];
+
+        engine
+            .attach_from_hand(player, card, target)
+    }
+
+    fn defending_damage_effect(&self, card: &Card, engine: &GameEngine, damage: usize) -> Option<usize> {
+        if engine.defending().attached.iter().any(|c| c.card() == card) {
+            Some(damage.saturating_sub(20))
+        } else {
+            None
+        }
+    }
+
+    fn on_turn_end(&self, card: &Card, engine: &GameEngine) -> Option<GameEngine> {
+        if let Some(attached_turn) = engine.turn_attached(card) {
+            if engine.is_end_of_opponents_next_turn(attached_turn) {
+                return Some(engine.remove_attached_cards(&vec![card]));
+            }
+        }
+
+        None
     }
 }
 

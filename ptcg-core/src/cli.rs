@@ -75,6 +75,7 @@ impl InPlayCard {
                 "Psychic Energy (BS 101)" => "[P]",
                 "Water Energy (BS 102)" => "[W]",
                 "Double Colorless Energy (BS 96)" => "[C][C]",
+                "Defender (BS 80)" => "{Defender}",
                 _ => "[C]"
             })
             .collect::<Vec<_>>()
