@@ -1363,8 +1363,9 @@ impl Magikarp {
         engine
             .damage(10)
     }
-    pub fn flail(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    pub fn flail(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+        engine
+            .damage(engine.damage_counters_on(engine.attacking()) * 10)
     }
 }
 

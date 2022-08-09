@@ -196,6 +196,11 @@ class Builder
     self
   end
 
+  def damage_per_damage_counter_on_itself(damage_per_counter)
+    inject_engine!
+    @text << ".damage(#{@engine_name}.damage_counters_on(#{@engine_name}.attacking()) * #{damage_per_counter})"
+    self
+  end
 
   def damage_minus_per_damage_counter_on_itself(base_damage, minus)
     inject_engine!
@@ -213,7 +218,7 @@ class Builder
 end
 
 def attack_impl(attack)
-  text = attack.fetch('text')
+  text = attack.fetch('text').gsub(/\([^)]+\)/, '').gsub(/ +/, " ").gsub(/\ +\./, ".").strip
   damage = attack.fetch('damage', "")
 
   if text.empty?
@@ -221,7 +226,7 @@ def attack_impl(attack)
   elsif text =~ /^The Defending Pokémon is now (Asleep|Paralyzed|Confused|Poisoned)\.$/
     status = status_to_verb($1.downcase)
     Builder.new.damage(damage).inflict(status)
-  elsif text =~ /^The Defending Pokémon is now Poisoned\. It now takes (\w+) Poison damage instead of 10 after each player's turn \(even if it was already Poisoned\)\.$/
+  elsif text =~ /^The Defending Pokémon is now Poisoned\. It now takes (\w+) Poison damage instead of 10 after each player's turn\.$/
     counters = $1.to_i / 10
     Builder.new.damage(damage).severe_poison(counters)
   elsif text =~ /^Flip a coin\. If heads, the Defending Pokémon is now (Asleep|Paralyzed|Confused|Poisoned)\.$/
@@ -238,15 +243,17 @@ def attack_impl(attack)
     coins = $1.to_i
     damage = $2.to_i
     Builder.new.flip_coins(coins).damage_per_heads(damage)
+  elsif text =~ /^Does (\d+) damage times the number of damage counters on \w+\.$/
+    damage_per_counter = $1.to_i
+    Builder.new.damage_per_damage_counter_on_itself(damage_per_counter)
   elsif text =~ /^Does (\d+) damage minus (\d+) damage for each damage counter on \w+\.$/
     base_damage = $1.to_i
     minus_damage = $2.to_i
-
     Builder.new.damage_minus_per_damage_counter_on_itself(base_damage, minus_damage)
   elsif text =~ /^\w+ does (\d+) damage to itself.$/
     damage_self = $1.to_i
     Builder.new.damage(damage).damage_itself(damage_self)
-  elsif text =~ /^Flip a coin\. If heads, prevent all damage done to (.+) during your opponent's next turn\. \(Any other effects of attacks still happen\.\)$/
+  elsif text =~ /^Flip a coin\. If heads, prevent all damage done to (.+) during your opponent's next turn\.$/
     Builder
       .flip_a_coin
       .if_heads { prevent_damage_during_opponents_next_turn }
@@ -268,12 +275,12 @@ def attack_impl(attack)
     Builder.new.flip_a_coin
       .if_heads{ damage(damage_base1 + damage_extra) }
       .if_tails{ damage(damage_base2).damage_itself(damage_self) }
-  elsif text =~ /^Does (\d+) damage to each of your own Benched Pokémon\. \(Don't apply Weakness and Resistance for Benched Pokémon\.\)$/
+  elsif text =~ /^Does (\d+) damage to each of your own Benched Pokémon\.$/
     bench_damage = $1
     Builder.new
       .damage(damage)
       .each_own_benched { damage(bench_damage) }
-  elsif text =~ /^Does (\d+) damage to each Pokémon on each player's Bench\. \(Don't apply Weakness and Resistance for Benched Pokémon.\) \w+ does (\d+) damage to itself\.$/
+  elsif text =~ /^Does (\d+) damage to each Pokémon on each player's Bench\. \w+ does (\d+) damage to itself\.$/
     bench_damage = $1.to_i
     self_damage = $2.to_i
     Builder.new
@@ -355,7 +362,7 @@ puts output.strip.gsub(/^ +$/, '')
 poops = pokemon_cards.flat_map { |card| card.fetch("attacks", []) }.filter do |attack|
   attack_impl(attack) == "unimplemented!();"
 end.map do |attack|
-  [attack["text"].gsub(/\d+/, "X").gsub(/\([^)]+\)/, '').split(". "), attack["damage"]]
+  [attack["text"].gsub(/\d+/, "X").gsub(/\([^)]+\)/, '').gsub(/\b(Water|Fire|Lightning|Psychic)\b/, 'TYPE').split(". "), attack["damage"]]
 end
 
 PP.pp poops.sort, out=$stderr
