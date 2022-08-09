@@ -485,8 +485,14 @@ impl GameEngine {
         self.with_state(self.state.add_damage_counters(self.defending(), damage/10))
     }
 
-    pub fn damage_self(&self, _damage: usize) -> Self {
-        unimplemented!();
+    pub fn damage_self(&self, damage: usize) -> Self {
+        let mut engine = self.clone();
+
+        engine = engine.push_target(self.attacking(), self.attacking());
+        engine = engine.damage(damage);
+        engine = engine.pop_target();
+
+        engine
     }
 
     pub fn apply_weakness(&self, mut damage: usize) -> usize {
