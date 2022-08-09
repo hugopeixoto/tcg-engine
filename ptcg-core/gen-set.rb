@@ -61,111 +61,129 @@ def status_to_verb(status)
   }[status]
 end
 
+class Builder
+  def initialize
+    @text = []
+    @is_engining = false
+  end
+
+  def self.engine
+    Builder.new.engine
+  end
+
+  def self.flip_a_coin
+    Builder.new.flip_a_coin
+  end
+
+  def self.flip_coins(n)
+    Builder.new.flip_coins(n)
+  end
+
+  def engine
+    @text << "engine"
+    @is_engining = true
+    self
+  end
+
+  def inject_engine!
+    engine if !@is_engining
+    self
+  end
+
+  def damage(amount)
+    if !amount.empty?
+      inject_engine!
+      @text << ".damage(#{amount})"
+    end
+    self
+  end
+
+  def flip_a_coin
+    @text << "let heads = dm.flip(1).heads() == 1;"
+    self
+  end
+
+  def flip_coins(n)
+    @text << "let flip_results = dm.flip(#{n});"
+    self
+  end
+
+  def inflict(affliction)
+    inject_engine!
+    @text << ".#{affliction}()"
+    self
+  end
+
+  def severe_poison(counters)
+    inject_engine!
+    @text << ".severe_poison(#{counters})"
+    self
+  end
+
+  def if_heads(what)
+    inject_engine!
+    @text << ".then_if(heads, #{what})"
+    self
+  end
+
+  def if_tails(what)
+    inject_engine!
+    @text << ".then_if(!heads, #{what})"
+    self
+  end
+
+  def damage_itself(damage)
+    inject_engine!
+    @text << ".damage_self(#{damage})"
+    self
+  end
+
+  def damage_per_heads(damage)
+    inject_engine!
+    @text << ".damage(#{damage} * flip_results.heads())"
+    self
+  end
+
+  def discard_all_attached_energies
+    inject_engine!
+    @text << ".discard_all_attached_energies(engine.player(), engine.attacking(), dm)"
+    self
+  end
+
+  def to_s
+    @text.map { |x| if x.start_with?(".") then "    #{x}\n" else "#{x}\n" end }.join
+  end
+end
+
 def attack_impl(attack)
   text = attack.fetch('text')
   damage = attack.fetch('damage', "")
 
   if text.empty?
-    <<~EOF
-      engine.damage(#{damage})
-    EOF
+    Builder.new.damage(damage)
   elsif text =~ /^The Defending Pokémon is now (Asleep|Paralyzed|Confused|Poisoned)\.$/
-    status = $1.downcase
-    inflict = status_to_verb(status)
-
-    if !damage.empty?
-      <<~EOF
-        engine
-            .damage(#{damage})
-            .#{inflict}()
-      EOF
-    else
-      <<~EOF
-        engine.#{inflict}()
-      EOF
-    end
+    status = status_to_verb($1.downcase)
+    Builder.new.damage(damage).inflict(status)
   elsif text =~ /^The Defending Pokémon is now Poisoned\. It now takes (\w+) Poison damage instead of 10 after each player's turn \(even if it was already Poisoned\)\.$/
     counters = $1.to_i / 10
-
-    if !damage.empty?
-      <<~EOF
-      engine
-          .damage(#{damage})
-          .severe_poison(#{counters})
-      EOF
-    else
-      <<~EOF
-        engine
-            .severe_poison(#{counters})
-      EOF
-    end
+    Builder.new.damage(damage).severe_poison(counters)
   elsif text =~ /^Flip a coin\. If heads, the Defending Pokémon is now (Asleep|Paralyzed|Confused|Poisoned)\.$/
-    status = $1.downcase
-    inflict = status_to_verb(status)
-
-    if !damage.empty?
-      <<~EOF
-        let #{status} = dm.flip(1).heads() == 1;
-
-        engine.damage(#{damage}).then_if(#{status}, GameEngine::#{inflict})
-      EOF
-    else
-      <<~EOF
-        let #{status} = dm.flip(1).heads() == 1;
-
-        engine.then_if(#{status}, GameEngine::#{inflict})
-      EOF
-    end
+    inflict = status_to_verb($1.downcase)
+    Builder.new.flip_a_coin.damage(damage).if_heads("GameEngine::#{inflict}")
   elsif text =~ /^Flip a coin\. If heads, the Defending Pokémon is now (Asleep|Paralyzed|Confused|Poisoned)\; if tails, it is now (Asleep|Paralyzed|Confused|Confused)\.$/
-    status = $1.downcase
-    inflict_yes = status_to_verb(status)
-    inflict_no = status_to_verb(status)
-
-    if !damage.empty?
-      <<~EOF
-        let #{status} = dm.flip(1).heads() == 1;
-
-        engine
-            .damage(#{damage})
-            .then_if(#{status}, GameEngine::#{inflict_yes})
-            .then_if(!#{status}, GameEngine::#{inflict_no})
-      EOF
-    else
-      <<~EOF
-        let #{status} = dm.flip(1).heads() == 1;
-
-        engine
-            .then_if(#{status}, GameEngine::#{inflict_yes})
-            .then_if(!#{status}, GameEngine::#{inflict_no})
-      EOF
-    end
+    inflict_yes = status_to_verb($1.downcase)
+    inflict_no = status_to_verb($2.downcase)
+    Builder.new.flip_a_coin.damage(damage).if_heads("GameEngine::#{inflict_yes}").if_tails("GameEngine::#{inflict_no}")
   elsif text =~ /^Flip a coin\. If tails, \w+ does (\d+) damage to itself\.$/
-    self_damage = $1
-
-    <<~EOF
-      let ouchie = dm.flip(1).heads() == 0;
-
-      engine
-        .damage(#{damage})
-        .then_if(ouchie, |e| e.damage_self(#{self_damage}))
-      EOF
+    self_damage = $1.to_i
+    Builder.new.flip_a_coin.damage(damage).if_tails("|e| e.damage_self(#{self_damage})")
   elsif text =~ /^Flip (\d+) coins\. This attack does (\d+) damage times the number of heads\./
-    coins = $1
-    damage = $2
-
-    <<~EOF
-        let damage = #{damage} * dm.flip(#{coins}).heads();
-
-        engine.damage(damage)
-    EOF
+    coins = $1.to_i
+    damage = $2.to_i
+    Builder.new.flip_coins(coins).damage_per_heads(damage)
   elsif text =~ /^\w+ does (\d+) damage to itself.$/
-    damage_self = $1
-
-    <<~EOF
-      engine
-          .damage(#{damage})
-          .damage_self(#{damage_self})
-    EOF
+    damage_self = $1.to_i
+    Builder.new.damage(damage).damage_itself(damage_self)
   elsif text =~ /^Flip a coin\. If heads, prevent all damage done to (.+) during your opponent's next turn\. \(Any other effects of attacks still happen\.\)$/
     who = $1.upcase
 
@@ -193,11 +211,7 @@ def attack_impl(attack)
         .damage(#{damage})
     EOF
   elsif text =~ /^Discard all Energy cards attached to \w+ in order to use this attack\.$/
-    <<~EOF
-      engine
-        .discard_all_attached_energies(engine.player(), engine.attacking(), dm)
-        .damage(#{damage})
-    EOF
+    Builder.new.discard_all_attached_energies.damage(damage)
   elsif text =~ /^Flip a coin\. If heads, this attack does (\d+) damage plus (\d+) more damage; if tails, this attack does (\d+) damage (?:plus|and) \w+ does (\d+) damage to itself\.$/
     damage_base = $1.to_i
     damage_extra = $2.to_i
@@ -241,7 +255,7 @@ def attack_impl(attack)
       unimplemented!();
     EOF
   end
-    .rstrip.gsub("\n", "\n        ")
+    .to_s.rstrip.gsub("\n", "\n        ")
 end
 
 def idify(name)

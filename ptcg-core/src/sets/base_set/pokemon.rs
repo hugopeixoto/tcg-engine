@@ -30,9 +30,10 @@ impl CardArchetype for Alakazam {
 }
 impl Alakazam {
     pub fn confuse_ray(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let confused = dm.flip(1).heads() == 1;
-
-        engine.damage(30).then_if(confused, GameEngine::confuse)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(30)
+            .then_if(heads, GameEngine::confuse)
     }
 }
 
@@ -185,9 +186,9 @@ impl CardArchetype for Clefairy {
 }
 impl Clefairy {
     pub fn sing(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let asleep = dm.flip(1).heads() == 1;
-
-        engine.then_if(asleep, GameEngine::asleep)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .then_if(heads, GameEngine::asleep)
     }
     pub fn metronome(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
@@ -228,9 +229,10 @@ impl Gyarados {
             .damage(50)
     }
     pub fn bubblebeam(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(40).then_if(paralyzed, GameEngine::paralyze)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(40)
+            .then_if(heads, GameEngine::paralyze)
     }
 }
 
@@ -337,9 +339,10 @@ impl CardArchetype for Magneton {
 }
 impl Magneton {
     pub fn thunder_wave(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(30).then_if(paralyzed, GameEngine::paralyze)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(30)
+            .then_if(heads, GameEngine::paralyze)
     }
     pub fn selfdestruct(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
@@ -541,11 +544,10 @@ impl Raichu {
         unimplemented!();
     }
     pub fn thunder(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let ouchie = dm.flip(1).heads() == 0;
-
+        let heads = dm.flip(1).heads() == 1;
         engine
-          .damage(60)
-          .then_if(ouchie, |e| e.damage_self(30))
+            .damage(60)
+            .then_if(!heads, |e| e.damage_self(30))
     }
 }
 
@@ -613,16 +615,15 @@ impl CardArchetype for Zapdos {
 }
 impl Zapdos {
     pub fn thunder(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let ouchie = dm.flip(1).heads() == 0;
-
+        let heads = dm.flip(1).heads() == 1;
         engine
-          .damage(60)
-          .then_if(ouchie, |e| e.damage_self(30))
+            .damage(60)
+            .then_if(!heads, |e| e.damage_self(30))
     }
     pub fn thunderbolt(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
-          .discard_all_attached_energies(engine.player(), engine.attacking(), dm)
-          .damage(100)
+            .discard_all_attached_energies(engine.player(), engine.attacking(), dm)
+            .damage(100)
     }
 }
 
@@ -656,14 +657,15 @@ impl CardArchetype for Beedrill {
 }
 impl Beedrill {
     pub fn twineedle(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let damage = 30 * dm.flip(2).heads();
-
-        engine.damage(damage)
+        let flip_results = dm.flip(2);
+        engine
+            .damage(30 * flip_results.heads())
     }
     pub fn poison_sting(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let poisoned = dm.flip(1).heads() == 1;
-
-        engine.damage(40).then_if(poisoned, GameEngine::poison)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(40)
+            .then_if(heads, GameEngine::poison)
     }
 }
 
@@ -697,9 +699,9 @@ impl CardArchetype for Dragonair {
 }
 impl Dragonair {
     pub fn slam(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let damage = 30 * dm.flip(2).heads();
-
-        engine.damage(damage)
+        let flip_results = dm.flip(2);
+        engine
+            .damage(30 * flip_results.heads())
     }
     pub fn hyper_beam(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
@@ -776,9 +778,10 @@ impl CardArchetype for Electabuzz {
 }
 impl Electabuzz {
     pub fn thundershock(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(10)
+            .then_if(heads, GameEngine::paralyze)
     }
     pub fn thunderpunch(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let extra = dm.flip(1).heads() == 1;
@@ -820,11 +823,10 @@ impl CardArchetype for Electrode {
 }
 impl Electrode {
     pub fn electric_shock(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let ouchie = dm.flip(1).heads() == 0;
-
+        let heads = dm.flip(1).heads() == 1;
         engine
-          .damage(50)
-          .then_if(ouchie, |e| e.damage_self(10))
+            .damage(50)
+            .then_if(!heads, |e| e.damage_self(10))
     }
 }
 
@@ -980,9 +982,10 @@ impl Dewgong {
             .damage(50)
     }
     pub fn ice_beam(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(30).then_if(paralyzed, GameEngine::paralyze)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(30)
+            .then_if(heads, GameEngine::paralyze)
     }
 }
 
@@ -1200,9 +1203,9 @@ impl CardArchetype for Jynx {
 }
 impl Jynx {
     pub fn doubleslap(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let damage = 10 * dm.flip(2).heads();
-
-        engine.damage(damage)
+        let flip_results = dm.flip(2);
+        engine
+            .damage(10 * flip_results.heads())
     }
     pub fn meditate(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
@@ -1294,9 +1297,10 @@ impl Kakuna {
         )
     }
     pub fn poisonpowder(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let poisoned = dm.flip(1).heads() == 1;
-
-        engine.damage(20).then_if(poisoned, GameEngine::poison)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(20)
+            .then_if(heads, GameEngine::poison)
     }
 }
 
@@ -1447,9 +1451,9 @@ impl CardArchetype for Nidorino {
 }
 impl Nidorino {
     pub fn double_kick(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let damage = 30 * dm.flip(2).heads();
-
-        engine.damage(damage)
+        let flip_results = dm.flip(2);
+        engine
+            .damage(30 * flip_results.heads())
     }
     pub fn horn_drill(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
@@ -1490,9 +1494,9 @@ impl Poliwhirl {
         unimplemented!();
     }
     pub fn doubleslap(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let damage = 30 * dm.flip(2).heads();
-
-        engine.damage(damage)
+        let flip_results = dm.flip(2);
+        engine
+            .damage(30 * flip_results.heads())
     }
 }
 
@@ -1686,9 +1690,10 @@ impl CardArchetype for Abra {
 }
 impl Abra {
     pub fn psyshock(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(10)
+            .then_if(heads, GameEngine::paralyze)
     }
 }
 
@@ -1754,9 +1759,10 @@ impl CardArchetype for Caterpie {
 }
 impl Caterpie {
     pub fn string_shot(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(10)
+            .then_if(heads, GameEngine::paralyze)
     }
 }
 
@@ -1868,9 +1874,9 @@ impl CardArchetype for Doduo {
 }
 impl Doduo {
     pub fn fury_attack(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let damage = 10 * dm.flip(2).heads();
-
-        engine.damage(damage)
+        let flip_results = dm.flip(2);
+        engine
+            .damage(10 * flip_results.heads())
     }
 }
 
@@ -1908,9 +1914,10 @@ impl Drowzee {
             .damage(10)
     }
     pub fn confuse_ray(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let confused = dm.flip(1).heads() == 1;
-
-        engine.damage(10).then_if(confused, GameEngine::confuse)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(10)
+            .then_if(heads, GameEngine::confuse)
     }
 }
 
@@ -1944,9 +1951,9 @@ impl CardArchetype for Gastly {
 }
 impl Gastly {
     pub fn sleeping_gas(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let asleep = dm.flip(1).heads() == 1;
-
-        engine.then_if(asleep, GameEngine::asleep)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .then_if(heads, GameEngine::asleep)
     }
     pub fn destiny_bond(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         unimplemented!();
@@ -1982,12 +1989,11 @@ impl CardArchetype for Koffing {
 }
 impl Koffing {
     pub fn foul_gas(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let poisoned = dm.flip(1).heads() == 1;
-
+        let heads = dm.flip(1).heads() == 1;
         engine
             .damage(10)
-            .then_if(poisoned, GameEngine::poison)
-            .then_if(!poisoned, GameEngine::poison)
+            .then_if(heads, GameEngine::poison)
+            .then_if(!heads, GameEngine::confuse)
     }
 }
 
@@ -2055,9 +2061,10 @@ impl CardArchetype for Magnemite {
 }
 impl Magnemite {
     pub fn thunder_wave(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(10)
+            .then_if(heads, GameEngine::paralyze)
     }
     pub fn selfdestruct(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
@@ -2115,9 +2122,10 @@ impl Metapod {
         )
     }
     pub fn stun_spore(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(20).then_if(paralyzed, GameEngine::paralyze)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(20)
+            .then_if(heads, GameEngine::paralyze)
     }
 }
 
@@ -2259,11 +2267,10 @@ impl Pikachu {
             .damage(10)
     }
     pub fn thunder_jolt(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let ouchie = dm.flip(1).heads() == 0;
-
+        let heads = dm.flip(1).heads() == 1;
         engine
-          .damage(30)
-          .then_if(ouchie, |e| e.damage_self(10))
+            .damage(30)
+            .then_if(!heads, |e| e.damage_self(10))
     }
 }
 
@@ -2436,9 +2443,10 @@ impl CardArchetype for Squirtle {
 }
 impl Squirtle {
     pub fn bubble(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(10).then_if(paralyzed, GameEngine::paralyze)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(10)
+            .then_if(heads, GameEngine::paralyze)
     }
     pub fn withdraw(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
         let worked = dm.flip(1).heads() == 1;
@@ -2492,9 +2500,10 @@ impl Starmie {
         unimplemented!();
     }
     pub fn star_freeze(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(20).then_if(paralyzed, GameEngine::paralyze)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(20)
+            .then_if(heads, GameEngine::paralyze)
     }
 }
 
@@ -2562,9 +2571,10 @@ impl CardArchetype for Tangela {
 }
 impl Tangela {
     pub fn bind(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(20).then_if(paralyzed, GameEngine::paralyze)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(20)
+            .then_if(heads, GameEngine::paralyze)
     }
     pub fn poisonpowder(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine
@@ -2636,9 +2646,10 @@ impl CardArchetype for Vulpix {
 }
 impl Vulpix {
     pub fn confuse_ray(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let confused = dm.flip(1).heads() == 1;
-
-        engine.damage(10).then_if(confused, GameEngine::confuse)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(10)
+            .then_if(heads, GameEngine::confuse)
     }
 }
 
@@ -2671,8 +2682,9 @@ impl CardArchetype for Weedle {
 }
 impl Weedle {
     pub fn poison_sting(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let poisoned = dm.flip(1).heads() == 1;
-
-        engine.damage(10).then_if(poisoned, GameEngine::poison)
+        let heads = dm.flip(1).heads() == 1;
+        engine
+            .damage(10)
+            .then_if(heads, GameEngine::poison)
     }
 }
