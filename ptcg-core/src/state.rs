@@ -236,6 +236,40 @@ impl FaceCard {
             Self::Down(c) => c,
         }
     }
+
+    pub fn is_up(&self) -> bool {
+        match self {
+            Self::Up(_c) => true,
+            Self::Down(_c) => false,
+        }
+    }
+
+    pub fn is_down(&self) -> bool {
+        match self {
+            Self::Up(_c) => false,
+            Self::Down(_c) => true,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct AttachedCard {
+    pub card: FaceCard,
+    pub attached_turn: usize,
+}
+
+impl AttachedCard {
+    pub fn card(&self) -> &Card {
+        self.card.card()
+    }
+
+    pub fn is_up(&self) -> bool {
+        self.card.is_up()
+    }
+
+    pub fn is_down(&self) -> bool {
+        self.card.is_down()
+    }
 }
 
 #[derive(Default, Debug, Clone)]
@@ -243,7 +277,7 @@ pub struct InPlayCard {
     pub id: InPlayID,
     pub owner: Player,
     pub stack: Vec<FaceCard>,
-    pub attached: Vec<FaceCard>,
+    pub attached: Vec<AttachedCard>,
     pub damage_counters: usize,
     pub rotational_status: RotationalStatus,
     pub poisoned: Option<Poison>,
@@ -646,7 +680,7 @@ impl GameState {
         let p = side.hand.iter().position(|c| c == card).unwrap();
         side.hand.remove(p);
 
-        side.in_play_mut(target).unwrap().attached.push(FaceCard::Up(card.clone()));
+        side.in_play_mut(target).unwrap().attached.push(AttachedCard { card: FaceCard::Up(card.clone()), attached_turn: self.turn });
 
         self.with_player_side(side)
     }

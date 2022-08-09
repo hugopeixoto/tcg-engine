@@ -70,13 +70,13 @@ impl InPlayCard {
 
         let energies = self.attached
             .iter()
-            .filter(|card| match card { FaceCard::Up(_) => true, _ => false })
-            .map(|card| match card { FaceCard::Up(card) => match card.archetype.as_str() {
+            .filter(|card| card.is_up())
+            .map(|card| match card.card().archetype.as_str() {
                 "Psychic Energy (BS 101)" => "[P]",
                 "Water Energy (BS 102)" => "[W]",
                 "Double Colorless Energy (BS 96)" => "[C][C]",
                 _ => "[C]"
-            }, _ => "" })
+            })
             .collect::<Vec<_>>()
             .join("")
             ;
