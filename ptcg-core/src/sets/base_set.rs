@@ -9,110 +9,63 @@ pub use pokemon::*;
 pub use energies::*;
 pub use trainers::*;
 
-pub fn find(archetype: &str) -> Option<Box<dyn CardArchetype>> {
-    Some(match archetype {
-        "Alakazam (BS 1)"                   => Pokemon::create::<Alakazam>(),
-        "Blastoise (BS 2)"                  => Pokemon::create::<Blastoise>(),
-        "Chansey (BS 3)"                    => Pokemon::create::<Chansey>(),
-        "Charizard (BS 4)"                  => Pokemon::create::<Charizard>(),
-        "Clefairy (BS 5)"                   => Pokemon::create::<Clefairy>(),
-        "Gyarados (BS 6)"                   => Pokemon::create::<Gyarados>(),
-        "Hitmonchan (BS 7)"                 => Pokemon::create::<Hitmonchan>(),
-        "Machamp (BS 8)"                    => Pokemon::create::<Machamp>(),
-        "Magneton (BS 9)"                   => Pokemon::create::<Magneton>(),
-        "Mewtwo (BS 10)"                    => Pokemon::create::<Mewtwo>(),
-        "Nidoking (BS 11)"                  => Pokemon::create::<Mewtwo>(),
-        "Ninetales (BS 12)"                 => Pokemon::create::<Ninetales>(),
-        "Poliwrath (BS 13)"                 => Pokemon::create::<Poliwrath>(),
-        "Raichu (BS 14)"                    => Pokemon::create::<Raichu>(),
-        "Venusaur (BS 15)"                  => Pokemon::create::<Venusaur>(),
-        "Zapdos (BS 16)"                    => Pokemon::create::<Zapdos>(),
-        "Beedrill (BS 17)"                  => Pokemon::create::<Beedrill>(),
-        "Dragonair (BS 18)"                 => Pokemon::create::<Dragonair>(),
-        "Dugtrio (BS 19)"                   => Pokemon::create::<Dugtrio>(),
-        "Electabuzz (BS 20)"                => Pokemon::create::<Electabuzz>(),
-        "Electrode (BS 21)"                 => Pokemon::create::<Electrode>(),
-        "Pidgeotto (BS 22)"                 => Pokemon::create::<Pidgeotto>(),
-        "Arcanine (BS 23)"                  => Pokemon::create::<Arcanine>(),
-        "Charmeleon (BS 24)"                => Pokemon::create::<Charmeleon>(),
-        "Dewgong (BS 25)"                   => Pokemon::create::<Dewgong>(),
-        "Dratini (BS 26)"                   => Pokemon::create::<Dratini>(),
-        "Farfetch'd (BS 27)"                => Pokemon::create::<FarfetchD>(),
-        "Growlithe (BS 28)"                 => Pokemon::create::<Growlithe>(),
-        "Haunter (BS 29)"                   => Pokemon::create::<Haunter>(),
-        "Ivysaur (BS 30)"                   => Pokemon::create::<Ivysaur>(),
-        "Jynx (BS 31)"                      => Pokemon::create::<Jynx>(),
-        "Kadabra (BS 32)"                   => Pokemon::create::<Kadabra>(),
-        "Kakuna (BS 33)"                    => Pokemon::create::<Kakuna>(),
-        "Machoke (BS 34)"                   => Pokemon::create::<Machoke>(),
-        "Magikarp (BS 35)"                  => Pokemon::create::<Magikarp>(),
-        "Magmar (BS 36)"                    => Pokemon::create::<Magmar>(),
-        "Nidorino (BS 37)"                  => Pokemon::create::<Nidorino>(),
-        "Poliwhirl (BS 38)"                 => Pokemon::create::<Poliwhirl>(),
-        "Porygon (BS 39)"                   => Pokemon::create::<Porygon>(),
-        "Raticate (BS 40)"                  => Pokemon::create::<Raticate>(),
-        "Seel (BS 41)"                      => Pokemon::create::<Seel>(),
-        "Wartortle (BS 42)"                 => Pokemon::create::<Wartortle>(),
-        "Abra (BS 43)"                      => Pokemon::create::<Abra>(),
-        "Bulbasaur (BS 44)"                 => Pokemon::create::<Bulbasaur>(),
-        "Caterpie (BS 45)"                  => Pokemon::create::<Caterpie>(),
-        "Charmander (BS 46)"                => Pokemon::create::<Charmander>(),
-        "Diglett (BS 47)"                   => Pokemon::create::<Diglett>(),
-        "Doduo (BS 48)"                     => Pokemon::create::<Doduo>(),
-        "Drowzee (BS 49)"                   => Pokemon::create::<Drowzee>(),
-        "Gastly (BS 50)"                    => Pokemon::create::<Gastly>(),
-        "Koffing (BS 51)"                   => Pokemon::create::<Koffing>(),
-        "Machop (BS 52)"                    => Pokemon::create::<Machop>(),
-        "Magnemite (BS 53)"                 => Pokemon::create::<Magnemite>(),
-        "Metapod (BS 54)"                   => Pokemon::create::<Metapod>(),
-        "Nidoran ♂ (BS 55)"                 => Pokemon::create::<NidoranM>(),
-        "Onix (BS 56)"                      => Pokemon::create::<Onix>(),
-        "Pidgey (BS 57)"                    => Pokemon::create::<Pidgey>(),
-        "Pikachu (BS 58)"                   => Pokemon::create::<Pikachu>(),
-        "Poliwag (BS 59)"                   => Pokemon::create::<Poliwag>(),
-        "Ponyta (BS 60)"                    => Pokemon::create::<Ponyta>(),
-        "Rattata (BS 61)"                   => Pokemon::create::<Rattata>(),
-        "Sandshrew (BS 62)"                 => Pokemon::create::<Sandshrew>(),
-        "Squirtle (BS 63)"                  => Pokemon::create::<Squirtle>(),
-        "Starmie (BS 64)"                   => Pokemon::create::<Starmie>(),
-        "Staryu (BS 65)"                    => Pokemon::create::<Staryu>(),
-        "Tangela (BS 66)"                   => Pokemon::create::<Tangela>(),
-        "Voltorb (BS 67)"                   => Pokemon::create::<Voltorb>(),
-        "Vulpix (BS 68)"                    => Pokemon::create::<Vulpix>(),
-        "Weedle (BS 69)"                    => Pokemon::create::<Weedle>(),
-        "Clefairy Doll (BS 70)"             => Trainer::create::<ClefairyDoll>(),
-        "Computer Search (BS 71)"           => Trainer::create::<ComputerSearch>(),
-        "Devolution Spray (BS 72)"          => Trainer::create::<DevolutionSpray>(),
-        "Impostor Professor Oak (BS 73)"    => Trainer::create::<ImpostorProfessorOak>(),
-        "Item Finder (BS 74)"               => Trainer::create::<ItemFinder>(),
-        "Lass (BS 75)"                      => Trainer::create::<Lass>(),
-        "Pokemon Breeder (BS 76)"           => Trainer::create::<PokemonBreeder>(),
-        "Pokemon Trader (BS 77)"            => Trainer::create::<PokemonTrader>(),
-        "Scoop Up (BS 78)"                  => Trainer::create::<ScoopUp>(),
-        "Super Energy Removal (BS 79)"      => Trainer::create::<SuperEnergyRemoval>(),
-        "Defender (BS 80)"                  => Trainer::create::<Defender>(),
-        "Energy Retrieval (BS 81)"          => Trainer::create::<EnergyRetrieval>(),
-        "Full Heal (BS 82)"                 => Trainer::create::<FullHeal>(),
-        "Maintenance (BS 83)"               => Trainer::create::<Maintenance>(),
-        "PlusPower (BS 84)"                 => Trainer::create::<PlusPower>(),
-        "Pokemon Center (BS 85)"            => Trainer::create::<PokemonCenter>(),
-        "Pokemon Flute (BS 86)"             => Trainer::create::<PokemonFlute>(),
-        "Pokedex (BS 87)"                   => Trainer::create::<Pokedex>(),
-        "Professor Oak (BS 88)"             => Trainer::create::<ProfessorOak>(),
-        "Revive (BS 89)"                    => Trainer::create::<Revive>(),
-        "Super Potion (BS 90)"              => Trainer::create::<SuperPotion>(),
-        "Bill (BS 91)"                      => Trainer::create::<Bill>(),
-        "Energy Removal (BS 92)"            => Trainer::create::<EnergyRemoval>(),
-        "Gust of Wind (BS 93)"              => Trainer::create::<GustOfWind>(),
-        "Potion (BS 94)"                    => Trainer::create::<Potion>(),
-        "Switch (BS 95)"                    => Trainer::create::<Switch>(),
-        "Double Colorless Energy (BS 96)"   => Box::new(DoubleColorlessEnergy::default()),
-        "Fighting Energy (BS 97)"           => BasicEnergy::create("Fighting Energy", Type::Fighting),
-        "Fire Energy (BS 98)"               => BasicEnergy::create("Fire Energy", Type::Fire),
-        "Grass Energy (BS 99)"              => BasicEnergy::create("Grass Energy", Type::Grass),
-        "Lightning Energy (BS 100)"         => BasicEnergy::create("Lightning Energy", Type::Lightning),
-        "Psychic Energy (BS 101)"           => BasicEnergy::create("Psychic Energy", Type::Psychic),
-        "Water Energy (BS 102)"             => BasicEnergy::create("Water Energy", Type::Water),
-        _                                   => { return None; },
-    })
+macro_rules! mk_pokemon {
+    ($vec: expr, $set: expr, $($name: ident),+) => {
+        $({
+                let boxed = Pokemon::create::<$name>();
+                $vec.push((format!("{} ({} {})", boxed.name(), $set, $vec.len() + 1), boxed))
+        })+
+    }
+}
+
+macro_rules! mk_trainer {
+    ($vec: expr, $set: expr, $($name: ident),+) => {
+        $({
+                let boxed = Trainer::create::<$name>();
+                $vec.push((format!("{} ({} {})", boxed.name(), $set, $vec.len() + 1), boxed))
+        })+
+    }
+}
+
+
+pub fn build() -> Vec<(String, Box<dyn CardArchetype>)> {
+    let mut entries = vec![];
+
+    mk_pokemon!(
+        entries, "BS",
+        Alakazam, Blastoise, Chansey, Charizard, Clefairy,
+        Gyarados, Hitmonchan, Machamp, Magneton, Mewtwo,
+        Mewtwo, Ninetales, Poliwrath, Raichu, Venusaur, Zapdos,
+        Beedrill, Dragonair, Dugtrio, Electabuzz, Electrode,
+        Pidgeotto, Arcanine, Charmeleon, Dewgong, Dratini,
+        FarfetchD, Growlithe, Haunter, Ivysaur, Jynx, Kadabra,
+        Kakuna, Machoke, Magikarp, Magmar, Nidorino, Poliwhirl,
+        Porygon, Raticate, Seel, Wartortle, Abra, Bulbasaur,
+        Caterpie, Charmander, Diglett, Doduo, Drowzee, Gastly,
+        Koffing, Machop, Magnemite, Metapod, NidoranM, Onix,
+        Pidgey, Pikachu, Poliwag, Ponyta, Rattata, Sandshrew,
+        Squirtle, Starmie, Staryu, Tangela, Voltorb, Vulpix,
+        Weedle
+    );
+
+    mk_trainer!(
+        entries, "BS",
+        ClefairyDoll, ComputerSearch, DevolutionSpray,
+        ImpostorProfessorOak, ItemFinder, Lass, PokemonBreeder,
+        PokemonTrader, ScoopUp, SuperEnergyRemoval, Defender,
+        EnergyRetrieval, FullHeal, Maintenance, PlusPower,
+        PokemonCenter, PokemonFlute, Pokedex, ProfessorOak,
+        Revive, SuperPotion, Bill, EnergyRemoval, GustOfWind,
+        Potion, Switch
+    );
+
+    entries.push(("Double Colorless Energy (BS 96)".into(), Box::new(DoubleColorlessEnergy::default())));
+    entries.push(("Fighting Energy (BS 97)"  .into(), BasicEnergy::create("Fighting Energy", Type::Fighting)));
+    entries.push(("Fire Energy (BS 98)"      .into(), BasicEnergy::create("Fire Energy", Type::Fire)));
+    entries.push(("Grass Energy (BS 99)"     .into(), BasicEnergy::create("Grass Energy", Type::Grass)));
+    entries.push(("Lightning Energy (BS 100)".into(), BasicEnergy::create("Lightning Energy", Type::Lightning)));
+    entries.push(("Psychic Energy (BS 101)"  .into(), BasicEnergy::create("Psychic Energy", Type::Psychic)));
+    entries.push(("Water Energy (BS 102)"    .into(), BasicEnergy::create("Water Energy", Type::Water)));
+
+    entries
 }

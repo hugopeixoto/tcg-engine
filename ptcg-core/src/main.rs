@@ -2,6 +2,7 @@
 
 extern crate rand;
 use crate::rand::Rng;
+use std::ops::Deref;
 
 mod state;
 mod cli;
@@ -280,17 +281,45 @@ fn load_deck(filename: &str) -> Result<Vec<String>, std::io::Error> {
 
 #[derive(Clone)]
 struct BaseFossil {
+    archetypes: std::rc::Rc<Vec<(String, Box<dyn CardArchetype>)>>,
+}
+
+impl BaseFossil {
+    pub fn new() -> Self {
+        let mut cards = vec![];
+
+        cards.extend(sets::base_set::build());
+        cards.extend(sets::fossil::build());
+
+        Self { archetypes: std::rc::Rc::new(cards) }
+    }
 }
 
 impl Format for BaseFossil {
-    fn behavior(&self, card: &Card) -> Box<dyn CardArchetype> {
-        sets::base_set::find(&card.archetype)
-            .or_else(|| sets::fossil::find(&card.archetype))
-            .unwrap()
+    fn behavior(&self, card: &Card) -> &dyn CardArchetype {
+        for (identifier, archetype) in self.archetypes.iter() {
+            if *identifier == card.archetype {
+                return archetype.deref();
+            }
+        }
+
+        panic!("Couldn't find card {}", card.archetype);
     }
 
     fn attacking_effects(&self) -> AttackingEffectsWhen {
         AttackingEffectsWhen::AfterWR
+    }
+
+    fn basic_for_stage2(&self, card: &Card) -> String {
+        let stage1name = self.behavior(card).evolves_from().unwrap();
+
+        for (_, archetype) in self.archetypes.iter() {
+            if archetype.name() == stage1name {
+                return archetype.evolves_from().unwrap();
+            }
+        }
+
+        panic!("Couldn't find basic that matches card {}", card.archetype);
     }
 
     fn boxed_clone(&self) -> Box<dyn Format> {
@@ -305,6 +334,6 @@ fn main() {
 
     let state = GameState::initial(&random_cards, &random_cards);
 
-    GameEngine::from_state(state, Box::new(BaseFossil {}))
+    GameEngine::from_state(state, Box::new(BaseFossil::new()))
         .play(&mut CLI { });
 }

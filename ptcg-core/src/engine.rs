@@ -1,5 +1,6 @@
 use crate::state::*;
 use crate::cli::CLIDrawTarget;
+use std::ops::Deref;
 
 pub type Weakness = (usize, Vec<Type>);
 pub type Resistance = (usize, Vec<Type>);
@@ -21,6 +22,9 @@ pub trait CardArchetype {
     fn is_pokemon(&self, _card: &Card, _engine: &GameEngine) -> bool {
         self.stage().is_some()
     }
+    fn is_trainer(&self, _card: &Card, _engine: &GameEngine) -> bool {
+        false
+    }
     fn defending_damage_effect(&self, _card: &Card, _engine: &GameEngine, _damage: usize) -> Option<usize> {
         None
     }
@@ -33,23 +37,25 @@ pub trait CardArchetype {
 }
 
 pub trait CardDB {
-    fn archetype(&self, format: &Box<dyn Format>) -> Box<dyn CardArchetype>;
+    fn archetype<'a>(&self, format: &'a dyn Format) -> &'a dyn CardArchetype;
 }
 
 impl CardDB for Card {
-    fn archetype(&self, format: &Box<dyn Format>) -> Box<dyn CardArchetype> {
+    fn archetype<'a>(&self, format: &'a dyn Format) -> &'a dyn CardArchetype {
         format.behavior(self)
     }
 }
 
+#[derive(PartialEq, Eq)]
 pub enum AttackingEffectsWhen {
     BeforeWR,
     AfterWR,
 }
 
 pub trait Format {
-    fn behavior(&self, card: &Card) -> Box<dyn CardArchetype>;
+    fn behavior(&self, card: &Card) -> &dyn CardArchetype;
     fn attacking_effects(&self) -> AttackingEffectsWhen;
+    fn basic_for_stage2(&self, card: &Card) -> String;
     fn boxed_clone(&self) -> Box<dyn Format>;
 }
 
@@ -300,11 +306,11 @@ impl GameEngine {
                     Action::TrainerFromHand(_, card) => {
                         self
                             .push_action(action.clone())
-                            .then(|e| card.archetype(&e.format).execute(player, card, &e, dm))
+                            .then(|e| self.archetype(card).execute(player, card, &e, dm))
                             .pop_action()
                     },
                     Action::AttachFromHand(_, card) => {
-                        card.archetype(&self.format).execute(player, card, &self, dm)
+                        self.archetype(card).execute(player, card, &self, dm)
                     },
                     Action::EvolveFromHand(player, card) => {
                         self.evolve(*player, card, dm)
@@ -520,8 +526,8 @@ impl GameEngine {
         engine
     }
 
-    pub fn archetype(&self, card: &Card) -> Box<dyn CardArchetype> {
-        card.archetype(&self.format)
+    pub fn archetype(&self, card: &Card) -> &dyn CardArchetype {
+        card.archetype(self.format.deref())
     }
 
     pub fn apply_weakness(&self, mut damage: usize) -> usize {
@@ -1405,35 +1411,7 @@ impl GameEngine {
     }
 
     pub fn is_trainer(&self, card: &Card) -> bool {
-        match card.archetype.as_str() {
-            "Clefairy Doll (BS 70)" => true,
-            "Computer Search (BS 71)" => true,
-            "Devolution Spray (BS 72)" => true,
-            "Impostor Professor Oak (BS 73)" => true,
-            "Item Finder (BS 74)" => true,
-            "Lass (BS 75)" => true,
-            "Pokemon Breeder (BS 76)" => true,
-            "Pokemon Trader (BS 77)" => true,
-            "Scoop Up (BS 78)" => true,
-            "Super Energy Removal (BS 79)" => true,
-            "Defender (BS 80)" => true,
-            "Energy Retrieval (BS 81)" => true,
-            "Full Heal (BS 82)" => true,
-            "Maintenance (BS 83)" => true,
-            "PlusPower (BS 84)" => true,
-            "Pokemon Center (BS 85)" => true,
-            "Pokemon Flute (BS 86)" => true,
-            "Pokedex (BS 87)" => true,
-            "Professor Oak (BS 88)" => true,
-            "Revive (BS 89)" => true,
-            "Super Potion (BS 90)" => true,
-            "Bill (BS 91)" => true,
-            "Energy Removal (BS 92)" => true,
-            "Gust of Wind (BS 93)" => true,
-            "Potion (BS 94)" => true,
-            "Switch (BS 95)" => true,
-            _ => false
-        }
+        self.archetype(card).is_trainer(card, self)
     }
 
     pub fn full_hp(&self, in_play: &InPlayCard) -> usize {
@@ -1529,5 +1507,9 @@ impl GameEngine {
 
     pub fn in_play(&self, player: Player) -> Vec<&InPlayCard> {
         self.state.side(player).all_in_play()
+    }
+
+    pub fn basic_for_stage2(&self, card: &Card) -> String {
+        self.format.basic_for_stage2(card)
     }
 }

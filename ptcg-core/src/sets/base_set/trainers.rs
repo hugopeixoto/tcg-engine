@@ -169,8 +169,8 @@ impl PokemonBreeder {
             .collect()
     }
 
-    pub fn targets(&self, engine: &GameEngine, _card: &Card) -> Vec<InPlayCard> {
-        let basic = "Squirtle".to_string(); // TODO: ???
+    pub fn targets(&self, engine: &GameEngine, card: &Card) -> Vec<InPlayCard> {
+        let basic = engine.basic_for_stage2(card);
 
         engine
             .in_play(engine.player())

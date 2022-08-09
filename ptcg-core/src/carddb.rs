@@ -109,6 +109,9 @@ impl CardArchetype for Trainer {
     fn stage(&self) -> Option<Stage> {
         None
     }
+    fn is_trainer(&self, _card: &Card, _engine: &GameEngine) -> bool {
+        true
+    }
     fn evolves_from(&self) -> Option<String> {
         None
     }
