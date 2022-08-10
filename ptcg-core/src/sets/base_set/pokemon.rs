@@ -66,8 +66,10 @@ impl CardArchetype for Blastoise {
     }
 }
 impl Blastoise {
-    pub fn hydro_pump(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn hydro_pump(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Water, Type::Water])
+            .damage_plus_per_extra_energy_on_attacking(40, 10, Type::Water, 2)
     }
 }
 
@@ -507,8 +509,10 @@ impl CardArchetype for Poliwrath {
     }
 }
 impl Poliwrath {
-    pub fn water_gun(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn water_gun(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Water, Type::Colorless])
+            .damage_plus_per_extra_energy_on_attacking(30, 10, Type::Water, 2)
     }
     pub fn whirlpool(builder: AttackBuilder) -> AttackBuilder {
         builder
@@ -1157,8 +1161,11 @@ impl Haunter {
             .attack_cost(&[Type::Psychic])
             .asleep()
     }
-    pub fn dream_eater(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn dream_eater(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic, Type::Psychic])
+            .defending_must_be_asleep()
+            .damage(50)
     }
 }
 
@@ -1998,8 +2005,10 @@ impl Gastly {
             .flip_a_coin()
             .if_heads(|e| e.asleep())
     }
-    pub fn destiny_bond(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn destiny_bond(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic, Type::Colorless])
+            .knock_out_attacker_if_attacking_is_knocked_out_next_turn()
     }
 }
 
@@ -2342,8 +2351,10 @@ impl CardArchetype for Poliwag {
     }
 }
 impl Poliwag {
-    pub fn water_gun(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn water_gun(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water])
+            .damage_plus_per_extra_energy_on_attacking(10, 10, Type::Water, 2)
     }
 }
 

@@ -1565,6 +1565,7 @@ pub struct AttackBuilder<'a> {
     dm: &'a mut dyn DecisionMaker,
     flips: Vec<Flips>,
 
+    attack_cost: Vec<Type>,
     failed: bool,
     results: Vec<ActionResult>,
     original: GameEngine,
@@ -1578,6 +1579,7 @@ impl<'a> AttackBuilder<'a> {
             dm,
             flips: vec![],
 
+            attack_cost: vec![],
             results: vec![],
             failed: false,
             original,
@@ -1605,6 +1607,8 @@ impl<'a> AttackBuilder<'a> {
     }
 
     pub fn attack_cost(mut self, energy_requirements: &[Type]) -> Self {
+        self.attack_cost = energy_requirements.iter().cloned().collect();
+
         if !self.engine.is_attack_energy_cost_met(self.engine.attacking(), energy_requirements) {
             self.failed = true;
         }
@@ -1659,6 +1663,13 @@ impl<'a> AttackBuilder<'a> {
         let idx = self.results.len();
         self = f(self);
         if !self.results[idx..].iter().all(|x| match x { ActionResult::Full => true, _ => false }) {
+            self.failed = true;
+        }
+        self
+    }
+
+    pub fn defending_must_be_asleep(mut self) -> Self {
+        if !self.defending().is_asleep() {
             self.failed = true;
         }
         self
@@ -1767,6 +1778,21 @@ impl<'a> AttackBuilder<'a> {
         self
     }
 
+    pub fn damage_plus_per_extra_energy_on_attacking(mut self, damage: usize, per_energy: usize, energy_type: Type, energy_limit: usize) -> Self {
+        let mut additional = 0;
+        let mut requirements = self.attack_cost.clone();
+        while additional < energy_limit {
+            requirements.push(energy_type.clone());
+            if !self.engine.is_attack_energy_cost_met(self.attacking(), &requirements) {
+                break;
+            }
+            additional += 1;
+        }
+
+        self.engine = self.engine.damage(damage.saturating_add(additional * per_energy));
+        self
+    }
+
     pub fn prevent_damage_during_opponents_next_turn(mut self) -> Self {
         self.engine = self.engine.with_effect(Effect {
             name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
@@ -1788,6 +1814,18 @@ impl<'a> AttackBuilder<'a> {
             expires: EffectExpiration::EndOfTurn(self.opponent(), 0),
             system: false,
         });
+        self
+    }
+
+    pub fn knock_out_attacker_if_attacking_is_knocked_out_next_turn(self) -> Self {
+        // self.engine = self.engine.with_effect(Effect {
+        //     name: "KNOCK_OUT_IF_WE_ARE_KNOCKED_OUT".into(),
+        //     source: EffectSource::Attack(self.player(), self.attacking().id),
+        //     target: EffectTarget::InPlay(self.player(), self.attacking().id),
+        //     consequence: TODO
+        //     expires: EffectExpiration::EndOfTurn(self.opponent(), 0)
+        //     system: false,
+        // });
         self
     }
 }

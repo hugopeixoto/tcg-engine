@@ -154,6 +154,11 @@ class Builder
     self
   end
 
+  def knock_out_attacker_if_attacking_is_knocked_out_next_turn
+    @text << ".knock_out_attacker_if_attacking_is_knocked_out_next_turn()"
+    self
+  end
+
   def prevent_damage_during_opponents_next_turn
     @text << ".prevent_damage_during_opponents_next_turn()"
     self
@@ -179,6 +184,13 @@ class Builder
     self
   end
 
+  def damage_plus_per_extra_energy_on_attacking(base_damage, plus, energy_type, energy_limit)
+    energy_type = "Type::#{energy_type}"
+
+    @text << ".damage_plus_per_extra_energy_on_attacking(#{base_damage}, #{plus}, #{energy_type}, #{energy_limit})"
+    self
+  end
+
   def damage_half_defending_remaining_hp
     @text << ".damage_half_defending_remaining_hp()"
     self
@@ -191,6 +203,11 @@ class Builder
 
   def must(&what)
     @text << ".must(|e| #{Builder.new("e").instance_eval(&what).to_s(compact: true)})"
+    self
+  end
+
+  def defending_must_be_asleep
+    @text << ".defending_must_be_asleep()"
     self
   end
 
@@ -329,6 +346,28 @@ def attack_impl(attack)
       .each_own_bench { damage(bench_damage) }
       .each_opponents_bench { damage(bench_damage) }
       .damage_itself(self_damage)
+  elsif text =~ /^You can't use this attack unless the Defending Pokémon is Asleep\.$/
+    builder
+      .defending_must_be_asleep
+      .damage(damage)
+  elsif text =~ /^Discard (\d+) (\w+) Energy card attached to \w+ in order to use this attack. If a Pokémon Knocks Out \w+ during your opponent's next turn, Knock Out that Pokémon\./
+    how_many = $1.to_i
+    energy_type = $2
+    builder
+      .damage(damage)
+      .knock_out_attacker_if_attacking_is_knocked_out_next_turn
+  elsif text =~ /^Does (\d+) damage plus (\d+) more damage for each (\w+) Energy attached to \w+ but not used to pay for this attack's Energy cost. Extra (\w+) Energy after the (\d+)(?:st|nd|rd|th) (?:doesn't|don't) count\.$/
+
+    base_damage = $1.to_i
+    plus_damage = $2.to_i
+    energy_type = $3
+    energy_type2 = $4
+    energy_limit = $5.to_i
+
+    raise unless energy_type == energy_type2
+
+    builder
+      .damage_plus_per_extra_energy_on_attacking(base_damage, plus_damage, energy_type, energy_limit)
   else
     return "unimplemented!();"
   end

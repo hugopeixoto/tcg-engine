@@ -294,6 +294,13 @@ impl InPlayCard {
 
         cards
     }
+
+    pub fn is_asleep(&self) -> bool {
+        match self.rotational_status {
+            RotationalStatus::Asleep => true,
+            _ => false,
+        }
+    }
 }
 
 type PrizeCardID = usize;
