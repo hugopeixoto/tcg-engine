@@ -302,6 +302,16 @@ impl<'a> AttackBuilder<'a> {
         // });
         self
     }
+
+    pub fn switch_defending(mut self) -> Self {
+        self.engine = self.engine.switch(self.opponent(), self.dm);
+        self
+    }
+
+    pub fn gust_defending(mut self) -> Self {
+        self.engine = self.engine.gust(self.player(), self.dm);
+        self
+    }
 }
 
 impl<'a> From<&AttackBuilder<'a>> for GameEngine {

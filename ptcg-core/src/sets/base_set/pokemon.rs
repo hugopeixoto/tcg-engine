@@ -473,8 +473,10 @@ impl CardArchetype for Ninetales {
     }
 }
 impl Ninetales {
-    pub fn lure(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn lure(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .gust_defending()
     }
     pub fn fire_blast(builder: AttackBuilder) -> AttackBuilder {
         builder
@@ -889,8 +891,11 @@ impl CardArchetype for Pidgeotto {
     }
 }
 impl Pidgeotto {
-    pub fn whirlwind(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn whirlwind(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .damage(20)
+            .switch_defending()
     }
     pub fn mirror_move(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
@@ -2288,8 +2293,11 @@ impl CardArchetype for Pidgey {
     }
 }
 impl Pidgey {
-    pub fn whirlwind(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn whirlwind(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .damage(10)
+            .switch_defending()
     }
 }
 

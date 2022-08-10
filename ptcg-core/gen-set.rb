@@ -227,6 +227,16 @@ class Builder
     self
   end
 
+  def switch_defending
+    @text << ".switch_defending()"
+    self
+  end
+
+  def gust_defending
+    @text << ".gust_defending()"
+    self
+  end
+
   def done
     @text[-1] += ";"
     self
@@ -404,6 +414,14 @@ def attack_impl(attack)
     builder
       .damage(damage)
       .if_did_damage { heal_attacking(counters * 10) }
+  elsif text =~ /^If your opponent has any Benched Pokémon, he or she chooses 1 of them and switches it with the Defending Pokémon\.$/
+    builder
+      .damage(damage)
+      .switch_defending()
+  elsif text =~ /^If your opponent has any Benched Pokémon, choose 1 of them and switch it with his or her Active Pokémon\.$/
+    builder
+      .damage(damage)
+      .gust_defending()
   elsif text =~ /^$/
   else
     return "unimplemented!();"
