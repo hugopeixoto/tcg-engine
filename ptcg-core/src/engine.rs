@@ -519,7 +519,7 @@ impl GameEngine {
         engine
     }
 
-    pub fn damage(&self, mut damage: usize) -> Self {
+    pub fn damage(&self, mut damage: usize) -> (Self, usize) {
         // TODO: when targetting benched pokémon, we shouldn't apply weakness and resistance by
         // default, but leave the door open for some attacks that do apply them.
 
@@ -533,17 +533,15 @@ impl GameEngine {
         }
         damage = self.effects_on_defending(damage);
 
-        self.with_state(self.state.add_damage_counters(self.defending(), damage/10))
+        (self.with_state(self.state.add_damage_counters(self.defending(), damage/10)), damage)
     }
 
-    pub fn damage_self(&self, damage: usize) -> Self {
-        let mut engine = self.clone();
+    pub fn damage_self(&self, damage: usize) -> (Self, usize) {
+        let engine = self.clone().push_target(self.attacking(), self.attacking());
+        let (engine, counters) = engine.damage(damage);
+        let engine = engine.pop_target();
 
-        engine = engine.push_target(self.attacking(), self.attacking());
-        engine = engine.damage(damage);
-        engine = engine.pop_target();
-
-        engine
+        (engine, counters)
     }
 
     pub fn archetype(&self, card: &Card) -> &dyn CardArchetype {
@@ -1464,6 +1462,7 @@ impl GameEngine {
 
     pub fn is_basic_energy(&self, card: &Card) -> bool {
         match card.archetype.as_str() {
+            "Grass Energy (BS 99)" => true,
             "Psychic Energy (BS 101)" => true,
             "Water Energy (BS 102)" => true,
             _ => false,

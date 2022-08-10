@@ -8,6 +8,7 @@ pub struct AttackBuilder<'a> {
 
     attack_cost: Vec<Type>,
     failed: bool,
+    damage_done: usize,
     results: Vec<ActionResult>,
     original: GameEngine,
 }
@@ -23,6 +24,7 @@ impl<'a> AttackBuilder<'a> {
             attack_cost: vec![],
             results: vec![],
             failed: false,
+            damage_done: 0,
             original,
         }
     }
@@ -71,12 +73,12 @@ impl<'a> AttackBuilder<'a> {
     }
 
     pub fn damage(mut self, damage: usize) -> Self {
-        self.engine = self.engine.damage(damage);
+        (self.engine, self.damage_done) = self.engine.damage(damage);
         self
     }
 
     pub fn damage_self(mut self, damage: usize) -> Self {
-        self.engine = self.engine.damage_self(damage);
+        (self.engine, _) = self.engine.damage_self(damage);
         self
     }
 
@@ -90,6 +92,14 @@ impl<'a> AttackBuilder<'a> {
 
     pub fn if_tails<F>(self, f: F) -> Self where F: Fn(Self) -> Self {
         if self.heads() == 0 {
+            f(self)
+        } else {
+            self
+        }
+    }
+
+    pub fn if_did_damage<F>(self, f: F) -> Self where F: Fn(Self) -> Self {
+        if self.damage_done > 0 {
             f(self)
         } else {
             self
@@ -190,32 +200,43 @@ impl<'a> AttackBuilder<'a> {
         self
     }
 
+    pub fn heal_attacking(mut self, damage: usize) -> Self {
+        self.engine = self.engine.heal(self.attacking(), damage);
+        self
+    }
+
     pub fn damage_per_heads(mut self, damage: usize) -> Self {
-        self.engine = self.engine.damage(damage * self.heads());
+        let heads = self.heads();
+        self = self.damage(damage * heads);
         self
     }
 
     pub fn damage_plus_per_energy_card_on_defending(mut self, base_damage: usize, plus: usize) -> Self {
-        self.engine = self.engine.damage(base_damage.saturating_add(self.defending().attached.iter().filter(|c| self.engine.is_energy(c.card())).count() * plus));
+        let energy_cards = self.defending().attached.iter().filter(|c| self.engine.is_energy(c.card())).count();
+        self = self.damage(base_damage.saturating_add(energy_cards * plus));
         self
     }
 
-    pub fn damage_plus_per_damage_counter_on_defending(mut self, base_damage: usize, plus: usize) -> Self {
-        self.engine = self.engine.damage(base_damage.saturating_add(self.engine.damage_counters_on(self.defending()) * plus));
+    pub fn damage_plus_per_damage_counter_on_defending(mut self, base_damage: usize, damage_per_counter: usize) -> Self {
+        let damage_counters = self.engine.damage_counters_on(self.defending());
+        self = self.damage(base_damage.saturating_add(damage_counters * damage_per_counter));
         self
     }
 
     pub fn damage_per_damage_counter_on_itself(mut self, damage_per_counter: usize) -> Self {
-        self.engine = self.engine.damage(self.engine.damage_counters_on(self.attacking()) * damage_per_counter);
+        let damage_counters = self.engine.damage_counters_on(self.attacking());
+        self = self.damage(damage_counters * damage_per_counter);
         self
     }
     pub fn damage_minus_per_damage_counter_on_itself(mut self, base_damage: usize, minus: usize) -> Self {
-        self.engine = self.engine.damage(base_damage.saturating_sub(self.engine.damage_counters_on(self.attacking()) * minus));
+        let damage_counters = self.engine.damage_counters_on(self.attacking());
+        self = self.damage(base_damage.saturating_sub(damage_counters * minus));
         self
     }
 
     pub fn damage_half_defending_remaining_hp(mut self) -> Self {
-        self.engine = self.engine.damage(self.engine.remaining_hp(self.defending()).div_ceil(2));
+        let remaining_hp = self.engine.remaining_hp(self.defending());
+        self = self.damage(remaining_hp.div_ceil(2));
         self
     }
 
@@ -230,7 +251,7 @@ impl<'a> AttackBuilder<'a> {
             additional += 1;
         }
 
-        self.engine = self.engine.damage(damage.saturating_add(additional * per_energy));
+        self = self.damage(damage.saturating_add(additional * per_energy));
         self
     }
 

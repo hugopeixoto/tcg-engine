@@ -1767,8 +1767,11 @@ impl CardArchetype for Bulbasaur {
     }
 }
 impl Bulbasaur {
-    pub fn leech_seed(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn leech_seed(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Grass])
+            .damage(20)
+            .if_did_damage(|e| e.heal_attacking(10))
     }
 }
 

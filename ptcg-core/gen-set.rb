@@ -106,6 +106,11 @@ class Builder
     self
   end
 
+  def if_did_damage(&what)
+    @text << ".if_did_damage(|e| #{Builder.new("e").instance_eval(&what).to_s(compact: true)})"
+    self
+  end
+
   def damage_itself(damage)
     @text << ".damage_self(#{damage})"
     self
@@ -142,6 +147,11 @@ class Builder
 
   def heal_all_attacking
     @text << ".heal_all_attacking()"
+    self
+  end
+
+  def heal_attacking(damage)
+    @text << ".heal_attacking(#{damage})"
     self
   end
 
@@ -369,6 +379,12 @@ def attack_impl(attack)
 
     builder
       .damage_plus_per_extra_energy_on_attacking(base_damage, plus_damage, energy_type, energy_limit)
+  elsif text =~ /^Unless all damage from this attack is prevented, you may remove (\d+) damage counter from \w+\.$/
+    counters = $1.to_i
+    builder
+      .damage(damage)
+      .if_did_damage { heal_attacking(counters * 10) }
+  elsif text =~ /^$/
   else
     return "unimplemented!();"
   end
