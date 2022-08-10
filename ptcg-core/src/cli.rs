@@ -72,6 +72,8 @@ impl InPlayCard {
             .iter()
             .filter(|card| card.is_up())
             .map(|card| match card.card().archetype.as_str() {
+                "Grass Energy (BS 99)" => "[G]",
+                "Lightning Energy (BS 100)" => "[L]",
                 "Psychic Energy (BS 101)" => "[P]",
                 "Water Energy (BS 102)" => "[W]",
                 "Double Colorless Energy (BS 96)" => "[C][C]",

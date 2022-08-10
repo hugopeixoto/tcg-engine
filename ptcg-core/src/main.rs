@@ -8,6 +8,7 @@ mod cli;
 mod engine;
 mod carddb;
 mod card_macros;
+mod attack_builder;
 
 mod sets;
 mod formats;

@@ -1,6 +1,7 @@
 use crate::state::*;
 use crate::cli::CLIDrawTarget;
 use std::ops::Deref;
+use crate::attack_builder::AttackBuilder;
 
 pub type Weakness = (usize, Vec<Type>);
 pub type Resistance = (usize, Vec<Type>);
@@ -67,18 +68,23 @@ impl Clone for Box<dyn Format> {
 
 #[derive(Clone)]
 pub struct RFA {
-    code: fn(&GameEngine, &mut dyn DecisionMaker) -> GameEngine,
+    code: fn(AttackBuilder) -> AttackBuilder,
 }
 
 impl RFA {
-    pub fn new(code: fn(&GameEngine, &mut dyn DecisionMaker) -> GameEngine) -> Self {
+    pub fn new(code: fn(AttackBuilder) -> AttackBuilder) -> Self {
         RFA { code }
     }
 }
 
 impl AttackBody for RFA {
+    fn build<'a>(&self, engine: &GameEngine, dm: &'a mut dyn DecisionMaker) -> AttackBuilder<'a> {
+        let builder = AttackBuilder::new(engine.clone(), dm);
+        (self.code)(builder)
+    }
+
     fn run(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        (self.code)(engine, dm)
+        (&self.build(engine, dm)).into()
     }
 
     fn boxed_clone(&self) -> Box<dyn AttackBody> {
@@ -208,6 +214,13 @@ pub enum Type {
     Any,
 }
 
+//#[derive(Debug, Clone, PartialEq, Eq)]
+//pub enum EnergyRequirement {
+//    Any,
+//    OneOf(Vec<Type>),
+//    Is(Type),
+//}
+
 #[derive(PartialEq, Eq, Debug)]
 pub enum SetupActiveSelection {
     Mulligan,
@@ -216,6 +229,7 @@ pub enum SetupActiveSelection {
 
 pub trait AttackBody {
     fn run(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
+    fn build<'a>(&self, engine: &GameEngine, dm: &'a mut dyn DecisionMaker) -> AttackBuilder<'a>;
     fn boxed_clone(&self) -> Box<dyn AttackBody>;
 }
 
@@ -505,7 +519,7 @@ impl GameEngine {
         engine
     }
 
-    pub fn damage(&self, mut damage: usize) -> Self {
+    pub fn damage(&self, mut damage: usize) -> (Self, usize) {
         // TODO: when targetting benched pokémon, we shouldn't apply weakness and resistance by
         // default, but leave the door open for some attacks that do apply them.
 
@@ -519,17 +533,15 @@ impl GameEngine {
         }
         damage = self.effects_on_defending(damage);
 
-        self.with_state(self.state.add_damage_counters(self.defending(), damage/10))
+        (self.with_state(self.state.add_damage_counters(self.defending(), damage/10)), damage)
     }
 
-    pub fn damage_self(&self, damage: usize) -> Self {
-        let mut engine = self.clone();
+    pub fn damage_self(&self, damage: usize) -> (Self, usize) {
+        let engine = self.clone().push_target(self.attacking(), self.attacking());
+        let (engine, counters) = engine.damage(damage);
+        let engine = engine.pop_target();
 
-        engine = engine.push_target(self.attacking(), self.attacking());
-        engine = engine.damage(damage);
-        engine = engine.pop_target();
-
-        engine
+        (engine, counters)
     }
 
     pub fn archetype(&self, card: &Card) -> &dyn CardArchetype {
@@ -916,7 +928,19 @@ impl GameEngine {
         self.with_state(state)
     }
 
-    pub fn discard_all_attached_energies(&self, _player: Player, in_play: &InPlayCard, _dm: &mut dyn DecisionMaker) -> Self {
+    pub fn discard_attached_energy_cards(&self, _player: Player, in_play: &InPlayCard, _cost: &[Type], _dm: &mut dyn DecisionMaker) -> (Self, ActionResult) {
+        // TODO: pick energies to discard instead of discarding everything
+        let mut state = self.state.clone();
+        for attached in in_play.attached.iter() {
+            if self.is_energy(attached.card()) {
+                state = state.move_card_to_discard(attached.card());
+            }
+        }
+
+        (self.with_state(state), ActionResult::Full)
+    }
+
+    pub fn discard_all_attached_energy_cards(&self, _player: Player, in_play: &InPlayCard, _dm: &mut dyn DecisionMaker) -> Self {
         let mut state = self.state.clone();
         for attached in in_play.attached.iter() {
             if self.is_energy(attached.card()) {
@@ -930,7 +954,6 @@ impl GameEngine {
     pub fn discard_from_hand(&self, player: Player, card: &Card, _dm: &mut dyn DecisionMaker) -> Self {
         self.with_state(self.state.discard_from_hand(player, card))
     }
-
 
     pub fn shuffle_hand_into_deck(&self, player: Player, _dm: &mut dyn DecisionMaker) -> Self {
         self.with_state(self.state.shuffle_hand_into_deck(player))
@@ -1439,6 +1462,7 @@ impl GameEngine {
 
     pub fn is_basic_energy(&self, card: &Card) -> bool {
         match card.archetype.as_str() {
+            "Grass Energy (BS 99)" => true,
             "Psychic Energy (BS 101)" => true,
             "Water Energy (BS 102)" => true,
             _ => false,
@@ -1523,4 +1547,11 @@ impl GameEngine {
     pub fn basic_for_stage2(&self, card: &Card) -> String {
         self.format.basic_for_stage2(card)
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ActionResult {
+    Nothing,
+    Partial,
+    Full,
 }
