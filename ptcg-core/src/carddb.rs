@@ -17,12 +17,27 @@ impl<'a> Attacks<'a> {
         }
     }
 
-    pub fn register(mut self, name: &str, energy_requirements: &[Type], f: fn(&GameEngine, &mut dyn DecisionMaker) -> GameEngine) -> Attacks<'a> {
-        if self.engine.is_attack_energy_cost_met(self.in_play, energy_requirements) {
-            self.attacks.push(Action::Attack(self.player, self.in_play.clone(), name.into(), Box::new(RFA::new(f))));
+    pub fn register(mut self, name: &str, f: fn(AttackBuilder) -> AttackBuilder) -> Attacks<'a> {
+        let action = Action::Attack(self.player, self.in_play.clone(), name.into(), Box::new(RFA::new(f)));
+
+        if self.are_attack_requirements_met(&action) {
+            self.attacks.push(action);
         }
 
         self
+    }
+
+    pub fn are_attack_requirements_met(&self, action: &Action) -> bool {
+        if let Action::Attack(player, attacking, _name, executor) = action {
+            let mut dm = FakeDM{};
+            let engine = self.engine
+                .push_action(action.clone())
+                .push_target(&attacking, &self.engine.state.side(player.opponent()).active[0]);
+
+            !executor.build(&engine, &mut dm).failed()
+        } else {
+            panic!("Can't check the attack requirements for {:?}", action);
+        }
     }
 }
 

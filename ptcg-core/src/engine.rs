@@ -67,18 +67,23 @@ impl Clone for Box<dyn Format> {
 
 #[derive(Clone)]
 pub struct RFA {
-    code: fn(&GameEngine, &mut dyn DecisionMaker) -> GameEngine,
+    code: fn(AttackBuilder) -> AttackBuilder,
 }
 
 impl RFA {
-    pub fn new(code: fn(&GameEngine, &mut dyn DecisionMaker) -> GameEngine) -> Self {
+    pub fn new(code: fn(AttackBuilder) -> AttackBuilder) -> Self {
         RFA { code }
     }
 }
 
 impl AttackBody for RFA {
+    fn build<'a>(&self, engine: &GameEngine, dm: &'a mut dyn DecisionMaker) -> AttackBuilder<'a> {
+        let builder = engine.attack_builder(dm);
+        (self.code)(builder)
+    }
+
     fn run(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        (self.code)(engine, dm)
+        (&self.build(engine, dm)).into()
     }
 
     fn boxed_clone(&self) -> Box<dyn AttackBody> {
@@ -208,6 +213,13 @@ pub enum Type {
     Any,
 }
 
+//#[derive(Debug, Clone, PartialEq, Eq)]
+//pub enum EnergyRequirement {
+//    Any,
+//    OneOf(Vec<Type>),
+//    Is(Type),
+//}
+
 #[derive(PartialEq, Eq, Debug)]
 pub enum SetupActiveSelection {
     Mulligan,
@@ -216,6 +228,7 @@ pub enum SetupActiveSelection {
 
 pub trait AttackBody {
     fn run(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
+    fn build<'a>(&self, engine: &GameEngine, dm: &'a mut dyn DecisionMaker) -> AttackBuilder<'a>;
     fn boxed_clone(&self) -> Box<dyn AttackBody>;
 }
 
@@ -916,7 +929,19 @@ impl GameEngine {
         self.with_state(state)
     }
 
-    pub fn discard_all_attached_energies(&self, _player: Player, in_play: &InPlayCard, _dm: &mut dyn DecisionMaker) -> Self {
+    pub fn discard_attached_energy_cards(&self, _player: Player, in_play: &InPlayCard, _cost: &[Type], _dm: &mut dyn DecisionMaker) -> (Self, ActionResult) {
+        // TODO: pick energies to discard instead of discarding everything
+        let mut state = self.state.clone();
+        for attached in in_play.attached.iter() {
+            if self.is_energy(attached.card()) {
+                state = state.move_card_to_discard(attached.card());
+            }
+        }
+
+        (self.with_state(state), ActionResult::Full)
+    }
+
+    pub fn discard_all_attached_energy_cards(&self, _player: Player, in_play: &InPlayCard, _dm: &mut dyn DecisionMaker) -> Self {
         let mut state = self.state.clone();
         for attached in in_play.attached.iter() {
             if self.is_energy(attached.card()) {
@@ -930,7 +955,6 @@ impl GameEngine {
     pub fn discard_from_hand(&self, player: Player, card: &Card, _dm: &mut dyn DecisionMaker) -> Self {
         self.with_state(self.state.discard_from_hand(player, card))
     }
-
 
     pub fn shuffle_hand_into_deck(&self, player: Player, _dm: &mut dyn DecisionMaker) -> Self {
         self.with_state(self.state.shuffle_hand_into_deck(player))
@@ -1522,5 +1546,258 @@ impl GameEngine {
 
     pub fn basic_for_stage2(&self, card: &Card) -> String {
         self.format.basic_for_stage2(card)
+    }
+
+    pub fn attack_builder<'a>(&self, dm: &'a mut dyn DecisionMaker) -> AttackBuilder<'a> {
+        AttackBuilder::new(self.clone(), dm)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ActionResult {
+    Nothing,
+    Partial,
+    Full,
+}
+
+pub struct AttackBuilder<'a> {
+    engine: GameEngine,
+    dm: &'a mut dyn DecisionMaker,
+    flips: Vec<Flips>,
+
+    failed: bool,
+    results: Vec<ActionResult>,
+    original: GameEngine,
+}
+
+impl<'a> AttackBuilder<'a> {
+    pub fn new(engine: GameEngine, dm: &'a mut dyn DecisionMaker) -> Self {
+        let original = engine.clone();
+        AttackBuilder {
+            engine,
+            dm,
+            flips: vec![],
+
+            results: vec![],
+            failed: false,
+            original,
+        }
+    }
+
+    pub fn failed(&self) -> bool {
+        self.failed
+    }
+
+    pub fn player(&self) -> Player {
+        self.engine.player()
+    }
+
+    pub fn opponent(&self) -> Player {
+        self.engine.opponent()
+    }
+
+    pub fn attacking(&self) -> &InPlayCard {
+        self.engine.attacking()
+    }
+
+    pub fn defending(&self) -> &InPlayCard {
+        self.engine.defending()
+    }
+
+    pub fn attack_cost(mut self, energy_requirements: &[Type]) -> Self {
+        if !self.engine.is_attack_energy_cost_met(self.engine.attacking(), energy_requirements) {
+            self.failed = true;
+        }
+        self
+    }
+
+    pub fn flip_a_coin(mut self) -> Self {
+        self.flips.push(self.dm.flip(1));
+        self
+    }
+
+    pub fn flip_coins(mut self, how_many: usize) -> Self {
+        self.flips.push(self.dm.flip(how_many));
+        self
+    }
+
+    pub fn heads(&self) -> usize {
+        self.flips.last().unwrap().heads()
+    }
+
+    pub fn damage(mut self, damage: usize) -> Self {
+        self.engine = self.engine.damage(damage);
+        self
+    }
+
+    pub fn damage_self(mut self, damage: usize) -> Self {
+        self.engine = self.engine.damage_self(damage);
+        self
+    }
+
+    pub fn if_heads<F>(self, f: F) -> Self where F: Fn(Self) -> Self {
+        if self.heads() == 1 {
+            f(self)
+        } else {
+            self
+        }
+    }
+
+    pub fn if_tails<F>(self, f: F) -> Self where F: Fn(Self) -> Self {
+        if self.heads() == 0 {
+            f(self)
+        } else {
+            self
+        }
+    }
+
+    pub fn then<F>(self, f: F) -> Self where F: Fn(Self) -> Self {
+        f(self)
+    }
+
+    pub fn must<F>(mut self, f: F) -> Self where F: Fn(Self) -> Self {
+        let idx = self.results.len();
+        self = f(self);
+        if !self.results[idx..].iter().all(|x| match x { ActionResult::Full => true, _ => false }) {
+            self.failed = true;
+        }
+        self
+    }
+
+    pub fn each_own_bench<F>(mut self, f: F) -> Self where F: Fn(Self) -> Self {
+        for target in self.engine.bench(self.player()) {
+            self.engine = self.engine.push_target(self.attacking(), &target);
+            self = f(self);
+            self.engine = self.engine.pop_target();
+        }
+        self
+    }
+
+    pub fn each_opponents_bench<F>(mut self, f: F) -> Self where F: Fn(Self) -> Self {
+        for target in self.engine.bench(self.opponent()) {
+            self.engine = self.engine.push_target(self.attacking(), &target);
+            self = f(self);
+            self.engine = self.engine.pop_target();
+        }
+        self
+    }
+
+    pub fn with_effect(mut self, effect: Effect) -> Self {
+        self.engine = self.engine.with_effect(effect);
+        self
+    }
+
+    pub fn asleep(mut self) -> Self {
+        self.engine = self.engine.asleep();
+        self
+    }
+
+    pub fn confuse(mut self) -> Self {
+        self.engine = self.engine.confuse();
+        self
+    }
+
+    pub fn paralyze(mut self) -> Self {
+        self.engine = self.engine.paralyze();
+        self
+    }
+
+    pub fn poison(mut self) -> Self {
+        self.engine = self.engine.poison();
+        self
+    }
+
+    pub fn severe_poison(mut self, counters: usize) -> Self {
+        self.engine = self.engine.severe_poison(counters);
+        self
+    }
+
+    pub fn discard_defending_energy_cards(mut self, energy_requirements: &[Type]) -> Self {
+        let (engine, result) = self.engine.discard_attached_energy_cards(self.player(), &self.engine.defending(), energy_requirements, self.dm);
+
+        self.engine = engine;
+        self.results.push(result);
+        self
+    }
+
+    pub fn discard_all_attacking_energy_cards(mut self) -> Self {
+        self.engine = self.engine.discard_all_attached_energy_cards(self.player(), &self.engine.attacking(), self.dm);
+        self
+    }
+
+    pub fn discard_attacking_energy_cards(mut self, energy_requirements: &[Type]) -> Self {
+        let (engine, result) = self.engine.discard_attached_energy_cards(self.player(), &self.engine.attacking(), energy_requirements, self.dm);
+
+        self.engine = engine;
+        self.results.push(result);
+        self
+    }
+
+    pub fn heal_all_attacking(mut self) -> Self {
+        self.engine = self.engine.heal_all(self.attacking());
+        self
+    }
+
+    pub fn damage_per_heads(mut self, damage: usize) -> Self {
+        self.engine = self.engine.damage(damage * self.heads());
+        self
+    }
+
+    pub fn damage_plus_per_energy_card_on_defending(mut self, base_damage: usize, plus: usize) -> Self {
+        self.engine = self.engine.damage(base_damage.saturating_add(self.defending().attached.iter().filter(|c| self.engine.is_energy(c.card())).count() * plus));
+        self
+    }
+
+    pub fn damage_plus_per_damage_counter_on_defending(mut self, base_damage: usize, plus: usize) -> Self {
+        self.engine = self.engine.damage(base_damage.saturating_add(self.engine.damage_counters_on(self.defending()) * plus));
+        self
+    }
+
+    pub fn damage_per_damage_counter_on_itself(mut self, damage_per_counter: usize) -> Self {
+        self.engine = self.engine.damage(self.engine.damage_counters_on(self.attacking()) * damage_per_counter);
+        self
+    }
+    pub fn damage_minus_per_damage_counter_on_itself(mut self, base_damage: usize, minus: usize) -> Self {
+        self.engine = self.engine.damage(base_damage.saturating_sub(self.engine.damage_counters_on(self.attacking()) * minus));
+        self
+    }
+
+    pub fn damage_half_defending_remaining_hp(mut self) -> Self {
+        self.engine = self.engine.damage(self.engine.remaining_hp(self.defending()).div_ceil(2));
+        self
+    }
+
+    pub fn prevent_damage_during_opponents_next_turn(mut self) -> Self {
+        self.engine = self.engine.with_effect(Effect {
+            name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
+            source: EffectSource::Attack(self.player(), self.attacking().id),
+            target: EffectTarget::InPlay(self.player(), self.attacking().id),
+            consequence: EffectConsequence::BlockDamage,
+            expires: EffectExpiration::EndOfTurn(self.opponent(), 0),
+            system: false,
+        });
+        self
+    }
+
+    pub fn prevent_trainers_during_opponents_next_turn(mut self) -> Self {
+        self.engine = self.engine.with_effect(Effect {
+            name: "PSYDUCK_FO_HEADACHE_NO_TRAINERS".into(),
+            source: EffectSource::Attack(self.player(), self.attacking().id),
+            target: EffectTarget::Player(self.opponent()),
+            consequence: EffectConsequence::BlockTrainerFromHand,
+            expires: EffectExpiration::EndOfTurn(self.opponent(), 0),
+            system: false,
+        });
+        self
+    }
+}
+
+impl<'a> From<&AttackBuilder<'a>> for GameEngine {
+    fn from(ab: &AttackBuilder<'a>) -> Self {
+        if ab.failed {
+            ab.original.clone()
+        } else {
+            ab.engine.clone()
+        }
     }
 }

@@ -20,8 +20,8 @@ impl CardArchetype for Articuno {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Freeze Dry", &[Type::Water, Type::Water, Type::Water], Self::freeze_dry)
-            .register("Blizzard", &[Type::Water, Type::Water, Type::Water, Type::Water], Self::blizzard)
+            .register("Freeze Dry", Self::freeze_dry)
+            .register("Blizzard", Self::blizzard)
             .into()
     }
     fn provides(&self) -> Vec<Type> {
@@ -29,22 +29,19 @@ impl CardArchetype for Articuno {
     }
 }
 impl Articuno {
-    pub fn freeze_dry(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let paralyzed = dm.flip(1).heads() == 1;
-
-        engine.damage(30).then_if(paralyzed, GameEngine::paralyze)
+    pub fn freeze_dry(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .flip_a_coin()
+            .damage(30)
+            .if_heads(|b| b.paralyze())
     }
 
-    pub fn blizzard(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let whose_bench = if dm.flip(1).heads() == 1 {
-            engine.opponent()
-        } else {
-            engine.player()
-        };
-
-        engine
+    pub fn blizzard(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .flip_a_coin()
             .damage(50)
-            .then(|e| e.target_all(e.bench(whose_bench), |e2| e2.damage(10)))
+            .if_heads(|b| b.each_opponents_bench(|b2| b2.damage(10)))
+            .if_tails(|b| b.each_own_bench(|b2| b2.damage(10)))
     }
 }
 
@@ -67,8 +64,8 @@ impl CardArchetype for Psyduck {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Headache", &[Type::Psychic], Self::headache)
-            .register("Fury Swipes", &[Type::Water], Self::fury_swipes)
+            .register("Headache", Self::headache)
+            .register("Fury Swipes", Self::fury_swipes)
             .into()
     }
     fn provides(&self) -> Vec<Type> {
@@ -76,19 +73,13 @@ impl CardArchetype for Psyduck {
     }
 }
 impl Psyduck {
-    pub fn headache(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine.with_effect(Effect {
-            name: "PSYDUCK_FO_HEADACHE_NO_TRAINERS".into(),
-            source: EffectSource::Attack(engine.player(), engine.attacking().id),
-            target: EffectTarget::Player(engine.opponent()),
-            consequence: EffectConsequence::BlockTrainerFromHand,
-            expires: EffectExpiration::EndOfTurn(engine.opponent(), 0),
-            system: false,
-        })
+    pub fn headache(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .prevent_trainers_during_opponents_next_turn()
     }
-    pub fn fury_swipes(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let damage = 10 * dm.flip(3).heads();
-
-        engine.damage(damage)
+    pub fn fury_swipes(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .flip_coins(3)
+            .damage_per_heads(10)
     }
 }

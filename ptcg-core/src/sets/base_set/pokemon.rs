@@ -20,7 +20,7 @@ impl CardArchetype for Alakazam {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Confuse Ray", &[Type::Psychic, Type::Psychic, Type::Psychic], Self::confuse_ray)
+            .register("Confuse Ray", Self::confuse_ray)
             .into()
     }
 
@@ -29,11 +29,12 @@ impl CardArchetype for Alakazam {
     }
 }
 impl Alakazam {
-    pub fn confuse_ray(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn confuse_ray(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic, Type::Psychic, Type::Psychic])
+            .flip_a_coin()
             .damage(30)
-            .then_if(heads, |e| e.confuse())
+            .if_heads(|e| e.confuse())
     }
 }
 
@@ -56,7 +57,7 @@ impl CardArchetype for Blastoise {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Hydro Pump", &[Type::Water, Type::Water, Type::Water], Self::hydro_pump)
+            .register("Hydro Pump", Self::hydro_pump)
             .into()
     }
 
@@ -65,7 +66,7 @@ impl CardArchetype for Blastoise {
     }
 }
 impl Blastoise {
-    pub fn hydro_pump(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn hydro_pump(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
 }
@@ -89,8 +90,8 @@ impl CardArchetype for Chansey {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Scrunch", &[Type::Colorless, Type::Colorless], Self::scrunch)
-            .register("Double-edge", &[Type::Colorless, Type::Colorless, Type::Colorless, Type::Colorless], Self::double_edge)
+            .register("Scrunch", Self::scrunch)
+            .register("Double-edge", Self::double_edge)
             .into()
     }
 
@@ -99,21 +100,15 @@ impl CardArchetype for Chansey {
     }
 }
 impl Chansey {
-    pub fn scrunch(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
-            .then_if(heads, |e| e.with_effect(Effect {
-                name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
-                source: EffectSource::Attack(e.player(), e.attacking().id),
-                target: EffectTarget::InPlay(e.player(), e.attacking().id),
-                consequence: EffectConsequence::BlockDamage,
-                expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
-                system: false,
-            })
-        )
+    pub fn scrunch(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.prevent_damage_during_opponents_next_turn())
     }
-    pub fn double_edge(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn double_edge(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless, Type::Colorless, Type::Colorless])
             .damage(80)
             .damage_self(80)
     }
@@ -138,7 +133,7 @@ impl CardArchetype for Charizard {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Fire Spin", &[Type::Fire, Type::Fire, Type::Fire, Type::Fire], Self::fire_spin)
+            .register("Fire Spin", Self::fire_spin)
             .into()
     }
 
@@ -147,9 +142,10 @@ impl CardArchetype for Charizard {
     }
 }
 impl Charizard {
-    pub fn fire_spin(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Any, Type::Any], dm)
+    pub fn fire_spin(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fire, Type::Fire, Type::Fire, Type::Fire])
+            .must(|e| e.discard_attacking_energy_cards(&[Type::Any, Type::Any]))
             .damage(100)
     }
 }
@@ -173,8 +169,8 @@ impl CardArchetype for Clefairy {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Sing", &[Type::Colorless], Self::sing)
-            .register("Metronome", &[Type::Colorless, Type::Colorless, Type::Colorless], Self::metronome)
+            .register("Sing", Self::sing)
+            .register("Metronome", Self::metronome)
             .into()
     }
 
@@ -183,12 +179,13 @@ impl CardArchetype for Clefairy {
     }
 }
 impl Clefairy {
-    pub fn sing(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
-            .then_if(heads, |e| e.asleep())
+    pub fn sing(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.asleep())
     }
-    pub fn metronome(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn metronome(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
 }
@@ -212,8 +209,8 @@ impl CardArchetype for Gyarados {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Dragon Rage", &[Type::Water, Type::Water, Type::Water], Self::dragon_rage)
-            .register("Bubblebeam", &[Type::Water, Type::Water, Type::Water, Type::Water], Self::bubblebeam)
+            .register("Dragon Rage", Self::dragon_rage)
+            .register("Bubblebeam", Self::bubblebeam)
             .into()
     }
 
@@ -222,15 +219,17 @@ impl CardArchetype for Gyarados {
     }
 }
 impl Gyarados {
-    pub fn dragon_rage(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn dragon_rage(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Water, Type::Water])
             .damage(50)
     }
-    pub fn bubblebeam(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn bubblebeam(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Water, Type::Water, Type::Water])
+            .flip_a_coin()
             .damage(40)
-            .then_if(heads, |e| e.paralyze())
+            .if_heads(|e| e.paralyze())
     }
 }
 
@@ -253,8 +252,8 @@ impl CardArchetype for Hitmonchan {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Jab", &[Type::Fighting], Self::jab)
-            .register("Special Punch", &[Type::Fighting, Type::Fighting, Type::Colorless], Self::special_punch)
+            .register("Jab", Self::jab)
+            .register("Special Punch", Self::special_punch)
             .into()
     }
 
@@ -263,12 +262,14 @@ impl CardArchetype for Hitmonchan {
     }
 }
 impl Hitmonchan {
-    pub fn jab(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn jab(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting])
             .damage(20)
     }
-    pub fn special_punch(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn special_punch(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting, Type::Fighting, Type::Colorless])
             .damage(40)
     }
 }
@@ -292,7 +293,7 @@ impl CardArchetype for Machamp {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Seismic Toss", &[Type::Fighting, Type::Fighting, Type::Fighting, Type::Colorless], Self::seismic_toss)
+            .register("Seismic Toss", Self::seismic_toss)
             .into()
     }
 
@@ -301,8 +302,9 @@ impl CardArchetype for Machamp {
     }
 }
 impl Machamp {
-    pub fn seismic_toss(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn seismic_toss(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting, Type::Fighting, Type::Fighting, Type::Colorless])
             .damage(60)
     }
 }
@@ -326,8 +328,8 @@ impl CardArchetype for Magneton {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Thunder Wave", &[Type::Lightning, Type::Lightning, Type::Colorless], Self::thunder_wave)
-            .register("Selfdestruct", &[Type::Lightning, Type::Lightning, Type::Colorless, Type::Colorless], Self::selfdestruct)
+            .register("Thunder Wave", Self::thunder_wave)
+            .register("Selfdestruct", Self::selfdestruct)
             .into()
     }
 
@@ -336,17 +338,19 @@ impl CardArchetype for Magneton {
     }
 }
 impl Magneton {
-    pub fn thunder_wave(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn thunder_wave(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Lightning, Type::Lightning, Type::Colorless])
+            .flip_a_coin()
             .damage(30)
-            .then_if(heads, |e| e.paralyze())
+            .if_heads(|e| e.paralyze())
     }
-    pub fn selfdestruct(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn selfdestruct(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Lightning, Type::Lightning, Type::Colorless, Type::Colorless])
             .damage(80)
-            .then(|e| e.target_all(e.bench(e.player()), |e2| e2.damage(20)))
-            .then(|e| e.target_all(e.bench(e.opponent()), |e2| e2.damage(20)))
+            .each_own_bench(|e| e.damage(20))
+            .each_opponents_bench(|e| e.damage(20))
             .damage_self(80)
     }
 }
@@ -370,8 +374,8 @@ impl CardArchetype for Mewtwo {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Psychic", &[Type::Psychic, Type::Colorless], Self::psychic)
-            .register("Barrier", &[Type::Psychic, Type::Psychic], Self::barrier)
+            .register("Psychic", Self::psychic)
+            .register("Barrier", Self::barrier)
             .into()
     }
 
@@ -380,10 +384,12 @@ impl CardArchetype for Mewtwo {
     }
 }
 impl Mewtwo {
-    pub fn psychic(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        unimplemented!();
+    pub fn psychic(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic, Type::Colorless])
+            .damage_plus_per_energy_card_on_defending(10, 10)
     }
-    pub fn barrier(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn barrier(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
 }
@@ -407,8 +413,8 @@ impl CardArchetype for Nidoking {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Thrash", &[Type::Grass, Type::Colorless, Type::Colorless], Self::thrash)
-            .register("Toxic", &[Type::Grass, Type::Grass, Type::Grass], Self::toxic)
+            .register("Thrash", Self::thrash)
+            .register("Toxic", Self::toxic)
             .into()
     }
 
@@ -417,14 +423,16 @@ impl CardArchetype for Nidoking {
     }
 }
 impl Nidoking {
-    pub fn thrash(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
-            .then_if(heads, |e| e.damage(40))
-            .then_if(!heads, |e| e.damage(30).damage_self(10))
+    pub fn thrash(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(40))
+            .if_tails(|e| e.damage(30).damage_self(10))
     }
-    pub fn toxic(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn toxic(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Grass, Type::Grass])
             .damage(20)
             .severe_poison(2)
     }
@@ -449,8 +457,8 @@ impl CardArchetype for Ninetales {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Lure", &[Type::Colorless, Type::Colorless], Self::lure)
-            .register("Fire Blast", &[Type::Fire, Type::Fire, Type::Fire, Type::Fire], Self::fire_blast)
+            .register("Lure", Self::lure)
+            .register("Fire Blast", Self::fire_blast)
             .into()
     }
 
@@ -459,12 +467,13 @@ impl CardArchetype for Ninetales {
     }
 }
 impl Ninetales {
-    pub fn lure(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn lure(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
-    pub fn fire_blast(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
+    pub fn fire_blast(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fire, Type::Fire, Type::Fire, Type::Fire])
+            .must(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
             .damage(80)
     }
 }
@@ -488,8 +497,8 @@ impl CardArchetype for Poliwrath {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Water Gun", &[Type::Water, Type::Water, Type::Colorless], Self::water_gun)
-            .register("Whirlpool", &[Type::Water, Type::Water, Type::Colorless, Type::Colorless], Self::whirlpool)
+            .register("Water Gun", Self::water_gun)
+            .register("Whirlpool", Self::whirlpool)
             .into()
     }
 
@@ -498,12 +507,13 @@ impl CardArchetype for Poliwrath {
     }
 }
 impl Poliwrath {
-    pub fn water_gun(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn water_gun(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
-    pub fn whirlpool(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .discard_attached_energies(engine.player(), engine.defending(), &[Type::Any], dm)
+    pub fn whirlpool(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Water, Type::Colorless, Type::Colorless])
+            .discard_defending_energy_cards(&[Type::Any])
             .damage(40)
     }
 }
@@ -527,8 +537,8 @@ impl CardArchetype for Raichu {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Agility", &[Type::Lightning, Type::Colorless, Type::Colorless], Self::agility)
-            .register("Thunder", &[Type::Lightning, Type::Lightning, Type::Lightning, Type::Colorless], Self::thunder)
+            .register("Agility", Self::agility)
+            .register("Thunder", Self::thunder)
             .into()
     }
 
@@ -537,14 +547,15 @@ impl CardArchetype for Raichu {
     }
 }
 impl Raichu {
-    pub fn agility(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn agility(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
-    pub fn thunder(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn thunder(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Lightning, Type::Lightning, Type::Lightning, Type::Colorless])
+            .flip_a_coin()
             .damage(60)
-            .then_if(!heads, |e| e.damage_self(30))
+            .if_tails(|e| e.damage_self(30))
     }
 }
 
@@ -567,7 +578,7 @@ impl CardArchetype for Venusaur {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Solarbeam", &[Type::Grass, Type::Grass, Type::Grass, Type::Grass], Self::solarbeam)
+            .register("Solarbeam", Self::solarbeam)
             .into()
     }
 
@@ -576,8 +587,9 @@ impl CardArchetype for Venusaur {
     }
 }
 impl Venusaur {
-    pub fn solarbeam(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn solarbeam(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Grass, Type::Grass, Type::Grass])
             .damage(60)
     }
 }
@@ -601,8 +613,8 @@ impl CardArchetype for Zapdos {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Thunder", &[Type::Lightning, Type::Lightning, Type::Lightning, Type::Colorless], Self::thunder)
-            .register("Thunderbolt", &[Type::Lightning, Type::Lightning, Type::Lightning, Type::Lightning], Self::thunderbolt)
+            .register("Thunder", Self::thunder)
+            .register("Thunderbolt", Self::thunderbolt)
             .into()
     }
 
@@ -611,15 +623,17 @@ impl CardArchetype for Zapdos {
     }
 }
 impl Zapdos {
-    pub fn thunder(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn thunder(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Lightning, Type::Lightning, Type::Lightning, Type::Colorless])
+            .flip_a_coin()
             .damage(60)
-            .then_if(!heads, |e| e.damage_self(30))
+            .if_tails(|e| e.damage_self(30))
     }
-    pub fn thunderbolt(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .discard_all_attached_energies(engine.player(), engine.attacking(), dm)
+    pub fn thunderbolt(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Lightning, Type::Lightning, Type::Lightning, Type::Lightning])
+            .must(|e| e.discard_all_attacking_energy_cards())
             .damage(100)
     }
 }
@@ -643,8 +657,8 @@ impl CardArchetype for Beedrill {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Twineedle", &[Type::Colorless, Type::Colorless, Type::Colorless], Self::twineedle)
-            .register("Poison Sting", &[Type::Grass, Type::Grass, Type::Grass], Self::poison_sting)
+            .register("Twineedle", Self::twineedle)
+            .register("Poison Sting", Self::poison_sting)
             .into()
     }
 
@@ -653,16 +667,18 @@ impl CardArchetype for Beedrill {
     }
 }
 impl Beedrill {
-    pub fn twineedle(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let flip_results = dm.flip(2);
-        engine
-            .damage(30 * flip_results.heads())
+    pub fn twineedle(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless, Type::Colorless])
+            .flip_coins(2)
+            .damage_per_heads(30)
     }
-    pub fn poison_sting(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn poison_sting(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Grass, Type::Grass])
+            .flip_a_coin()
             .damage(40)
-            .then_if(heads, |e| e.poison())
+            .if_heads(|e| e.poison())
     }
 }
 
@@ -685,8 +701,8 @@ impl CardArchetype for Dragonair {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Slam", &[Type::Colorless, Type::Colorless, Type::Colorless], Self::slam)
-            .register("Hyper Beam", &[Type::Colorless, Type::Colorless, Type::Colorless, Type::Colorless], Self::hyper_beam)
+            .register("Slam", Self::slam)
+            .register("Hyper Beam", Self::hyper_beam)
             .into()
     }
 
@@ -695,14 +711,16 @@ impl CardArchetype for Dragonair {
     }
 }
 impl Dragonair {
-    pub fn slam(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let flip_results = dm.flip(2);
-        engine
-            .damage(30 * flip_results.heads())
+    pub fn slam(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless, Type::Colorless])
+            .flip_coins(2)
+            .damage_per_heads(30)
     }
-    pub fn hyper_beam(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .discard_attached_energies(engine.player(), engine.defending(), &[Type::Any], dm)
+    pub fn hyper_beam(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless, Type::Colorless, Type::Colorless])
+            .discard_defending_energy_cards(&[Type::Any])
             .damage(20)
     }
 }
@@ -726,8 +744,8 @@ impl CardArchetype for Dugtrio {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Slash", &[Type::Fighting, Type::Fighting, Type::Colorless], Self::slash)
-            .register("Earthquake", &[Type::Fighting, Type::Fighting, Type::Fighting, Type::Fighting], Self::earthquake)
+            .register("Slash", Self::slash)
+            .register("Earthquake", Self::earthquake)
             .into()
     }
 
@@ -736,14 +754,16 @@ impl CardArchetype for Dugtrio {
     }
 }
 impl Dugtrio {
-    pub fn slash(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn slash(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting, Type::Fighting, Type::Colorless])
             .damage(40)
     }
-    pub fn earthquake(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn earthquake(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting, Type::Fighting, Type::Fighting, Type::Fighting])
             .damage(70)
-            .then(|e| e.target_all(e.bench(e.player()), |e2| e2.damage(10)))
+            .each_own_bench(|e| e.damage(10))
     }
 }
 
@@ -766,8 +786,8 @@ impl CardArchetype for Electabuzz {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Thundershock", &[Type::Lightning], Self::thundershock)
-            .register("Thunderpunch", &[Type::Lightning, Type::Colorless], Self::thunderpunch)
+            .register("Thundershock", Self::thundershock)
+            .register("Thunderpunch", Self::thunderpunch)
             .into()
     }
 
@@ -776,17 +796,19 @@ impl CardArchetype for Electabuzz {
     }
 }
 impl Electabuzz {
-    pub fn thundershock(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn thundershock(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Lightning])
+            .flip_a_coin()
             .damage(10)
-            .then_if(heads, |e| e.paralyze())
+            .if_heads(|e| e.paralyze())
     }
-    pub fn thunderpunch(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
-            .then_if(heads, |e| e.damage(40))
-            .then_if(!heads, |e| e.damage(30).damage_self(10))
+    pub fn thunderpunch(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Lightning, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(40))
+            .if_tails(|e| e.damage(30).damage_self(10))
     }
 }
 
@@ -809,7 +831,7 @@ impl CardArchetype for Electrode {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Electric Shock", &[Type::Lightning, Type::Lightning, Type::Lightning], Self::electric_shock)
+            .register("Electric Shock", Self::electric_shock)
             .into()
     }
 
@@ -818,11 +840,12 @@ impl CardArchetype for Electrode {
     }
 }
 impl Electrode {
-    pub fn electric_shock(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn electric_shock(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Lightning, Type::Lightning, Type::Lightning])
+            .flip_a_coin()
             .damage(50)
-            .then_if(!heads, |e| e.damage_self(10))
+            .if_tails(|e| e.damage_self(10))
     }
 }
 
@@ -845,8 +868,8 @@ impl CardArchetype for Pidgeotto {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Whirlwind", &[Type::Colorless, Type::Colorless], Self::whirlwind)
-            .register("Mirror Move", &[Type::Colorless, Type::Colorless, Type::Colorless], Self::mirror_move)
+            .register("Whirlwind", Self::whirlwind)
+            .register("Mirror Move", Self::mirror_move)
             .into()
     }
 
@@ -855,10 +878,10 @@ impl CardArchetype for Pidgeotto {
     }
 }
 impl Pidgeotto {
-    pub fn whirlwind(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn whirlwind(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
-    pub fn mirror_move(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn mirror_move(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
 }
@@ -882,8 +905,8 @@ impl CardArchetype for Arcanine {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Flamethrower", &[Type::Fire, Type::Fire, Type::Colorless], Self::flamethrower)
-            .register("Take Down", &[Type::Fire, Type::Fire, Type::Colorless, Type::Colorless], Self::take_down)
+            .register("Flamethrower", Self::flamethrower)
+            .register("Take Down", Self::take_down)
             .into()
     }
 
@@ -892,13 +915,15 @@ impl CardArchetype for Arcanine {
     }
 }
 impl Arcanine {
-    pub fn flamethrower(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
+    pub fn flamethrower(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fire, Type::Fire, Type::Colorless])
+            .must(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
             .damage(50)
     }
-    pub fn take_down(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn take_down(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fire, Type::Fire, Type::Colorless, Type::Colorless])
             .damage(80)
             .damage_self(30)
     }
@@ -923,8 +948,8 @@ impl CardArchetype for Charmeleon {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Slash", &[Type::Colorless, Type::Colorless, Type::Colorless], Self::slash)
-            .register("Flamethrower", &[Type::Fire, Type::Fire, Type::Colorless], Self::flamethrower)
+            .register("Slash", Self::slash)
+            .register("Flamethrower", Self::flamethrower)
             .into()
     }
 
@@ -933,13 +958,15 @@ impl CardArchetype for Charmeleon {
     }
 }
 impl Charmeleon {
-    pub fn slash(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn slash(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless, Type::Colorless])
             .damage(30)
     }
-    pub fn flamethrower(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
+    pub fn flamethrower(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fire, Type::Fire, Type::Colorless])
+            .must(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
             .damage(50)
     }
 }
@@ -963,8 +990,8 @@ impl CardArchetype for Dewgong {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Aurora Beam", &[Type::Water, Type::Water, Type::Colorless], Self::aurora_beam)
-            .register("Ice Beam", &[Type::Water, Type::Water, Type::Colorless, Type::Colorless], Self::ice_beam)
+            .register("Aurora Beam", Self::aurora_beam)
+            .register("Ice Beam", Self::ice_beam)
             .into()
     }
 
@@ -973,15 +1000,17 @@ impl CardArchetype for Dewgong {
     }
 }
 impl Dewgong {
-    pub fn aurora_beam(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn aurora_beam(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Water, Type::Colorless])
             .damage(50)
     }
-    pub fn ice_beam(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn ice_beam(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Water, Type::Colorless, Type::Colorless])
+            .flip_a_coin()
             .damage(30)
-            .then_if(heads, |e| e.paralyze())
+            .if_heads(|e| e.paralyze())
     }
 }
 
@@ -1004,7 +1033,7 @@ impl CardArchetype for Dratini {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Pound", &[Type::Colorless], Self::pound)
+            .register("Pound", Self::pound)
             .into()
     }
 
@@ -1013,8 +1042,9 @@ impl CardArchetype for Dratini {
     }
 }
 impl Dratini {
-    pub fn pound(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn pound(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
             .damage(10)
     }
 }
@@ -1038,8 +1068,8 @@ impl CardArchetype for FarfetchD {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Leek Slap", &[Type::Colorless], Self::leek_slap)
-            .register("Pot Smash", &[Type::Colorless, Type::Colorless, Type::Colorless], Self::pot_smash)
+            .register("Leek Slap", Self::leek_slap)
+            .register("Pot Smash", Self::pot_smash)
             .into()
     }
 
@@ -1048,11 +1078,12 @@ impl CardArchetype for FarfetchD {
     }
 }
 impl FarfetchD {
-    pub fn leek_slap(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn leek_slap(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
-    pub fn pot_smash(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn pot_smash(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless, Type::Colorless])
             .damage(30)
     }
 }
@@ -1076,7 +1107,7 @@ impl CardArchetype for Growlithe {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Flare", &[Type::Fire, Type::Colorless], Self::flare)
+            .register("Flare", Self::flare)
             .into()
     }
 
@@ -1085,8 +1116,9 @@ impl CardArchetype for Growlithe {
     }
 }
 impl Growlithe {
-    pub fn flare(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn flare(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fire, Type::Colorless])
             .damage(20)
     }
 }
@@ -1110,8 +1142,8 @@ impl CardArchetype for Haunter {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Hypnosis", &[Type::Psychic], Self::hypnosis)
-            .register("Dream Eater", &[Type::Psychic, Type::Psychic], Self::dream_eater)
+            .register("Hypnosis", Self::hypnosis)
+            .register("Dream Eater", Self::dream_eater)
             .into()
     }
 
@@ -1120,11 +1152,12 @@ impl CardArchetype for Haunter {
     }
 }
 impl Haunter {
-    pub fn hypnosis(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn hypnosis(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic])
             .asleep()
     }
-    pub fn dream_eater(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn dream_eater(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
 }
@@ -1148,8 +1181,8 @@ impl CardArchetype for Ivysaur {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Vine Whip", &[Type::Grass, Type::Colorless, Type::Colorless], Self::vine_whip)
-            .register("Poisonpowder", &[Type::Grass, Type::Grass, Type::Grass], Self::poisonpowder)
+            .register("Vine Whip", Self::vine_whip)
+            .register("Poisonpowder", Self::poisonpowder)
             .into()
     }
 
@@ -1158,12 +1191,14 @@ impl CardArchetype for Ivysaur {
     }
 }
 impl Ivysaur {
-    pub fn vine_whip(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn vine_whip(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Colorless, Type::Colorless])
             .damage(30)
     }
-    pub fn poisonpowder(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn poisonpowder(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Grass, Type::Grass])
             .damage(20)
             .poison()
     }
@@ -1188,8 +1223,8 @@ impl CardArchetype for Jynx {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Doubleslap", &[Type::Psychic], Self::doubleslap)
-            .register("Meditate", &[Type::Psychic, Type::Psychic, Type::Colorless], Self::meditate)
+            .register("Doubleslap", Self::doubleslap)
+            .register("Meditate", Self::meditate)
             .into()
     }
 
@@ -1198,14 +1233,16 @@ impl CardArchetype for Jynx {
     }
 }
 impl Jynx {
-    pub fn doubleslap(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let flip_results = dm.flip(2);
-        engine
-            .damage(10 * flip_results.heads())
+    pub fn doubleslap(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic])
+            .flip_coins(2)
+            .damage_per_heads(10)
     }
-    pub fn meditate(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .damage(20usize.saturating_add(engine.damage_counters_on(engine.defending()) * 10))
+    pub fn meditate(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic, Type::Psychic, Type::Colorless])
+            .damage_plus_per_damage_counter_on_defending(20, 10)
     }
 }
 
@@ -1228,8 +1265,8 @@ impl CardArchetype for Kadabra {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Recover", &[Type::Psychic, Type::Psychic], Self::recover)
-            .register("Super Psy", &[Type::Psychic, Type::Psychic, Type::Colorless], Self::super_psy)
+            .register("Recover", Self::recover)
+            .register("Super Psy", Self::super_psy)
             .into()
     }
 
@@ -1238,13 +1275,15 @@ impl CardArchetype for Kadabra {
     }
 }
 impl Kadabra {
-    pub fn recover(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Psychic], dm)
-            .heal_all(engine.attacking())
+    pub fn recover(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic, Type::Psychic])
+            .must(|e| e.discard_attacking_energy_cards(&[Type::Psychic]))
+            .heal_all_attacking()
     }
-    pub fn super_psy(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn super_psy(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic, Type::Psychic, Type::Colorless])
             .damage(50)
     }
 }
@@ -1268,8 +1307,8 @@ impl CardArchetype for Kakuna {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Stiffen", &[Type::Colorless, Type::Colorless], Self::stiffen)
-            .register("Poisonpowder", &[Type::Grass, Type::Grass], Self::poisonpowder)
+            .register("Stiffen", Self::stiffen)
+            .register("Poisonpowder", Self::poisonpowder)
             .into()
     }
 
@@ -1278,24 +1317,18 @@ impl CardArchetype for Kakuna {
     }
 }
 impl Kakuna {
-    pub fn stiffen(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
-            .then_if(heads, |e| e.with_effect(Effect {
-                name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
-                source: EffectSource::Attack(e.player(), e.attacking().id),
-                target: EffectTarget::InPlay(e.player(), e.attacking().id),
-                consequence: EffectConsequence::BlockDamage,
-                expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
-                system: false,
-            })
-        )
+    pub fn stiffen(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.prevent_damage_during_opponents_next_turn())
     }
-    pub fn poisonpowder(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn poisonpowder(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Grass])
+            .flip_a_coin()
             .damage(20)
-            .then_if(heads, |e| e.poison())
+            .if_heads(|e| e.poison())
     }
 }
 
@@ -1318,8 +1351,8 @@ impl CardArchetype for Machoke {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Karate Chop", &[Type::Fighting, Type::Fighting, Type::Colorless], Self::karate_chop)
-            .register("Submission", &[Type::Fighting, Type::Fighting, Type::Colorless, Type::Colorless], Self::submission)
+            .register("Karate Chop", Self::karate_chop)
+            .register("Submission", Self::submission)
             .into()
     }
 
@@ -1328,12 +1361,14 @@ impl CardArchetype for Machoke {
     }
 }
 impl Machoke {
-    pub fn karate_chop(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .damage(50usize.saturating_sub(engine.damage_counters_on(engine.attacking()) * 10))
+    pub fn karate_chop(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting, Type::Fighting, Type::Colorless])
+            .damage_minus_per_damage_counter_on_itself(50, 10)
     }
-    pub fn submission(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn submission(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting, Type::Fighting, Type::Colorless, Type::Colorless])
             .damage(60)
             .damage_self(20)
     }
@@ -1358,8 +1393,8 @@ impl CardArchetype for Magikarp {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Tackle", &[Type::Colorless], Self::tackle)
-            .register("Flail", &[Type::Water], Self::flail)
+            .register("Tackle", Self::tackle)
+            .register("Flail", Self::flail)
             .into()
     }
 
@@ -1368,13 +1403,15 @@ impl CardArchetype for Magikarp {
     }
 }
 impl Magikarp {
-    pub fn tackle(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn tackle(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
             .damage(10)
     }
-    pub fn flail(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .damage(engine.damage_counters_on(engine.attacking()) * 10)
+    pub fn flail(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water])
+            .damage_per_damage_counter_on_itself(10)
     }
 }
 
@@ -1397,8 +1434,8 @@ impl CardArchetype for Magmar {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Fire Punch", &[Type::Fire, Type::Fire], Self::fire_punch)
-            .register("Flamethrower", &[Type::Fire, Type::Fire, Type::Colorless], Self::flamethrower)
+            .register("Fire Punch", Self::fire_punch)
+            .register("Flamethrower", Self::flamethrower)
             .into()
     }
 
@@ -1407,13 +1444,15 @@ impl CardArchetype for Magmar {
     }
 }
 impl Magmar {
-    pub fn fire_punch(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn fire_punch(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fire, Type::Fire])
             .damage(30)
     }
-    pub fn flamethrower(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
+    pub fn flamethrower(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fire, Type::Fire, Type::Colorless])
+            .must(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
             .damage(50)
     }
 }
@@ -1437,8 +1476,8 @@ impl CardArchetype for Nidorino {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Double Kick", &[Type::Grass, Type::Colorless, Type::Colorless], Self::double_kick)
-            .register("Horn Drill", &[Type::Grass, Type::Grass, Type::Colorless, Type::Colorless], Self::horn_drill)
+            .register("Double Kick", Self::double_kick)
+            .register("Horn Drill", Self::horn_drill)
             .into()
     }
 
@@ -1447,13 +1486,15 @@ impl CardArchetype for Nidorino {
     }
 }
 impl Nidorino {
-    pub fn double_kick(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let flip_results = dm.flip(2);
-        engine
-            .damage(30 * flip_results.heads())
+    pub fn double_kick(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Colorless, Type::Colorless])
+            .flip_coins(2)
+            .damage_per_heads(30)
     }
-    pub fn horn_drill(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn horn_drill(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Grass, Type::Colorless, Type::Colorless])
             .damage(50)
     }
 }
@@ -1477,8 +1518,8 @@ impl CardArchetype for Poliwhirl {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Amnesia", &[Type::Water, Type::Water], Self::amnesia)
-            .register("Doubleslap", &[Type::Water, Type::Water, Type::Colorless], Self::doubleslap)
+            .register("Amnesia", Self::amnesia)
+            .register("Doubleslap", Self::doubleslap)
             .into()
     }
 
@@ -1487,13 +1528,14 @@ impl CardArchetype for Poliwhirl {
     }
 }
 impl Poliwhirl {
-    pub fn amnesia(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn amnesia(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
-    pub fn doubleslap(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let flip_results = dm.flip(2);
-        engine
-            .damage(30 * flip_results.heads())
+    pub fn doubleslap(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Water, Type::Colorless])
+            .flip_coins(2)
+            .damage_per_heads(30)
     }
 }
 
@@ -1516,8 +1558,8 @@ impl CardArchetype for Porygon {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Conversion 1", &[Type::Colorless], Self::conversion_1)
-            .register("Conversion 2", &[Type::Colorless, Type::Colorless], Self::conversion_2)
+            .register("Conversion 1", Self::conversion_1)
+            .register("Conversion 2", Self::conversion_2)
             .into()
     }
 
@@ -1526,10 +1568,10 @@ impl CardArchetype for Porygon {
     }
 }
 impl Porygon {
-    pub fn conversion_1(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn conversion_1(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
-    pub fn conversion_2(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn conversion_2(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
 }
@@ -1553,8 +1595,8 @@ impl CardArchetype for Raticate {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Bite", &[Type::Colorless], Self::bite)
-            .register("Super Fang", &[Type::Colorless, Type::Colorless, Type::Colorless], Self::super_fang)
+            .register("Bite", Self::bite)
+            .register("Super Fang", Self::super_fang)
             .into()
     }
 
@@ -1563,13 +1605,15 @@ impl CardArchetype for Raticate {
     }
 }
 impl Raticate {
-    pub fn bite(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn bite(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
             .damage(20)
     }
-    pub fn super_fang(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .damage(engine.remaining_hp(engine.defending()).div_ceil(2))
+    pub fn super_fang(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless, Type::Colorless])
+            .damage_half_defending_remaining_hp()
     }
 }
 
@@ -1592,7 +1636,7 @@ impl CardArchetype for Seel {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Headbutt", &[Type::Water], Self::headbutt)
+            .register("Headbutt", Self::headbutt)
             .into()
     }
 
@@ -1601,8 +1645,9 @@ impl CardArchetype for Seel {
     }
 }
 impl Seel {
-    pub fn headbutt(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn headbutt(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water])
             .damage(10)
     }
 }
@@ -1626,8 +1671,8 @@ impl CardArchetype for Wartortle {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Withdraw", &[Type::Water, Type::Colorless], Self::withdraw)
-            .register("Bite", &[Type::Water, Type::Colorless, Type::Colorless], Self::bite)
+            .register("Withdraw", Self::withdraw)
+            .register("Bite", Self::bite)
             .into()
     }
 
@@ -1636,21 +1681,15 @@ impl CardArchetype for Wartortle {
     }
 }
 impl Wartortle {
-    pub fn withdraw(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
-            .then_if(heads, |e| e.with_effect(Effect {
-                name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
-                source: EffectSource::Attack(e.player(), e.attacking().id),
-                target: EffectTarget::InPlay(e.player(), e.attacking().id),
-                consequence: EffectConsequence::BlockDamage,
-                expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
-                system: false,
-            })
-        )
+    pub fn withdraw(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.prevent_damage_during_opponents_next_turn())
     }
-    pub fn bite(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn bite(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Colorless, Type::Colorless])
             .damage(40)
     }
 }
@@ -1674,7 +1713,7 @@ impl CardArchetype for Abra {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Psyshock", &[Type::Psychic], Self::psyshock)
+            .register("Psyshock", Self::psyshock)
             .into()
     }
 
@@ -1683,11 +1722,12 @@ impl CardArchetype for Abra {
     }
 }
 impl Abra {
-    pub fn psyshock(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn psyshock(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic])
+            .flip_a_coin()
             .damage(10)
-            .then_if(heads, |e| e.paralyze())
+            .if_heads(|e| e.paralyze())
     }
 }
 
@@ -1710,7 +1750,7 @@ impl CardArchetype for Bulbasaur {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Leech Seed", &[Type::Grass, Type::Grass], Self::leech_seed)
+            .register("Leech Seed", Self::leech_seed)
             .into()
     }
 
@@ -1719,7 +1759,7 @@ impl CardArchetype for Bulbasaur {
     }
 }
 impl Bulbasaur {
-    pub fn leech_seed(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn leech_seed(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
 }
@@ -1743,7 +1783,7 @@ impl CardArchetype for Caterpie {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("String Shot", &[Type::Grass], Self::string_shot)
+            .register("String Shot", Self::string_shot)
             .into()
     }
 
@@ -1752,11 +1792,12 @@ impl CardArchetype for Caterpie {
     }
 }
 impl Caterpie {
-    pub fn string_shot(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn string_shot(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass])
+            .flip_a_coin()
             .damage(10)
-            .then_if(heads, |e| e.paralyze())
+            .if_heads(|e| e.paralyze())
     }
 }
 
@@ -1779,8 +1820,8 @@ impl CardArchetype for Charmander {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Scratch", &[Type::Colorless], Self::scratch)
-            .register("Ember", &[Type::Fire, Type::Colorless], Self::ember)
+            .register("Scratch", Self::scratch)
+            .register("Ember", Self::ember)
             .into()
     }
 
@@ -1789,13 +1830,15 @@ impl CardArchetype for Charmander {
     }
 }
 impl Charmander {
-    pub fn scratch(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn scratch(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
             .damage(10)
     }
-    pub fn ember(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Fire], dm)
+    pub fn ember(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fire, Type::Colorless])
+            .must(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
             .damage(30)
     }
 }
@@ -1819,8 +1862,8 @@ impl CardArchetype for Diglett {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Dig", &[Type::Fighting], Self::dig)
-            .register("Mud Slap", &[Type::Fighting, Type::Fighting], Self::mud_slap)
+            .register("Dig", Self::dig)
+            .register("Mud Slap", Self::mud_slap)
             .into()
     }
 
@@ -1829,12 +1872,14 @@ impl CardArchetype for Diglett {
     }
 }
 impl Diglett {
-    pub fn dig(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn dig(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting])
             .damage(10)
     }
-    pub fn mud_slap(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn mud_slap(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting, Type::Fighting])
             .damage(30)
     }
 }
@@ -1858,7 +1903,7 @@ impl CardArchetype for Doduo {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Fury Attack", &[Type::Colorless], Self::fury_attack)
+            .register("Fury Attack", Self::fury_attack)
             .into()
     }
 
@@ -1867,10 +1912,11 @@ impl CardArchetype for Doduo {
     }
 }
 impl Doduo {
-    pub fn fury_attack(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let flip_results = dm.flip(2);
-        engine
-            .damage(10 * flip_results.heads())
+    pub fn fury_attack(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
+            .flip_coins(2)
+            .damage_per_heads(10)
     }
 }
 
@@ -1893,8 +1939,8 @@ impl CardArchetype for Drowzee {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Pound", &[Type::Colorless], Self::pound)
-            .register("Confuse Ray", &[Type::Psychic, Type::Psychic], Self::confuse_ray)
+            .register("Pound", Self::pound)
+            .register("Confuse Ray", Self::confuse_ray)
             .into()
     }
 
@@ -1903,15 +1949,17 @@ impl CardArchetype for Drowzee {
     }
 }
 impl Drowzee {
-    pub fn pound(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn pound(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
             .damage(10)
     }
-    pub fn confuse_ray(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn confuse_ray(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic, Type::Psychic])
+            .flip_a_coin()
             .damage(10)
-            .then_if(heads, |e| e.confuse())
+            .if_heads(|e| e.confuse())
     }
 }
 
@@ -1934,8 +1982,8 @@ impl CardArchetype for Gastly {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Sleeping Gas", &[Type::Psychic], Self::sleeping_gas)
-            .register("Destiny Bond", &[Type::Psychic, Type::Colorless], Self::destiny_bond)
+            .register("Sleeping Gas", Self::sleeping_gas)
+            .register("Destiny Bond", Self::destiny_bond)
             .into()
     }
 
@@ -1944,12 +1992,13 @@ impl CardArchetype for Gastly {
     }
 }
 impl Gastly {
-    pub fn sleeping_gas(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
-            .then_if(heads, |e| e.asleep())
+    pub fn sleeping_gas(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic])
+            .flip_a_coin()
+            .if_heads(|e| e.asleep())
     }
-    pub fn destiny_bond(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn destiny_bond(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
 }
@@ -1973,7 +2022,7 @@ impl CardArchetype for Koffing {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Foul Gas", &[Type::Grass, Type::Grass], Self::foul_gas)
+            .register("Foul Gas", Self::foul_gas)
             .into()
     }
 
@@ -1982,12 +2031,13 @@ impl CardArchetype for Koffing {
     }
 }
 impl Koffing {
-    pub fn foul_gas(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn foul_gas(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Grass])
+            .flip_a_coin()
             .damage(10)
-            .then_if(heads, |e| e.poison())
-            .then_if(!heads, |e| e.confuse())
+            .if_heads(|e| e.poison())
+            .if_tails(|e| e.confuse())
     }
 }
 
@@ -2010,7 +2060,7 @@ impl CardArchetype for Machop {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Low Kick", &[Type::Fighting], Self::low_kick)
+            .register("Low Kick", Self::low_kick)
             .into()
     }
 
@@ -2019,8 +2069,9 @@ impl CardArchetype for Machop {
     }
 }
 impl Machop {
-    pub fn low_kick(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn low_kick(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting])
             .damage(20)
     }
 }
@@ -2044,8 +2095,8 @@ impl CardArchetype for Magnemite {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Thunder Wave", &[Type::Lightning], Self::thunder_wave)
-            .register("Selfdestruct", &[Type::Lightning, Type::Colorless], Self::selfdestruct)
+            .register("Thunder Wave", Self::thunder_wave)
+            .register("Selfdestruct", Self::selfdestruct)
             .into()
     }
 
@@ -2054,17 +2105,19 @@ impl CardArchetype for Magnemite {
     }
 }
 impl Magnemite {
-    pub fn thunder_wave(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn thunder_wave(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Lightning])
+            .flip_a_coin()
             .damage(10)
-            .then_if(heads, |e| e.paralyze())
+            .if_heads(|e| e.paralyze())
     }
-    pub fn selfdestruct(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn selfdestruct(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Lightning, Type::Colorless])
             .damage(40)
-            .then(|e| e.target_all(e.bench(e.player()), |e2| e2.damage(10)))
-            .then(|e| e.target_all(e.bench(e.opponent()), |e2| e2.damage(10)))
+            .each_own_bench(|e| e.damage(10))
+            .each_opponents_bench(|e| e.damage(10))
             .damage_self(40)
     }
 }
@@ -2088,8 +2141,8 @@ impl CardArchetype for Metapod {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Stiffen", &[Type::Colorless, Type::Colorless], Self::stiffen)
-            .register("Stun Spore", &[Type::Grass, Type::Grass], Self::stun_spore)
+            .register("Stiffen", Self::stiffen)
+            .register("Stun Spore", Self::stun_spore)
             .into()
     }
 
@@ -2098,24 +2151,18 @@ impl CardArchetype for Metapod {
     }
 }
 impl Metapod {
-    pub fn stiffen(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
-            .then_if(heads, |e| e.with_effect(Effect {
-                name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
-                source: EffectSource::Attack(e.player(), e.attacking().id),
-                target: EffectTarget::InPlay(e.player(), e.attacking().id),
-                consequence: EffectConsequence::BlockDamage,
-                expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
-                system: false,
-            })
-        )
+    pub fn stiffen(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.prevent_damage_during_opponents_next_turn())
     }
-    pub fn stun_spore(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn stun_spore(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Grass])
+            .flip_a_coin()
             .damage(20)
-            .then_if(heads, |e| e.paralyze())
+            .if_heads(|e| e.paralyze())
     }
 }
 
@@ -2138,7 +2185,7 @@ impl CardArchetype for NidoranM {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Horn Hazard", &[Type::Grass], Self::horn_hazard)
+            .register("Horn Hazard", Self::horn_hazard)
             .into()
     }
 
@@ -2147,7 +2194,7 @@ impl CardArchetype for NidoranM {
     }
 }
 impl NidoranM {
-    pub fn horn_hazard(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn horn_hazard(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
 }
@@ -2171,8 +2218,8 @@ impl CardArchetype for Onix {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Rock Throw", &[Type::Fighting], Self::rock_throw)
-            .register("Harden", &[Type::Fighting, Type::Fighting], Self::harden)
+            .register("Rock Throw", Self::rock_throw)
+            .register("Harden", Self::harden)
             .into()
     }
 
@@ -2181,11 +2228,12 @@ impl CardArchetype for Onix {
     }
 }
 impl Onix {
-    pub fn rock_throw(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn rock_throw(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting])
             .damage(10)
     }
-    pub fn harden(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn harden(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
 }
@@ -2209,7 +2257,7 @@ impl CardArchetype for Pidgey {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Whirlwind", &[Type::Colorless, Type::Colorless], Self::whirlwind)
+            .register("Whirlwind", Self::whirlwind)
             .into()
     }
 
@@ -2218,7 +2266,7 @@ impl CardArchetype for Pidgey {
     }
 }
 impl Pidgey {
-    pub fn whirlwind(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn whirlwind(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
 }
@@ -2242,8 +2290,8 @@ impl CardArchetype for Pikachu {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Gnaw", &[Type::Colorless], Self::gnaw)
-            .register("Thunder Jolt", &[Type::Lightning, Type::Colorless], Self::thunder_jolt)
+            .register("Gnaw", Self::gnaw)
+            .register("Thunder Jolt", Self::thunder_jolt)
             .into()
     }
 
@@ -2252,15 +2300,17 @@ impl CardArchetype for Pikachu {
     }
 }
 impl Pikachu {
-    pub fn gnaw(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn gnaw(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
             .damage(10)
     }
-    pub fn thunder_jolt(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn thunder_jolt(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Lightning, Type::Colorless])
+            .flip_a_coin()
             .damage(30)
-            .then_if(!heads, |e| e.damage_self(10))
+            .if_tails(|e| e.damage_self(10))
     }
 }
 
@@ -2283,7 +2333,7 @@ impl CardArchetype for Poliwag {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Water Gun", &[Type::Water], Self::water_gun)
+            .register("Water Gun", Self::water_gun)
             .into()
     }
 
@@ -2292,7 +2342,7 @@ impl CardArchetype for Poliwag {
     }
 }
 impl Poliwag {
-    pub fn water_gun(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn water_gun(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
 }
@@ -2316,8 +2366,8 @@ impl CardArchetype for Ponyta {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Smash Kick", &[Type::Colorless, Type::Colorless], Self::smash_kick)
-            .register("Flame Tail", &[Type::Fire, Type::Fire], Self::flame_tail)
+            .register("Smash Kick", Self::smash_kick)
+            .register("Flame Tail", Self::flame_tail)
             .into()
     }
 
@@ -2326,12 +2376,14 @@ impl CardArchetype for Ponyta {
     }
 }
 impl Ponyta {
-    pub fn smash_kick(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn smash_kick(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
             .damage(20)
     }
-    pub fn flame_tail(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn flame_tail(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fire, Type::Fire])
             .damage(30)
     }
 }
@@ -2355,7 +2407,7 @@ impl CardArchetype for Rattata {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Bite", &[Type::Colorless], Self::bite)
+            .register("Bite", Self::bite)
             .into()
     }
 
@@ -2364,8 +2416,9 @@ impl CardArchetype for Rattata {
     }
 }
 impl Rattata {
-    pub fn bite(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn bite(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
             .damage(20)
     }
 }
@@ -2389,7 +2442,7 @@ impl CardArchetype for Sandshrew {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Sand-attack", &[Type::Fighting], Self::sand_attack)
+            .register("Sand-attack", Self::sand_attack)
             .into()
     }
 
@@ -2398,7 +2451,7 @@ impl CardArchetype for Sandshrew {
     }
 }
 impl Sandshrew {
-    pub fn sand_attack(_engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
+    pub fn sand_attack(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
 }
@@ -2422,8 +2475,8 @@ impl CardArchetype for Squirtle {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Bubble", &[Type::Water], Self::bubble)
-            .register("Withdraw", &[Type::Water, Type::Colorless], Self::withdraw)
+            .register("Bubble", Self::bubble)
+            .register("Withdraw", Self::withdraw)
             .into()
     }
 
@@ -2432,24 +2485,18 @@ impl CardArchetype for Squirtle {
     }
 }
 impl Squirtle {
-    pub fn bubble(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn bubble(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water])
+            .flip_a_coin()
             .damage(10)
-            .then_if(heads, |e| e.paralyze())
+            .if_heads(|e| e.paralyze())
     }
-    pub fn withdraw(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
-            .then_if(heads, |e| e.with_effect(Effect {
-                name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
-                source: EffectSource::Attack(e.player(), e.attacking().id),
-                target: EffectTarget::InPlay(e.player(), e.attacking().id),
-                consequence: EffectConsequence::BlockDamage,
-                expires: EffectExpiration::EndOfTurn(e.opponent(), 0),
-                system: false,
-            })
-        )
+    pub fn withdraw(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.prevent_damage_during_opponents_next_turn())
     }
 }
 
@@ -2472,8 +2519,8 @@ impl CardArchetype for Starmie {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Recover", &[Type::Water, Type::Water], Self::recover)
-            .register("Star Freeze", &[Type::Water, Type::Colorless, Type::Colorless], Self::star_freeze)
+            .register("Recover", Self::recover)
+            .register("Star Freeze", Self::star_freeze)
             .into()
     }
 
@@ -2482,16 +2529,18 @@ impl CardArchetype for Starmie {
     }
 }
 impl Starmie {
-    pub fn recover(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
-            .discard_attached_energies(engine.player(), engine.attacking(), &[Type::Water], dm)
-            .heal_all(engine.attacking())
+    pub fn recover(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Water])
+            .must(|e| e.discard_attacking_energy_cards(&[Type::Water]))
+            .heal_all_attacking()
     }
-    pub fn star_freeze(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn star_freeze(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Colorless, Type::Colorless])
+            .flip_a_coin()
             .damage(20)
-            .then_if(heads, |e| e.paralyze())
+            .if_heads(|e| e.paralyze())
     }
 }
 
@@ -2514,7 +2563,7 @@ impl CardArchetype for Staryu {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Slap", &[Type::Water], Self::slap)
+            .register("Slap", Self::slap)
             .into()
     }
 
@@ -2523,8 +2572,9 @@ impl CardArchetype for Staryu {
     }
 }
 impl Staryu {
-    pub fn slap(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn slap(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water])
             .damage(20)
     }
 }
@@ -2548,8 +2598,8 @@ impl CardArchetype for Tangela {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Bind", &[Type::Grass, Type::Colorless], Self::bind)
-            .register("Poisonpowder", &[Type::Grass, Type::Grass, Type::Grass], Self::poisonpowder)
+            .register("Bind", Self::bind)
+            .register("Poisonpowder", Self::poisonpowder)
             .into()
     }
 
@@ -2558,14 +2608,16 @@ impl CardArchetype for Tangela {
     }
 }
 impl Tangela {
-    pub fn bind(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn bind(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Colorless])
+            .flip_a_coin()
             .damage(20)
-            .then_if(heads, |e| e.paralyze())
+            .if_heads(|e| e.paralyze())
     }
-    pub fn poisonpowder(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn poisonpowder(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass, Type::Grass, Type::Grass])
             .damage(20)
             .poison()
     }
@@ -2590,7 +2642,7 @@ impl CardArchetype for Voltorb {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Tackle", &[Type::Colorless], Self::tackle)
+            .register("Tackle", Self::tackle)
             .into()
     }
 
@@ -2599,8 +2651,9 @@ impl CardArchetype for Voltorb {
     }
 }
 impl Voltorb {
-    pub fn tackle(engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
-        engine
+    pub fn tackle(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
             .damage(10)
     }
 }
@@ -2624,7 +2677,7 @@ impl CardArchetype for Vulpix {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Confuse Ray", &[Type::Fire, Type::Fire], Self::confuse_ray)
+            .register("Confuse Ray", Self::confuse_ray)
             .into()
     }
 
@@ -2633,11 +2686,12 @@ impl CardArchetype for Vulpix {
     }
 }
 impl Vulpix {
-    pub fn confuse_ray(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn confuse_ray(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fire, Type::Fire])
+            .flip_a_coin()
             .damage(10)
-            .then_if(heads, |e| e.confuse())
+            .if_heads(|e| e.confuse())
     }
 }
 
@@ -2660,7 +2714,7 @@ impl CardArchetype for Weedle {
     }
     fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
         Attacks::new(player, in_play, engine)
-            .register("Poison Sting", &[Type::Grass], Self::poison_sting)
+            .register("Poison Sting", Self::poison_sting)
             .into()
     }
 
@@ -2669,10 +2723,11 @@ impl CardArchetype for Weedle {
     }
 }
 impl Weedle {
-    pub fn poison_sting(engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        let heads = dm.flip(1).heads() == 1;
-        engine
+    pub fn poison_sting(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass])
+            .flip_a_coin()
             .damage(10)
-            .then_if(heads, |e| e.poison())
+            .if_heads(|e| e.poison())
     }
 }
