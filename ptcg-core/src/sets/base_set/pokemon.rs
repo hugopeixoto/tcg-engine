@@ -2213,8 +2213,11 @@ impl CardArchetype for NidoranM {
     }
 }
 impl NidoranM {
-    pub fn horn_hazard(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn horn_hazard(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Grass])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(30))
     }
 }
 

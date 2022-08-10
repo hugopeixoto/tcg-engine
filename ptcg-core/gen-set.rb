@@ -395,6 +395,10 @@ def attack_impl(attack)
 
     builder
       .damage_plus_per_extra_energy_on_attacking(base_damage, plus_damage, energy_type, energy_limit)
+  elsif text =~ /^Flip a coin\. If tails, this attack does nothing\.$/
+    builder
+      .flip_a_coin
+      .if_heads { damage(damage) }
   elsif text =~ /^Unless all damage from this attack is prevented, you may remove (\d+) damage counter from \w+\.$/
     counters = $1.to_i
     builder
