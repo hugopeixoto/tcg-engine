@@ -175,6 +175,11 @@ class Builder
     self
   end
 
+  def prevent_damage_and_effects_during_opponents_next_turn
+    @text << ".prevent_damage_and_effects_during_opponents_next_turn()"
+    self
+  end
+
   def damage_per_damage_counter_on_itself(damage_per_counter)
     @text << ".damage_per_damage_counter_on_itself(#{damage_per_counter})"
     self
@@ -311,6 +316,17 @@ def attack_impl(attack)
     builder
       .flip_a_coin
       .if_heads { prevent_damage_during_opponents_next_turn }
+  elsif text =~ /^Discard (\d+) (\w+) Energy card attached to \w+ in order to prevent all effects of attacks, including damage, done to \w+ during your opponent's next turn\.$/
+    how_many = $1.to_i
+    energy_type = $2
+    builder
+      .must { discard_attacking_energy_cards([energy_type] * how_many) }
+      .damage(damage)
+      .prevent_damage_and_effects_during_opponents_next_turn
+  elsif text =~ /^Flip a coin. If heads, during your opponent's next turn, prevent all effects of attacks, including damage, done to \w+\.$/
+    builder
+      .flip_a_coin
+      .if_heads { prevent_damage_and_effects_during_opponents_next_turn }
   elsif text =~ /^Discard 1 (Fire|Water) Energy card attached to \w+ in order to use this attack\.$/
     energy_type = $1
     builder

@@ -487,6 +487,7 @@ pub enum EffectConsequence {
     BlockAttachmentFromHand,
     BlockTrainerFromHand,
     BlockDamage,
+    BlockDamageAndEffects,
 }
 
 #[derive(Clone, Debug)]

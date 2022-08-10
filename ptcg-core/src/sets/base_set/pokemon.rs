@@ -392,8 +392,11 @@ impl Mewtwo {
             .attack_cost(&[Type::Psychic, Type::Colorless])
             .damage_plus_per_energy_card_on_defending(10, 10)
     }
-    pub fn barrier(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn barrier(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic, Type::Psychic])
+            .must(|e| e.discard_attacking_energy_cards(&[Type::Psychic]))
+            .prevent_damage_and_effects_during_opponents_next_turn()
     }
 }
 
@@ -552,8 +555,11 @@ impl CardArchetype for Raichu {
     }
 }
 impl Raichu {
-    pub fn agility(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn agility(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Lightning, Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.prevent_damage_and_effects_during_opponents_next_turn())
     }
     pub fn thunder(builder: AttackBuilder) -> AttackBuilder {
         builder

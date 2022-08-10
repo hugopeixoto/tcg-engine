@@ -267,6 +267,18 @@ impl<'a> AttackBuilder<'a> {
         self
     }
 
+    pub fn prevent_damage_and_effects_during_opponents_next_turn(mut self) -> Self {
+        self.engine = self.engine.with_effect(Effect {
+            name: "NO_DAMAGE_NO_EFFECTS_DURING_OPPONENTS_NEXT_TURN".into(),
+            source: EffectSource::Attack(self.player(), self.attacking().id),
+            target: EffectTarget::InPlay(self.player(), self.attacking().id),
+            consequence: EffectConsequence::BlockDamageAndEffects,
+            expires: EffectExpiration::EndOfTurn(self.opponent(), 0),
+            system: false,
+        });
+        self
+    }
+
     pub fn prevent_trainers_during_opponents_next_turn(mut self) -> Self {
         self.engine = self.engine.with_effect(Effect {
             name: "PSYDUCK_FO_HEADACHE_NO_TRAINERS".into(),
