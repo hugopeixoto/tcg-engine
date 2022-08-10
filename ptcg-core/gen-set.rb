@@ -410,7 +410,9 @@ end
 output = ""
 output << PRELUDE
 
-cards = JSON.parse(File.read("base1.json"))['data']
+
+
+cards = JSON.parse(STDIN.read)['data']
 pokemon_cards = cards.filter { |c| c["supertype"] == "Pokémon" }
 pokemon_cards.each do |card|
   stage = if card["subtypes"].include?("Basic")
