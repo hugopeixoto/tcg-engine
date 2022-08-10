@@ -8,6 +8,7 @@ require 'erb'
 
 PRELUDE = <<~EOF
 use crate::*;
+use crate::attack_builder::AttackBuilder;
 use crate::carddb::Attacks;
 
 EOF

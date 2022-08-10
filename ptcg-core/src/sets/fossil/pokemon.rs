@@ -1,5 +1,6 @@
 use crate::*;
 use crate::carddb::Attacks;
+use crate::attack_builder::AttackBuilder;
 
 #[derive(Default)]
 pub struct Articuno {}

@@ -1,4 +1,5 @@
 use crate::*;
+use crate::attack_builder::AttackBuilder;
 use crate::carddb::Attacks;
 
 #[derive(Default)]
