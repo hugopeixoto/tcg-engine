@@ -1119,8 +1119,12 @@ impl CardArchetype for DarkDragonair33 {
     }
 }
 impl DarkDragonair33 {
-    pub fn tail_strike(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn tail_strike(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(40))
+            .if_tails(|e| e.damage(20))
     }
 }
 
@@ -2234,8 +2238,12 @@ impl Mankey61 {
     pub fn mischief(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
-    pub fn anger(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn anger(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(40))
+            .if_tails(|e| e.damage(20))
     }
 }
 
@@ -2419,8 +2427,12 @@ impl CardArchetype for Rattata66 {
     }
 }
 impl Rattata66 {
-    pub fn quick_attack(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn quick_attack(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(20))
+            .if_tails(|e| e.damage(10))
     }
 }
 

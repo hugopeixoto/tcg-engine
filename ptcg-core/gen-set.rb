@@ -354,7 +354,19 @@ $patterns = [
   },
   {
     pattern: /^Flip a coin\. If heads, this attack does (?<base1>\d+) damage plus (?<damage_extra>\d+) more damage. If tails, this attack does (?<base2>\d+) damage (?:plus|and) \w+ does (?<damage_self>\d+) damage to itself\.$/,
-    build: ->(base1:, damage_extra:, base2:, damage_self:) { flip_a_coin.if_heads{ damage(base1 + damage_extra) }.if_tails{ damage(base2).damage_itself(damage_self) } },
+    build: ->(base1:, damage_extra:, base2:, damage_self:) {
+      flip_a_coin
+        .if_heads{ damage(base1 + damage_extra) }
+        .if_tails{ damage(base2).damage_itself(damage_self) }
+    },
+  },
+  {
+    pattern: /^Flip a coin\. If heads, this attack does (?<base_heads>\d+) damage plus (?<extra>\d+) more damage\. If tails, this attack does (?<base_tails>\d+) damage\.$/,
+    build: ->(base_heads:, extra:, base_tails:) {
+      flip_a_coin
+        .if_heads{ damage(base_heads + extra) }
+        .if_tails{ damage(base_tails) }
+    }
   },
   {
     pattern: /^Does (?<bench_damage>\d+) damage to each of your own Benched Pokémon\.$/,
@@ -408,7 +420,9 @@ def attack_impl(attack)
   $patterns.each do |pattern|
     m = pattern[:pattern].match(text)
     if m
-      v = m.named_captures.transform_keys(&:to_sym)
+      v = m.named_captures
+        .transform_keys(&:to_sym)
+        .transform_values { |v| v =~ /^\d+$/ ? v.to_i : v.to_s }
       v.merge!({ damage: attack.fetch('damage') }) if pattern[:build].parameters.include?([:keyreq, :damage])
       return builder.instance_exec(**v, &pattern[:build]).to_s.rstrip.gsub("\n", "\n        ")
     end

@@ -110,8 +110,12 @@ impl CardArchetype for Flareon3 {
     }
 }
 impl Flareon3 {
-    pub fn quick_attack(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn quick_attack(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(30))
+            .if_tails(|e| e.damage(10))
     }
     pub fn flamethrower(builder: AttackBuilder) -> AttackBuilder {
         builder
@@ -151,8 +155,12 @@ impl CardArchetype for Jolteon4 {
     }
 }
 impl Jolteon4 {
-    pub fn quick_attack(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn quick_attack(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(30))
+            .if_tails(|e| e.damage(10))
     }
     pub fn pin_missile(builder: AttackBuilder) -> AttackBuilder {
         builder
@@ -471,8 +479,12 @@ impl CardArchetype for Vaporeon12 {
     }
 }
 impl Vaporeon12 {
-    pub fn quick_attack(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn quick_attack(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(30))
+            .if_tails(|e| e.damage(10))
     }
     pub fn water_gun(builder: AttackBuilder) -> AttackBuilder {
         builder
@@ -740,8 +752,12 @@ impl CardArchetype for Flareon19 {
     }
 }
 impl Flareon19 {
-    pub fn quick_attack(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn quick_attack(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(30))
+            .if_tails(|e| e.damage(10))
     }
     pub fn flamethrower(builder: AttackBuilder) -> AttackBuilder {
         builder
@@ -781,8 +797,12 @@ impl CardArchetype for Jolteon20 {
     }
 }
 impl Jolteon20 {
-    pub fn quick_attack(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn quick_attack(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(30))
+            .if_tails(|e| e.damage(10))
     }
     pub fn pin_missile(builder: AttackBuilder) -> AttackBuilder {
         builder
@@ -1101,8 +1121,12 @@ impl CardArchetype for Vaporeon28 {
     }
 }
 impl Vaporeon28 {
-    pub fn quick_attack(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn quick_attack(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(30))
+            .if_tails(|e| e.damage(10))
     }
     pub fn water_gun(builder: AttackBuilder) -> AttackBuilder {
         builder
@@ -1741,8 +1765,12 @@ impl CardArchetype for Rapidash44 {
     }
 }
 impl Rapidash44 {
-    pub fn stomp(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn stomp(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(30))
+            .if_tails(|e| e.damage(20))
     }
     pub fn agility(builder: AttackBuilder) -> AttackBuilder {
         builder
@@ -1864,8 +1892,12 @@ impl CardArchetype for Tauros47 {
     }
 }
 impl Tauros47 {
-    pub fn stomp(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn stomp(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(30))
+            .if_tails(|e| e.damage(20))
     }
     pub fn rampage(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
@@ -2027,8 +2059,12 @@ impl Eevee51 {
     pub fn tail_wag(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
-    pub fn quick_attack(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn quick_attack(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(30))
+            .if_tails(|e| e.damage(10))
     }
 }
 

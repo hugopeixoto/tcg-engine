@@ -436,7 +436,7 @@ impl Nidoking11 {
         builder
             .attack_cost(&[Type::Grass, Type::Colorless, Type::Colorless])
             .flip_a_coin()
-            .if_heads(|e| e.damage(3010))
+            .if_heads(|e| e.damage(40))
             .if_tails(|e| e.damage(30).damage_self(10))
     }
     pub fn toxic(builder: AttackBuilder) -> AttackBuilder {
@@ -988,7 +988,7 @@ impl Electabuzz24 {
         builder
             .attack_cost(&[Type::Lightning, Type::Colorless])
             .flip_a_coin()
-            .if_heads(|e| e.damage(3010))
+            .if_heads(|e| e.damage(40))
             .if_tails(|e| e.damage(30).damage_self(10))
     }
 }
@@ -2535,8 +2535,12 @@ impl CardArchetype for Tauros62 {
     }
 }
 impl Tauros62 {
-    pub fn stomp(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn stomp(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(30))
+            .if_tails(|e| e.damage(20))
     }
     pub fn rampage(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();

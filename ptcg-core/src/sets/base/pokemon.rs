@@ -444,7 +444,7 @@ impl Nidoking11 {
         builder
             .attack_cost(&[Type::Grass, Type::Colorless, Type::Colorless])
             .flip_a_coin()
-            .if_heads(|e| e.damage(3010))
+            .if_heads(|e| e.damage(40))
             .if_tails(|e| e.damage(30).damage_self(10))
     }
     pub fn toxic(builder: AttackBuilder) -> AttackBuilder {
@@ -840,7 +840,7 @@ impl Electabuzz20 {
         builder
             .attack_cost(&[Type::Lightning, Type::Colorless])
             .flip_a_coin()
-            .if_heads(|e| e.damage(3010))
+            .if_heads(|e| e.damage(40))
             .if_tails(|e| e.damage(30).damage_self(10))
     }
 }
