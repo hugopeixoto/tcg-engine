@@ -2619,7 +2619,11 @@ impl CardArchetype for DarkRaichu83 {
     }
 }
 impl DarkRaichu83 {
-    pub fn surprise_thunder(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn surprise_thunder(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Lightning, Type::Lightning, Type::Lightning])
+            .damage(30)
+            .flip_a_coin()
+            .if_heads(|e| e.flip_a_coin().if_heads(|e| e.each_opponents_bench(|e| e.damage(20))).if_tails(|e| e.each_own_bench(|e| e.damage(10))))
     }
 }

@@ -409,6 +409,18 @@ $patterns = [
     pattern: /^If your opponent has any Benched Pokémon, choose 1 of them and switch it with his or her Active Pokémon\.$/,
     build: ->(damage:) { damage(damage).gust_defending() },
   },
+  {
+    pattern: /^Flip a coin\. If heads, flip another coin\. If the second coin is heads, this attack does (?<damage_heads>\d+) damage to each of your opponent's Benched Pokémon\. If the second coin is tails, this attack does (?<damage_tails>\d+) damage to each of your opponent's Benched Pokémon\.$/,
+    build: ->(damage:, damage_heads:, damage_tails:) {
+      damage(damage)
+        .flip_a_coin
+        .if_heads {
+          flip_a_coin
+            .if_heads{ each_opponents_bench{ damage(damage_heads) } }
+            .if_tails{ each_own_bench{ damage(damage_tails) } }
+        }
+    }
+  }
 ]
 
 def attack_impl(attack)
