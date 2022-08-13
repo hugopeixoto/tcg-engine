@@ -1,2 +1,2 @@
-pub mod base_set;
+pub mod base;
 pub mod fossil;

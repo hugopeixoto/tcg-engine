@@ -9,6 +9,7 @@ mod engine;
 mod carddb;
 mod card_macros;
 mod attack_builder;
+mod effect;
 
 mod sets;
 mod formats;

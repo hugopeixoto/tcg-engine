@@ -150,27 +150,27 @@ impl<'a> AttackBuilder<'a> {
     }
 
     pub fn asleep(mut self) -> Self {
-        self.engine = self.engine.asleep();
+        self.engine = self.engine.asleep(self.engine.defending());
         self
     }
 
     pub fn confuse(mut self) -> Self {
-        self.engine = self.engine.confuse();
+        self.engine = self.engine.confuse(self.engine.defending());
         self
     }
 
     pub fn paralyze(mut self) -> Self {
-        self.engine = self.engine.paralyze();
+        self.engine = self.engine.paralyze(self.engine.defending());
         self
     }
 
     pub fn poison(mut self) -> Self {
-        self.engine = self.engine.poison();
+        self.engine = self.engine.poison(self.engine.defending(), 1);
         self
     }
 
     pub fn severe_poison(mut self, counters: usize) -> Self {
-        self.engine = self.engine.severe_poison(counters);
+        self.engine = self.engine.poison(self.engine.defending(), counters);
         self
     }
 
@@ -255,7 +255,21 @@ impl<'a> AttackBuilder<'a> {
         self
     }
 
+    pub fn switch_defending(mut self) -> Self {
+        self.engine = self.engine.switch(self.opponent(), self.dm);
+        self
+    }
+
+    pub fn gust_defending(mut self) -> Self {
+        self.engine = self.engine.gust(self.player(), self.dm);
+        self
+    }
+
     pub fn prevent_damage_during_opponents_next_turn(mut self) -> Self {
+        // effect::from_attack(self)
+        //     .on_attacking()
+        //     .until_opponents_end_of_turn()
+        //     .on_damaged(|e| e.if_opponents_turn().prevent_damage())
         self.engine = self.engine.with_effect(Effect {
             name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
             source: EffectSource::Attack(self.player(), self.attacking().id),
@@ -268,6 +282,11 @@ impl<'a> AttackBuilder<'a> {
     }
 
     pub fn prevent_damage_and_effects_during_opponents_next_turn(mut self) -> Self {
+        // effect::from_attack(&self)
+        //     .on_attacking()
+        //     .until_opponents_end_of_turn()
+        //     .on_damaged(|e| e.if_opponents_turn().prevent())
+        //     .on_affected(|e| e.if_opponents_turn().prevent())
         self.engine = self.engine.with_effect(Effect {
             name: "NO_DAMAGE_NO_EFFECTS_DURING_OPPONENTS_NEXT_TURN".into(),
             source: EffectSource::Attack(self.player(), self.attacking().id),
@@ -280,6 +299,10 @@ impl<'a> AttackBuilder<'a> {
     }
 
     pub fn prevent_trainers_during_opponents_next_turn(mut self) -> Self {
+        // effect::from_attack(self)
+        //     .on_opponent()
+        //     .until_opponents_end_of_turn()
+        //     .on_trainer(|e| e.played_from_hand().prevent())
         self.engine = self.engine.with_effect(Effect {
             name: "PSYDUCK_FO_HEADACHE_NO_TRAINERS".into(),
             source: EffectSource::Attack(self.player(), self.attacking().id),
@@ -292,6 +315,11 @@ impl<'a> AttackBuilder<'a> {
     }
 
     pub fn knock_out_attacker_if_attacking_is_knocked_out_next_turn(self) -> Self {
+        // effect::from_attack(self)
+        //     .on_attacking()
+        //     .until_opponents_end_of_turn()
+        //     .on_knocked_out(|e| e.if_opponents_turn().knockout_defending())
+
         // self.engine = self.engine.with_effect(Effect {
         //     name: "KNOCK_OUT_IF_WE_ARE_KNOCKED_OUT".into(),
         //     source: EffectSource::Attack(self.player(), self.attacking().id),
@@ -303,13 +331,11 @@ impl<'a> AttackBuilder<'a> {
         self
     }
 
-    pub fn switch_defending(mut self) -> Self {
-        self.engine = self.engine.switch(self.opponent(), self.dm);
-        self
-    }
-
-    pub fn gust_defending(mut self) -> Self {
-        self.engine = self.engine.gust(self.player(), self.dm);
+    pub fn prevent_attack_on_a_flip_during_opponents_next_turn(self) -> Self {
+        // effect::from_attack(self)
+        //     .on_defending()
+        //     .until_opponents_end_of_turn()
+        //     .on_attack(|e| e.flip_a_coin().if_heads(|e2| e2.prevent()))
         self
     }
 }

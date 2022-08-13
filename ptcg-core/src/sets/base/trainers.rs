@@ -4,8 +4,9 @@ use crate::*;
 use crate::carddb::TrainerCardArchetype;
 
 #[derive(Default)]
-pub struct ClefairyDoll {}
-impl TrainerCardArchetype for ClefairyDoll {
+pub struct ClefairyDoll70 {}
+impl TrainerCardArchetype for ClefairyDoll70 {
+    identifier!("Clefairy Doll (BS 70)");
     card_name!("Clefairy Doll");
 
     fn requirements_ok(&self, player: Player, card: &Card, engine: &GameEngine) -> bool {
@@ -25,8 +26,9 @@ impl TrainerCardArchetype for ClefairyDoll {
 }
 
 #[derive(Default)]
-pub struct ComputerSearch {}
-impl TrainerCardArchetype for ComputerSearch {
+pub struct ComputerSearch71 {}
+impl TrainerCardArchetype for ComputerSearch71 {
+    identifier!("Computer Search (BS 71)");
     card_name!("Computer Search");
 
     fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -43,8 +45,9 @@ impl TrainerCardArchetype for ComputerSearch {
 }
 
 #[derive(Default)]
-pub struct DevolutionSpray {}
-impl TrainerCardArchetype for DevolutionSpray {
+pub struct DevolutionSpray72 {}
+impl TrainerCardArchetype for DevolutionSpray72 {
+    identifier!("Devolution Spray (BS 72)");
     card_name!("Devolution Spray");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -64,7 +67,7 @@ impl TrainerCardArchetype for DevolutionSpray {
             .devolve(&chosen[0], stage, &Zone::Discard(player))
     }
 }
-impl DevolutionSpray {
+impl DevolutionSpray72 {
     fn evolutions_in_play(&self, player: Player, engine: &GameEngine) -> Vec<InPlayCard> {
         engine
             .state.side(player)
@@ -87,8 +90,9 @@ impl DevolutionSpray {
 }
 
 #[derive(Default)]
-pub struct ImpostorProfessorOak {}
-impl TrainerCardArchetype for ImpostorProfessorOak {
+pub struct ImpostorProfessorOak73 {}
+impl TrainerCardArchetype for ImpostorProfessorOak73 {
+    identifier!("Impostor Professor Oak (BS 73)");
     card_name!("Impostor Professor Oak");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -104,8 +108,9 @@ impl TrainerCardArchetype for ImpostorProfessorOak {
 }
 
 #[derive(Default)]
-pub struct ItemFinder {}
-impl TrainerCardArchetype for ItemFinder {
+pub struct ItemFinder74 {}
+impl TrainerCardArchetype for ItemFinder74 {
+    identifier!("Item Finder (BS 74)");
     card_name!("Item Finder");
 
     fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -124,8 +129,9 @@ impl TrainerCardArchetype for ItemFinder {
 }
 
 #[derive(Default)]
-pub struct Lass {}
-impl TrainerCardArchetype for Lass {
+pub struct Lass75 {}
+impl TrainerCardArchetype for Lass75 {
+    identifier!("Lass (BS 75)");
     card_name!("Lass");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -141,8 +147,9 @@ impl TrainerCardArchetype for Lass {
 }
 
 #[derive(Default)]
-pub struct PokemonBreeder {}
-impl TrainerCardArchetype for PokemonBreeder {
+pub struct PokemonBreeder76 {}
+impl TrainerCardArchetype for PokemonBreeder76 {
+    identifier!("Pokémon Breeder (BS 76)");
     card_name!("Pokémon Breeder");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -159,7 +166,7 @@ impl TrainerCardArchetype for PokemonBreeder {
         engine.evolve_into(chosen, card)
     }
 }
-impl PokemonBreeder {
+impl PokemonBreeder76 {
     pub fn stage2_cards(&self, engine: &GameEngine) -> Vec<Card> {
         engine
             .state.side(engine.player()).hand
@@ -183,8 +190,9 @@ impl PokemonBreeder {
 }
 
 #[derive(Default)]
-pub struct PokemonTrader {}
-impl TrainerCardArchetype for PokemonTrader {
+pub struct PokemonTrader77 {}
+impl TrainerCardArchetype for PokemonTrader77 {
+    identifier!("Pokémon Trader (BS 77)");
     card_name!("Pokémon Trader");
 
     fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -198,8 +206,9 @@ impl TrainerCardArchetype for PokemonTrader {
 }
 
 #[derive(Default)]
-pub struct ScoopUp {}
-impl TrainerCardArchetype for ScoopUp {
+pub struct ScoopUp78 {}
+impl TrainerCardArchetype for ScoopUp78 {
+    identifier!("Scoop Up (BS 78)");
     card_name!("Scoop Up");
 
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
@@ -216,8 +225,9 @@ impl TrainerCardArchetype for ScoopUp {
 }
 
 #[derive(Default)]
-pub struct SuperEnergyRemoval {}
-impl TrainerCardArchetype for SuperEnergyRemoval {
+pub struct SuperEnergyRemoval79 {}
+impl TrainerCardArchetype for SuperEnergyRemoval79 {
+    identifier!("Super Energy Removal (BS 79)");
     card_name!("Super Energy Removal");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -244,15 +254,16 @@ impl TrainerCardArchetype for SuperEnergyRemoval {
             .remove_attached_cards(&their_discarded)
     }
 }
-impl SuperEnergyRemoval {
+impl SuperEnergyRemoval79 {
     pub fn energy_removal_targets(&self, player: Player, engine: &GameEngine) -> Vec<InPlayCard> {
         engine.state.side(player).all_in_play().into_iter().filter(|p| GameEngine::has_energy_cards_attached(engine, p)).cloned().collect()
     }
 }
 
 #[derive(Default)]
-pub struct Defender {}
-impl TrainerCardArchetype for Defender {
+pub struct Defender80 {}
+impl TrainerCardArchetype for Defender80 {
+    identifier!("Defender (BS 80)");
     card_name!("Defender");
 
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
@@ -286,8 +297,9 @@ impl TrainerCardArchetype for Defender {
 }
 
 #[derive(Default)]
-pub struct EnergyRetrieval {}
-impl TrainerCardArchetype for EnergyRetrieval {
+pub struct EnergyRetrieval81 {}
+impl TrainerCardArchetype for EnergyRetrieval81 {
+    identifier!("Energy Retrieval (BS 81)");
     card_name!("Energy Retrieval");
 
     fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -305,8 +317,9 @@ impl TrainerCardArchetype for EnergyRetrieval {
 }
 
 #[derive(Default)]
-pub struct FullHeal {}
-impl TrainerCardArchetype for FullHeal {
+pub struct FullHeal82 {}
+impl TrainerCardArchetype for FullHeal82 {
+    identifier!("Full Heal (BS 82)");
     card_name!("Full Heal");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -319,15 +332,16 @@ impl TrainerCardArchetype for FullHeal {
         engine.remove_special_conditions(&target)
     }
 }
-impl FullHeal {
+impl FullHeal82 {
     fn affected_in_play(&self, player: Player, engine: &GameEngine) -> Vec<InPlayCard> {
         engine.state.side(player).all_in_play().into_iter().filter(|p| GameEngine::has_special_condition(engine, p)).cloned().collect()
     }
 }
 
 #[derive(Default)]
-pub struct Maintenance {}
-impl TrainerCardArchetype for Maintenance {
+pub struct Maintenance83 {}
+impl TrainerCardArchetype for Maintenance83 {
+    identifier!("Maintenance (BS 83)");
     card_name!("Maintenance");
 
     fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -343,8 +357,9 @@ impl TrainerCardArchetype for Maintenance {
 }
 
 #[derive(Default)]
-pub struct PlusPower {}
-impl TrainerCardArchetype for PlusPower {
+pub struct PlusPower84 {}
+impl TrainerCardArchetype for PlusPower84 {
+    identifier!("Plus Power (BS 84)");
     card_name!("Plus Power");
 
     fn requirements_ok(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> bool {
@@ -378,8 +393,9 @@ impl TrainerCardArchetype for PlusPower {
 }
 
 #[derive(Default)]
-pub struct PokemonCenter {}
-impl TrainerCardArchetype for PokemonCenter {
+pub struct PokemonCenter85 {}
+impl TrainerCardArchetype for PokemonCenter85 {
+    identifier!("Pokémon Center (BS 85)");
     card_name!("Pokémon Center");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -399,8 +415,9 @@ impl TrainerCardArchetype for PokemonCenter {
 }
 
 #[derive(Default)]
-pub struct PokemonFlute {}
-impl TrainerCardArchetype for PokemonFlute {
+pub struct PokemonFlute86 {}
+impl TrainerCardArchetype for PokemonFlute86 {
+    identifier!("Pokémon Flute (BS 86)");
     card_name!("Pokémon Flute");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -415,15 +432,16 @@ impl TrainerCardArchetype for PokemonFlute {
         engine.bench_from_discard(engine.opponent(), chosen[0])
     }
 }
-impl PokemonFlute {
+impl PokemonFlute86 {
     fn discarded_basics(&self, player: Player, engine: &GameEngine) -> Vec<Card> {
         engine.state.side(player).discard.iter().filter(|&c| engine.stage(c) == Some(Stage::Basic)).cloned().collect()
     }
 }
 
 #[derive(Default)]
-pub struct Pokedex {}
-impl TrainerCardArchetype for Pokedex {
+pub struct Pokedex87 {}
+impl TrainerCardArchetype for Pokedex87 {
+    identifier!("Pokédex (BS 87)");
     card_name!("Pokédex");
 
     fn requirements_ok(&self, player: Player, _card: &Card, engine: &GameEngine) -> bool {
@@ -435,8 +453,9 @@ impl TrainerCardArchetype for Pokedex {
 }
 
 #[derive(Default)]
-pub struct ProfessorOak {}
-impl TrainerCardArchetype for ProfessorOak {
+pub struct ProfessorOak88 {}
+impl TrainerCardArchetype for ProfessorOak88 {
+    identifier!("Professor Oak (BS 88)");
     card_name!("Professor Oak");
 
     fn cost(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -452,8 +471,9 @@ impl TrainerCardArchetype for ProfessorOak {
 }
 
 #[derive(Default)]
-pub struct Revive {}
-impl TrainerCardArchetype for Revive {
+pub struct Revive89 {}
+impl TrainerCardArchetype for Revive89 {
+    identifier!("Revive (BS 89)");
     card_name!("Revive");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -473,15 +493,16 @@ impl TrainerCardArchetype for Revive {
             })
     }
 }
-impl Revive {
+impl Revive89 {
     fn discarded_basics(&self, player: Player, engine: &GameEngine) -> Vec<Card> {
         engine.state.side(player).discard.iter().filter(|&c| engine.stage(c) == Some(Stage::Basic)).cloned().collect()
     }
 }
 
 #[derive(Default)]
-pub struct SuperPotion {}
-impl TrainerCardArchetype for SuperPotion {
+pub struct SuperPotion90 {}
+impl TrainerCardArchetype for SuperPotion90 {
+    identifier!("Super Potion (BS 90)");
     card_name!("Super Potion");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -500,7 +521,7 @@ impl TrainerCardArchetype for SuperPotion {
             .heal(own_target, 40)
     }
 }
-impl SuperPotion {
+impl SuperPotion90 {
     fn targets(&self, engine: &GameEngine) -> Vec<InPlayCard> {
         engine
             .in_play(engine.player())
@@ -513,8 +534,9 @@ impl SuperPotion {
 }
 
 #[derive(Default)]
-pub struct Bill {}
-impl TrainerCardArchetype for Bill {
+pub struct Bill90 {}
+impl TrainerCardArchetype for Bill90 {
+    identifier!("Bill (BS 90)");
     card_name!("Bill");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -529,8 +551,9 @@ impl TrainerCardArchetype for Bill {
 }
 
 #[derive(Default)]
-pub struct EnergyRemoval {}
-impl TrainerCardArchetype for EnergyRemoval {
+pub struct EnergyRemoval91 {}
+impl TrainerCardArchetype for EnergyRemoval91 {
+    identifier!("Energy Removal (BS 91)");
     card_name!("Energy Removal");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -547,15 +570,16 @@ impl TrainerCardArchetype for EnergyRemoval {
         engine.remove_attached_cards(&discarded)
     }
 }
-impl EnergyRemoval {
+impl EnergyRemoval91 {
     pub fn energy_removal_targets(&self, engine: &GameEngine) -> Vec<InPlayCard> {
         engine.state.side(engine.opponent()).all_in_play().into_iter().filter(|p| GameEngine::has_energy_cards_attached(engine, p)).cloned().collect()
     }
 }
 
 #[derive(Default)]
-pub struct GustOfWind {}
-impl TrainerCardArchetype for GustOfWind {
+pub struct GustOfWind92 {}
+impl TrainerCardArchetype for GustOfWind92 {
+    identifier!("Gust of Wind (BS 92)");
     card_name!("Gust of Wind");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -570,8 +594,9 @@ impl TrainerCardArchetype for GustOfWind {
 }
 
 #[derive(Default)]
-pub struct Potion {}
-impl TrainerCardArchetype for Potion {
+pub struct Potion93 {}
+impl TrainerCardArchetype for Potion93 {
+    identifier!("Potion (BS 93)");
     card_name!("Potion");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -587,8 +612,9 @@ impl TrainerCardArchetype for Potion {
 }
 
 #[derive(Default)]
-pub struct Switch {}
-impl TrainerCardArchetype for Switch {
+pub struct Switch94 {}
+impl TrainerCardArchetype for Switch94 {
+    identifier!("Switch (BS 94)");
     card_name!("Switch");
 
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
@@ -601,5 +627,3 @@ impl TrainerCardArchetype for Switch {
             .switch(player, dm)
     }
 }
-
-

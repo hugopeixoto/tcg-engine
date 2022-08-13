@@ -3,8 +3,9 @@ use crate::attack_builder::AttackBuilder;
 use crate::carddb::Attacks;
 
 #[derive(Default)]
-pub struct Alakazam {}
-impl CardArchetype for Alakazam {
+pub struct Alakazam1 {}
+impl CardArchetype for Alakazam1 {
+    identifier!("Alakazam (BS 1)");
     card_name!("Alakazam");
     stage2!("Kadabra");
     hp!(80);
@@ -29,7 +30,7 @@ impl CardArchetype for Alakazam {
         vec![]
     }
 }
-impl Alakazam {
+impl Alakazam1 {
     pub fn confuse_ray(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Psychic, Type::Psychic, Type::Psychic])
@@ -40,8 +41,9 @@ impl Alakazam {
 }
 
 #[derive(Default)]
-pub struct Blastoise {}
-impl CardArchetype for Blastoise {
+pub struct Blastoise2 {}
+impl CardArchetype for Blastoise2 {
+    identifier!("Blastoise (BS 2)");
     card_name!("Blastoise");
     stage2!("Wartortle");
     hp!(100);
@@ -66,7 +68,7 @@ impl CardArchetype for Blastoise {
         vec![]
     }
 }
-impl Blastoise {
+impl Blastoise2 {
     pub fn hydro_pump(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Water, Type::Water, Type::Water])
@@ -75,8 +77,9 @@ impl Blastoise {
 }
 
 #[derive(Default)]
-pub struct Chansey {}
-impl CardArchetype for Chansey {
+pub struct Chansey3 {}
+impl CardArchetype for Chansey3 {
+    identifier!("Chansey (BS 3)");
     card_name!("Chansey");
     basic!();
     hp!(120);
@@ -102,7 +105,7 @@ impl CardArchetype for Chansey {
         vec![]
     }
 }
-impl Chansey {
+impl Chansey3 {
     pub fn scrunch(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless, Type::Colorless])
@@ -118,8 +121,9 @@ impl Chansey {
 }
 
 #[derive(Default)]
-pub struct Charizard {}
-impl CardArchetype for Charizard {
+pub struct Charizard4 {}
+impl CardArchetype for Charizard4 {
+    identifier!("Charizard (BS 4)");
     card_name!("Charizard");
     stage2!("Charmeleon");
     hp!(120);
@@ -144,7 +148,7 @@ impl CardArchetype for Charizard {
         vec![]
     }
 }
-impl Charizard {
+impl Charizard4 {
     pub fn fire_spin(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fire, Type::Fire, Type::Fire, Type::Fire])
@@ -154,8 +158,9 @@ impl Charizard {
 }
 
 #[derive(Default)]
-pub struct Clefairy {}
-impl CardArchetype for Clefairy {
+pub struct Clefairy5 {}
+impl CardArchetype for Clefairy5 {
+    identifier!("Clefairy (BS 5)");
     card_name!("Clefairy");
     basic!();
     hp!(40);
@@ -181,7 +186,7 @@ impl CardArchetype for Clefairy {
         vec![]
     }
 }
-impl Clefairy {
+impl Clefairy5 {
     pub fn sing(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless])
@@ -194,8 +199,9 @@ impl Clefairy {
 }
 
 #[derive(Default)]
-pub struct Gyarados {}
-impl CardArchetype for Gyarados {
+pub struct Gyarados6 {}
+impl CardArchetype for Gyarados6 {
+    identifier!("Gyarados (BS 6)");
     card_name!("Gyarados");
     stage1!("Magikarp");
     hp!(100);
@@ -221,7 +227,7 @@ impl CardArchetype for Gyarados {
         vec![]
     }
 }
-impl Gyarados {
+impl Gyarados6 {
     pub fn dragon_rage(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Water, Type::Water, Type::Water])
@@ -237,8 +243,9 @@ impl Gyarados {
 }
 
 #[derive(Default)]
-pub struct Hitmonchan {}
-impl CardArchetype for Hitmonchan {
+pub struct Hitmonchan7 {}
+impl CardArchetype for Hitmonchan7 {
+    identifier!("Hitmonchan (BS 7)");
     card_name!("Hitmonchan");
     basic!();
     hp!(70);
@@ -264,7 +271,7 @@ impl CardArchetype for Hitmonchan {
         vec![]
     }
 }
-impl Hitmonchan {
+impl Hitmonchan7 {
     pub fn jab(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fighting])
@@ -278,8 +285,9 @@ impl Hitmonchan {
 }
 
 #[derive(Default)]
-pub struct Machamp {}
-impl CardArchetype for Machamp {
+pub struct Machamp8 {}
+impl CardArchetype for Machamp8 {
+    identifier!("Machamp (BS 8)");
     card_name!("Machamp");
     stage2!("Machoke");
     hp!(100);
@@ -304,7 +312,7 @@ impl CardArchetype for Machamp {
         vec![]
     }
 }
-impl Machamp {
+impl Machamp8 {
     pub fn seismic_toss(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fighting, Type::Fighting, Type::Fighting, Type::Colorless])
@@ -313,8 +321,9 @@ impl Machamp {
 }
 
 #[derive(Default)]
-pub struct Magneton {}
-impl CardArchetype for Magneton {
+pub struct Magneton9 {}
+impl CardArchetype for Magneton9 {
+    identifier!("Magneton (BS 9)");
     card_name!("Magneton");
     stage1!("Magnemite");
     hp!(60);
@@ -340,7 +349,7 @@ impl CardArchetype for Magneton {
         vec![]
     }
 }
-impl Magneton {
+impl Magneton9 {
     pub fn thunder_wave(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Lightning, Type::Lightning, Type::Colorless])
@@ -359,8 +368,9 @@ impl Magneton {
 }
 
 #[derive(Default)]
-pub struct Mewtwo {}
-impl CardArchetype for Mewtwo {
+pub struct Mewtwo10 {}
+impl CardArchetype for Mewtwo10 {
+    identifier!("Mewtwo (BS 10)");
     card_name!("Mewtwo");
     basic!();
     hp!(60);
@@ -386,7 +396,7 @@ impl CardArchetype for Mewtwo {
         vec![]
     }
 }
-impl Mewtwo {
+impl Mewtwo10 {
     pub fn psychic(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Psychic, Type::Colorless])
@@ -401,8 +411,9 @@ impl Mewtwo {
 }
 
 #[derive(Default)]
-pub struct Nidoking {}
-impl CardArchetype for Nidoking {
+pub struct Nidoking11 {}
+impl CardArchetype for Nidoking11 {
+    identifier!("Nidoking (BS 11)");
     card_name!("Nidoking");
     stage2!("Nidorino");
     hp!(90);
@@ -428,12 +439,12 @@ impl CardArchetype for Nidoking {
         vec![]
     }
 }
-impl Nidoking {
+impl Nidoking11 {
     pub fn thrash(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Grass, Type::Colorless, Type::Colorless])
             .flip_a_coin()
-            .if_heads(|e| e.damage(40))
+            .if_heads(|e| e.damage(3010))
             .if_tails(|e| e.damage(30).damage_self(10))
     }
     pub fn toxic(builder: AttackBuilder) -> AttackBuilder {
@@ -445,8 +456,9 @@ impl Nidoking {
 }
 
 #[derive(Default)]
-pub struct Ninetales {}
-impl CardArchetype for Ninetales {
+pub struct Ninetales12 {}
+impl CardArchetype for Ninetales12 {
+    identifier!("Ninetales (BS 12)");
     card_name!("Ninetales");
     stage1!("Vulpix");
     hp!(80);
@@ -472,7 +484,7 @@ impl CardArchetype for Ninetales {
         vec![]
     }
 }
-impl Ninetales {
+impl Ninetales12 {
     pub fn lure(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless, Type::Colorless])
@@ -487,8 +499,9 @@ impl Ninetales {
 }
 
 #[derive(Default)]
-pub struct Poliwrath {}
-impl CardArchetype for Poliwrath {
+pub struct Poliwrath13 {}
+impl CardArchetype for Poliwrath13 {
+    identifier!("Poliwrath (BS 13)");
     card_name!("Poliwrath");
     stage2!("Poliwhirl");
     hp!(90);
@@ -514,7 +527,7 @@ impl CardArchetype for Poliwrath {
         vec![]
     }
 }
-impl Poliwrath {
+impl Poliwrath13 {
     pub fn water_gun(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Water, Type::Water, Type::Colorless])
@@ -529,8 +542,9 @@ impl Poliwrath {
 }
 
 #[derive(Default)]
-pub struct Raichu {}
-impl CardArchetype for Raichu {
+pub struct Raichu14 {}
+impl CardArchetype for Raichu14 {
+    identifier!("Raichu (BS 14)");
     card_name!("Raichu");
     stage1!("Pikachu");
     hp!(80);
@@ -556,7 +570,7 @@ impl CardArchetype for Raichu {
         vec![]
     }
 }
-impl Raichu {
+impl Raichu14 {
     pub fn agility(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Lightning, Type::Colorless, Type::Colorless])
@@ -573,8 +587,9 @@ impl Raichu {
 }
 
 #[derive(Default)]
-pub struct Venusaur {}
-impl CardArchetype for Venusaur {
+pub struct Venusaur15 {}
+impl CardArchetype for Venusaur15 {
+    identifier!("Venusaur (BS 15)");
     card_name!("Venusaur");
     stage2!("Ivysaur");
     hp!(100);
@@ -599,7 +614,7 @@ impl CardArchetype for Venusaur {
         vec![]
     }
 }
-impl Venusaur {
+impl Venusaur15 {
     pub fn solarbeam(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Grass, Type::Grass, Type::Grass, Type::Grass])
@@ -608,8 +623,9 @@ impl Venusaur {
 }
 
 #[derive(Default)]
-pub struct Zapdos {}
-impl CardArchetype for Zapdos {
+pub struct Zapdos16 {}
+impl CardArchetype for Zapdos16 {
+    identifier!("Zapdos (BS 16)");
     card_name!("Zapdos");
     basic!();
     hp!(90);
@@ -635,7 +651,7 @@ impl CardArchetype for Zapdos {
         vec![]
     }
 }
-impl Zapdos {
+impl Zapdos16 {
     pub fn thunder(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Lightning, Type::Lightning, Type::Lightning, Type::Colorless])
@@ -652,8 +668,9 @@ impl Zapdos {
 }
 
 #[derive(Default)]
-pub struct Beedrill {}
-impl CardArchetype for Beedrill {
+pub struct Beedrill17 {}
+impl CardArchetype for Beedrill17 {
+    identifier!("Beedrill (BS 17)");
     card_name!("Beedrill");
     stage2!("Kakuna");
     hp!(80);
@@ -679,7 +696,7 @@ impl CardArchetype for Beedrill {
         vec![]
     }
 }
-impl Beedrill {
+impl Beedrill17 {
     pub fn twineedle(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless, Type::Colorless, Type::Colorless])
@@ -696,8 +713,9 @@ impl Beedrill {
 }
 
 #[derive(Default)]
-pub struct Dragonair {}
-impl CardArchetype for Dragonair {
+pub struct Dragonair18 {}
+impl CardArchetype for Dragonair18 {
+    identifier!("Dragonair (BS 18)");
     card_name!("Dragonair");
     stage1!("Dratini");
     hp!(80);
@@ -723,7 +741,7 @@ impl CardArchetype for Dragonair {
         vec![]
     }
 }
-impl Dragonair {
+impl Dragonair18 {
     pub fn slam(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless, Type::Colorless, Type::Colorless])
@@ -739,8 +757,9 @@ impl Dragonair {
 }
 
 #[derive(Default)]
-pub struct Dugtrio {}
-impl CardArchetype for Dugtrio {
+pub struct Dugtrio19 {}
+impl CardArchetype for Dugtrio19 {
+    identifier!("Dugtrio (BS 19)");
     card_name!("Dugtrio");
     stage1!("Diglett");
     hp!(70);
@@ -766,7 +785,7 @@ impl CardArchetype for Dugtrio {
         vec![]
     }
 }
-impl Dugtrio {
+impl Dugtrio19 {
     pub fn slash(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fighting, Type::Fighting, Type::Colorless])
@@ -781,8 +800,9 @@ impl Dugtrio {
 }
 
 #[derive(Default)]
-pub struct Electabuzz {}
-impl CardArchetype for Electabuzz {
+pub struct Electabuzz20 {}
+impl CardArchetype for Electabuzz20 {
+    identifier!("Electabuzz (BS 20)");
     card_name!("Electabuzz");
     basic!();
     hp!(70);
@@ -808,7 +828,7 @@ impl CardArchetype for Electabuzz {
         vec![]
     }
 }
-impl Electabuzz {
+impl Electabuzz20 {
     pub fn thundershock(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Lightning])
@@ -820,14 +840,15 @@ impl Electabuzz {
         builder
             .attack_cost(&[Type::Lightning, Type::Colorless])
             .flip_a_coin()
-            .if_heads(|e| e.damage(40))
+            .if_heads(|e| e.damage(3010))
             .if_tails(|e| e.damage(30).damage_self(10))
     }
 }
 
 #[derive(Default)]
-pub struct Electrode {}
-impl CardArchetype for Electrode {
+pub struct Electrode21 {}
+impl CardArchetype for Electrode21 {
+    identifier!("Electrode (BS 21)");
     card_name!("Electrode");
     stage1!("Voltorb");
     hp!(80);
@@ -852,7 +873,7 @@ impl CardArchetype for Electrode {
         vec![]
     }
 }
-impl Electrode {
+impl Electrode21 {
     pub fn electric_shock(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Lightning, Type::Lightning, Type::Lightning])
@@ -863,8 +884,9 @@ impl Electrode {
 }
 
 #[derive(Default)]
-pub struct Pidgeotto {}
-impl CardArchetype for Pidgeotto {
+pub struct Pidgeotto22 {}
+impl CardArchetype for Pidgeotto22 {
+    identifier!("Pidgeotto (BS 22)");
     card_name!("Pidgeotto");
     stage1!("Pidgey");
     hp!(60);
@@ -890,7 +912,7 @@ impl CardArchetype for Pidgeotto {
         vec![]
     }
 }
-impl Pidgeotto {
+impl Pidgeotto22 {
     pub fn whirlwind(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless, Type::Colorless])
@@ -903,8 +925,9 @@ impl Pidgeotto {
 }
 
 #[derive(Default)]
-pub struct Arcanine {}
-impl CardArchetype for Arcanine {
+pub struct Arcanine23 {}
+impl CardArchetype for Arcanine23 {
+    identifier!("Arcanine (BS 23)");
     card_name!("Arcanine");
     stage1!("Growlithe");
     hp!(100);
@@ -930,7 +953,7 @@ impl CardArchetype for Arcanine {
         vec![]
     }
 }
-impl Arcanine {
+impl Arcanine23 {
     pub fn flamethrower(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fire, Type::Fire, Type::Colorless])
@@ -946,8 +969,9 @@ impl Arcanine {
 }
 
 #[derive(Default)]
-pub struct Charmeleon {}
-impl CardArchetype for Charmeleon {
+pub struct Charmeleon24 {}
+impl CardArchetype for Charmeleon24 {
+    identifier!("Charmeleon (BS 24)");
     card_name!("Charmeleon");
     stage1!("Charmander");
     hp!(80);
@@ -973,7 +997,7 @@ impl CardArchetype for Charmeleon {
         vec![]
     }
 }
-impl Charmeleon {
+impl Charmeleon24 {
     pub fn slash(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless, Type::Colorless, Type::Colorless])
@@ -988,8 +1012,9 @@ impl Charmeleon {
 }
 
 #[derive(Default)]
-pub struct Dewgong {}
-impl CardArchetype for Dewgong {
+pub struct Dewgong25 {}
+impl CardArchetype for Dewgong25 {
+    identifier!("Dewgong (BS 25)");
     card_name!("Dewgong");
     stage1!("Seel");
     hp!(80);
@@ -1015,7 +1040,7 @@ impl CardArchetype for Dewgong {
         vec![]
     }
 }
-impl Dewgong {
+impl Dewgong25 {
     pub fn aurora_beam(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Water, Type::Water, Type::Colorless])
@@ -1031,8 +1056,9 @@ impl Dewgong {
 }
 
 #[derive(Default)]
-pub struct Dratini {}
-impl CardArchetype for Dratini {
+pub struct Dratini26 {}
+impl CardArchetype for Dratini26 {
+    identifier!("Dratini (BS 26)");
     card_name!("Dratini");
     basic!();
     hp!(40);
@@ -1057,7 +1083,7 @@ impl CardArchetype for Dratini {
         vec![]
     }
 }
-impl Dratini {
+impl Dratini26 {
     pub fn pound(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless])
@@ -1066,8 +1092,9 @@ impl Dratini {
 }
 
 #[derive(Default)]
-pub struct FarfetchD {}
-impl CardArchetype for FarfetchD {
+pub struct FarfetchD27 {}
+impl CardArchetype for FarfetchD27 {
+    identifier!("Farfetch'd (BS 27)");
     card_name!("Farfetch'd");
     basic!();
     hp!(50);
@@ -1093,7 +1120,7 @@ impl CardArchetype for FarfetchD {
         vec![]
     }
 }
-impl FarfetchD {
+impl FarfetchD27 {
     pub fn leek_slap(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
@@ -1105,8 +1132,9 @@ impl FarfetchD {
 }
 
 #[derive(Default)]
-pub struct Growlithe {}
-impl CardArchetype for Growlithe {
+pub struct Growlithe28 {}
+impl CardArchetype for Growlithe28 {
+    identifier!("Growlithe (BS 28)");
     card_name!("Growlithe");
     basic!();
     hp!(60);
@@ -1131,7 +1159,7 @@ impl CardArchetype for Growlithe {
         vec![]
     }
 }
-impl Growlithe {
+impl Growlithe28 {
     pub fn flare(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fire, Type::Colorless])
@@ -1140,8 +1168,9 @@ impl Growlithe {
 }
 
 #[derive(Default)]
-pub struct Haunter {}
-impl CardArchetype for Haunter {
+pub struct Haunter29 {}
+impl CardArchetype for Haunter29 {
+    identifier!("Haunter (BS 29)");
     card_name!("Haunter");
     stage1!("Gastly");
     hp!(60);
@@ -1167,7 +1196,7 @@ impl CardArchetype for Haunter {
         vec![]
     }
 }
-impl Haunter {
+impl Haunter29 {
     pub fn hypnosis(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Psychic])
@@ -1182,8 +1211,9 @@ impl Haunter {
 }
 
 #[derive(Default)]
-pub struct Ivysaur {}
-impl CardArchetype for Ivysaur {
+pub struct Ivysaur30 {}
+impl CardArchetype for Ivysaur30 {
+    identifier!("Ivysaur (BS 30)");
     card_name!("Ivysaur");
     stage1!("Bulbasaur");
     hp!(60);
@@ -1209,7 +1239,7 @@ impl CardArchetype for Ivysaur {
         vec![]
     }
 }
-impl Ivysaur {
+impl Ivysaur30 {
     pub fn vine_whip(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Grass, Type::Colorless, Type::Colorless])
@@ -1224,8 +1254,9 @@ impl Ivysaur {
 }
 
 #[derive(Default)]
-pub struct Jynx {}
-impl CardArchetype for Jynx {
+pub struct Jynx31 {}
+impl CardArchetype for Jynx31 {
+    identifier!("Jynx (BS 31)");
     card_name!("Jynx");
     basic!();
     hp!(70);
@@ -1251,7 +1282,7 @@ impl CardArchetype for Jynx {
         vec![]
     }
 }
-impl Jynx {
+impl Jynx31 {
     pub fn doubleslap(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Psychic])
@@ -1266,8 +1297,9 @@ impl Jynx {
 }
 
 #[derive(Default)]
-pub struct Kadabra {}
-impl CardArchetype for Kadabra {
+pub struct Kadabra32 {}
+impl CardArchetype for Kadabra32 {
+    identifier!("Kadabra (BS 32)");
     card_name!("Kadabra");
     stage1!("Abra");
     hp!(60);
@@ -1293,7 +1325,7 @@ impl CardArchetype for Kadabra {
         vec![]
     }
 }
-impl Kadabra {
+impl Kadabra32 {
     pub fn recover(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Psychic, Type::Psychic])
@@ -1308,8 +1340,9 @@ impl Kadabra {
 }
 
 #[derive(Default)]
-pub struct Kakuna {}
-impl CardArchetype for Kakuna {
+pub struct Kakuna33 {}
+impl CardArchetype for Kakuna33 {
+    identifier!("Kakuna (BS 33)");
     card_name!("Kakuna");
     stage1!("Weedle");
     hp!(80);
@@ -1335,7 +1368,7 @@ impl CardArchetype for Kakuna {
         vec![]
     }
 }
-impl Kakuna {
+impl Kakuna33 {
     pub fn stiffen(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless, Type::Colorless])
@@ -1352,8 +1385,9 @@ impl Kakuna {
 }
 
 #[derive(Default)]
-pub struct Machoke {}
-impl CardArchetype for Machoke {
+pub struct Machoke34 {}
+impl CardArchetype for Machoke34 {
+    identifier!("Machoke (BS 34)");
     card_name!("Machoke");
     stage1!("Machop");
     hp!(80);
@@ -1379,7 +1413,7 @@ impl CardArchetype for Machoke {
         vec![]
     }
 }
-impl Machoke {
+impl Machoke34 {
     pub fn karate_chop(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fighting, Type::Fighting, Type::Colorless])
@@ -1394,8 +1428,9 @@ impl Machoke {
 }
 
 #[derive(Default)]
-pub struct Magikarp {}
-impl CardArchetype for Magikarp {
+pub struct Magikarp35 {}
+impl CardArchetype for Magikarp35 {
+    identifier!("Magikarp (BS 35)");
     card_name!("Magikarp");
     basic!();
     hp!(30);
@@ -1421,7 +1456,7 @@ impl CardArchetype for Magikarp {
         vec![]
     }
 }
-impl Magikarp {
+impl Magikarp35 {
     pub fn tackle(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless])
@@ -1435,8 +1470,9 @@ impl Magikarp {
 }
 
 #[derive(Default)]
-pub struct Magmar {}
-impl CardArchetype for Magmar {
+pub struct Magmar36 {}
+impl CardArchetype for Magmar36 {
+    identifier!("Magmar (BS 36)");
     card_name!("Magmar");
     basic!();
     hp!(50);
@@ -1462,7 +1498,7 @@ impl CardArchetype for Magmar {
         vec![]
     }
 }
-impl Magmar {
+impl Magmar36 {
     pub fn fire_punch(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fire, Type::Fire])
@@ -1477,8 +1513,9 @@ impl Magmar {
 }
 
 #[derive(Default)]
-pub struct Nidorino {}
-impl CardArchetype for Nidorino {
+pub struct Nidorino37 {}
+impl CardArchetype for Nidorino37 {
+    identifier!("Nidorino (BS 37)");
     card_name!("Nidorino");
     stage1!("Nidoran ♂");
     hp!(60);
@@ -1504,7 +1541,7 @@ impl CardArchetype for Nidorino {
         vec![]
     }
 }
-impl Nidorino {
+impl Nidorino37 {
     pub fn double_kick(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Grass, Type::Colorless, Type::Colorless])
@@ -1519,8 +1556,9 @@ impl Nidorino {
 }
 
 #[derive(Default)]
-pub struct Poliwhirl {}
-impl CardArchetype for Poliwhirl {
+pub struct Poliwhirl38 {}
+impl CardArchetype for Poliwhirl38 {
+    identifier!("Poliwhirl (BS 38)");
     card_name!("Poliwhirl");
     stage1!("Poliwag");
     hp!(60);
@@ -1546,7 +1584,7 @@ impl CardArchetype for Poliwhirl {
         vec![]
     }
 }
-impl Poliwhirl {
+impl Poliwhirl38 {
     pub fn amnesia(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
@@ -1559,8 +1597,9 @@ impl Poliwhirl {
 }
 
 #[derive(Default)]
-pub struct Porygon {}
-impl CardArchetype for Porygon {
+pub struct Porygon39 {}
+impl CardArchetype for Porygon39 {
+    identifier!("Porygon (BS 39)");
     card_name!("Porygon");
     basic!();
     hp!(30);
@@ -1586,7 +1625,7 @@ impl CardArchetype for Porygon {
         vec![]
     }
 }
-impl Porygon {
+impl Porygon39 {
     pub fn conversion_1(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
     }
@@ -1596,8 +1635,9 @@ impl Porygon {
 }
 
 #[derive(Default)]
-pub struct Raticate {}
-impl CardArchetype for Raticate {
+pub struct Raticate40 {}
+impl CardArchetype for Raticate40 {
+    identifier!("Raticate (BS 40)");
     card_name!("Raticate");
     stage1!("Rattata");
     hp!(60);
@@ -1623,7 +1663,7 @@ impl CardArchetype for Raticate {
         vec![]
     }
 }
-impl Raticate {
+impl Raticate40 {
     pub fn bite(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless])
@@ -1637,8 +1677,9 @@ impl Raticate {
 }
 
 #[derive(Default)]
-pub struct Seel {}
-impl CardArchetype for Seel {
+pub struct Seel41 {}
+impl CardArchetype for Seel41 {
+    identifier!("Seel (BS 41)");
     card_name!("Seel");
     basic!();
     hp!(60);
@@ -1663,7 +1704,7 @@ impl CardArchetype for Seel {
         vec![]
     }
 }
-impl Seel {
+impl Seel41 {
     pub fn headbutt(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Water])
@@ -1672,8 +1713,9 @@ impl Seel {
 }
 
 #[derive(Default)]
-pub struct Wartortle {}
-impl CardArchetype for Wartortle {
+pub struct Wartortle42 {}
+impl CardArchetype for Wartortle42 {
+    identifier!("Wartortle (BS 42)");
     card_name!("Wartortle");
     stage1!("Squirtle");
     hp!(70);
@@ -1699,7 +1741,7 @@ impl CardArchetype for Wartortle {
         vec![]
     }
 }
-impl Wartortle {
+impl Wartortle42 {
     pub fn withdraw(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Water, Type::Colorless])
@@ -1714,8 +1756,9 @@ impl Wartortle {
 }
 
 #[derive(Default)]
-pub struct Abra {}
-impl CardArchetype for Abra {
+pub struct Abra43 {}
+impl CardArchetype for Abra43 {
+    identifier!("Abra (BS 43)");
     card_name!("Abra");
     basic!();
     hp!(30);
@@ -1740,7 +1783,7 @@ impl CardArchetype for Abra {
         vec![]
     }
 }
-impl Abra {
+impl Abra43 {
     pub fn psyshock(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Psychic])
@@ -1751,8 +1794,9 @@ impl Abra {
 }
 
 #[derive(Default)]
-pub struct Bulbasaur {}
-impl CardArchetype for Bulbasaur {
+pub struct Bulbasaur44 {}
+impl CardArchetype for Bulbasaur44 {
+    identifier!("Bulbasaur (BS 44)");
     card_name!("Bulbasaur");
     basic!();
     hp!(40);
@@ -1777,7 +1821,7 @@ impl CardArchetype for Bulbasaur {
         vec![]
     }
 }
-impl Bulbasaur {
+impl Bulbasaur44 {
     pub fn leech_seed(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Grass, Type::Grass])
@@ -1787,8 +1831,9 @@ impl Bulbasaur {
 }
 
 #[derive(Default)]
-pub struct Caterpie {}
-impl CardArchetype for Caterpie {
+pub struct Caterpie45 {}
+impl CardArchetype for Caterpie45 {
+    identifier!("Caterpie (BS 45)");
     card_name!("Caterpie");
     basic!();
     hp!(40);
@@ -1813,7 +1858,7 @@ impl CardArchetype for Caterpie {
         vec![]
     }
 }
-impl Caterpie {
+impl Caterpie45 {
     pub fn string_shot(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Grass])
@@ -1824,8 +1869,9 @@ impl Caterpie {
 }
 
 #[derive(Default)]
-pub struct Charmander {}
-impl CardArchetype for Charmander {
+pub struct Charmander46 {}
+impl CardArchetype for Charmander46 {
+    identifier!("Charmander (BS 46)");
     card_name!("Charmander");
     basic!();
     hp!(50);
@@ -1851,7 +1897,7 @@ impl CardArchetype for Charmander {
         vec![]
     }
 }
-impl Charmander {
+impl Charmander46 {
     pub fn scratch(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless])
@@ -1866,8 +1912,9 @@ impl Charmander {
 }
 
 #[derive(Default)]
-pub struct Diglett {}
-impl CardArchetype for Diglett {
+pub struct Diglett47 {}
+impl CardArchetype for Diglett47 {
+    identifier!("Diglett (BS 47)");
     card_name!("Diglett");
     basic!();
     hp!(30);
@@ -1893,7 +1940,7 @@ impl CardArchetype for Diglett {
         vec![]
     }
 }
-impl Diglett {
+impl Diglett47 {
     pub fn dig(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fighting])
@@ -1907,8 +1954,9 @@ impl Diglett {
 }
 
 #[derive(Default)]
-pub struct Doduo {}
-impl CardArchetype for Doduo {
+pub struct Doduo48 {}
+impl CardArchetype for Doduo48 {
+    identifier!("Doduo (BS 48)");
     card_name!("Doduo");
     basic!();
     hp!(50);
@@ -1933,7 +1981,7 @@ impl CardArchetype for Doduo {
         vec![]
     }
 }
-impl Doduo {
+impl Doduo48 {
     pub fn fury_attack(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless])
@@ -1943,8 +1991,9 @@ impl Doduo {
 }
 
 #[derive(Default)]
-pub struct Drowzee {}
-impl CardArchetype for Drowzee {
+pub struct Drowzee49 {}
+impl CardArchetype for Drowzee49 {
+    identifier!("Drowzee (BS 49)");
     card_name!("Drowzee");
     basic!();
     hp!(50);
@@ -1970,7 +2019,7 @@ impl CardArchetype for Drowzee {
         vec![]
     }
 }
-impl Drowzee {
+impl Drowzee49 {
     pub fn pound(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless])
@@ -1986,8 +2035,9 @@ impl Drowzee {
 }
 
 #[derive(Default)]
-pub struct Gastly {}
-impl CardArchetype for Gastly {
+pub struct Gastly50 {}
+impl CardArchetype for Gastly50 {
+    identifier!("Gastly (BS 50)");
     card_name!("Gastly");
     basic!();
     hp!(30);
@@ -2013,7 +2063,7 @@ impl CardArchetype for Gastly {
         vec![]
     }
 }
-impl Gastly {
+impl Gastly50 {
     pub fn sleeping_gas(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Psychic])
@@ -2028,8 +2078,9 @@ impl Gastly {
 }
 
 #[derive(Default)]
-pub struct Koffing {}
-impl CardArchetype for Koffing {
+pub struct Koffing51 {}
+impl CardArchetype for Koffing51 {
+    identifier!("Koffing (BS 51)");
     card_name!("Koffing");
     basic!();
     hp!(50);
@@ -2054,7 +2105,7 @@ impl CardArchetype for Koffing {
         vec![]
     }
 }
-impl Koffing {
+impl Koffing51 {
     pub fn foul_gas(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Grass, Type::Grass])
@@ -2066,8 +2117,9 @@ impl Koffing {
 }
 
 #[derive(Default)]
-pub struct Machop {}
-impl CardArchetype for Machop {
+pub struct Machop52 {}
+impl CardArchetype for Machop52 {
+    identifier!("Machop (BS 52)");
     card_name!("Machop");
     basic!();
     hp!(50);
@@ -2092,7 +2144,7 @@ impl CardArchetype for Machop {
         vec![]
     }
 }
-impl Machop {
+impl Machop52 {
     pub fn low_kick(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fighting])
@@ -2101,8 +2153,9 @@ impl Machop {
 }
 
 #[derive(Default)]
-pub struct Magnemite {}
-impl CardArchetype for Magnemite {
+pub struct Magnemite53 {}
+impl CardArchetype for Magnemite53 {
+    identifier!("Magnemite (BS 53)");
     card_name!("Magnemite");
     basic!();
     hp!(40);
@@ -2128,7 +2181,7 @@ impl CardArchetype for Magnemite {
         vec![]
     }
 }
-impl Magnemite {
+impl Magnemite53 {
     pub fn thunder_wave(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Lightning])
@@ -2147,8 +2200,9 @@ impl Magnemite {
 }
 
 #[derive(Default)]
-pub struct Metapod {}
-impl CardArchetype for Metapod {
+pub struct Metapod54 {}
+impl CardArchetype for Metapod54 {
+    identifier!("Metapod (BS 54)");
     card_name!("Metapod");
     stage1!("Caterpie");
     hp!(70);
@@ -2174,7 +2228,7 @@ impl CardArchetype for Metapod {
         vec![]
     }
 }
-impl Metapod {
+impl Metapod54 {
     pub fn stiffen(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless, Type::Colorless])
@@ -2191,8 +2245,9 @@ impl Metapod {
 }
 
 #[derive(Default)]
-pub struct NidoranM {}
-impl CardArchetype for NidoranM {
+pub struct NidoranM55 {}
+impl CardArchetype for NidoranM55 {
+    identifier!("Nidoran ♂ (BS 55)");
     card_name!("Nidoran ♂");
     basic!();
     hp!(40);
@@ -2217,7 +2272,7 @@ impl CardArchetype for NidoranM {
         vec![]
     }
 }
-impl NidoranM {
+impl NidoranM55 {
     pub fn horn_hazard(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Grass])
@@ -2227,8 +2282,9 @@ impl NidoranM {
 }
 
 #[derive(Default)]
-pub struct Onix {}
-impl CardArchetype for Onix {
+pub struct Onix56 {}
+impl CardArchetype for Onix56 {
+    identifier!("Onix (BS 56)");
     card_name!("Onix");
     basic!();
     hp!(90);
@@ -2254,7 +2310,7 @@ impl CardArchetype for Onix {
         vec![]
     }
 }
-impl Onix {
+impl Onix56 {
     pub fn rock_throw(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fighting])
@@ -2266,8 +2322,9 @@ impl Onix {
 }
 
 #[derive(Default)]
-pub struct Pidgey {}
-impl CardArchetype for Pidgey {
+pub struct Pidgey57 {}
+impl CardArchetype for Pidgey57 {
+    identifier!("Pidgey (BS 57)");
     card_name!("Pidgey");
     basic!();
     hp!(40);
@@ -2292,7 +2349,7 @@ impl CardArchetype for Pidgey {
         vec![]
     }
 }
-impl Pidgey {
+impl Pidgey57 {
     pub fn whirlwind(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless, Type::Colorless])
@@ -2302,8 +2359,9 @@ impl Pidgey {
 }
 
 #[derive(Default)]
-pub struct Pikachu {}
-impl CardArchetype for Pikachu {
+pub struct Pikachu58 {}
+impl CardArchetype for Pikachu58 {
+    identifier!("Pikachu (BS 58)");
     card_name!("Pikachu");
     basic!();
     hp!(40);
@@ -2329,7 +2387,7 @@ impl CardArchetype for Pikachu {
         vec![]
     }
 }
-impl Pikachu {
+impl Pikachu58 {
     pub fn gnaw(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless])
@@ -2345,8 +2403,9 @@ impl Pikachu {
 }
 
 #[derive(Default)]
-pub struct Poliwag {}
-impl CardArchetype for Poliwag {
+pub struct Poliwag59 {}
+impl CardArchetype for Poliwag59 {
+    identifier!("Poliwag (BS 59)");
     card_name!("Poliwag");
     basic!();
     hp!(40);
@@ -2371,7 +2430,7 @@ impl CardArchetype for Poliwag {
         vec![]
     }
 }
-impl Poliwag {
+impl Poliwag59 {
     pub fn water_gun(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Water])
@@ -2380,8 +2439,9 @@ impl Poliwag {
 }
 
 #[derive(Default)]
-pub struct Ponyta {}
-impl CardArchetype for Ponyta {
+pub struct Ponyta60 {}
+impl CardArchetype for Ponyta60 {
+    identifier!("Ponyta (BS 60)");
     card_name!("Ponyta");
     basic!();
     hp!(40);
@@ -2407,7 +2467,7 @@ impl CardArchetype for Ponyta {
         vec![]
     }
 }
-impl Ponyta {
+impl Ponyta60 {
     pub fn smash_kick(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless, Type::Colorless])
@@ -2421,8 +2481,9 @@ impl Ponyta {
 }
 
 #[derive(Default)]
-pub struct Rattata {}
-impl CardArchetype for Rattata {
+pub struct Rattata61 {}
+impl CardArchetype for Rattata61 {
+    identifier!("Rattata (BS 61)");
     card_name!("Rattata");
     basic!();
     hp!(30);
@@ -2447,7 +2508,7 @@ impl CardArchetype for Rattata {
         vec![]
     }
 }
-impl Rattata {
+impl Rattata61 {
     pub fn bite(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless])
@@ -2456,8 +2517,9 @@ impl Rattata {
 }
 
 #[derive(Default)]
-pub struct Sandshrew {}
-impl CardArchetype for Sandshrew {
+pub struct Sandshrew62 {}
+impl CardArchetype for Sandshrew62 {
+    identifier!("Sandshrew (BS 62)");
     card_name!("Sandshrew");
     basic!();
     hp!(40);
@@ -2482,15 +2544,18 @@ impl CardArchetype for Sandshrew {
         vec![]
     }
 }
-impl Sandshrew {
-    pub fn sand_attack(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+impl Sandshrew62 {
+    pub fn sand_attack(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting])
+            .prevent_attack_on_a_flip_during_opponents_next_turn()
     }
 }
 
 #[derive(Default)]
-pub struct Squirtle {}
-impl CardArchetype for Squirtle {
+pub struct Squirtle63 {}
+impl CardArchetype for Squirtle63 {
+    identifier!("Squirtle (BS 63)");
     card_name!("Squirtle");
     basic!();
     hp!(40);
@@ -2516,7 +2581,7 @@ impl CardArchetype for Squirtle {
         vec![]
     }
 }
-impl Squirtle {
+impl Squirtle63 {
     pub fn bubble(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Water])
@@ -2533,8 +2598,9 @@ impl Squirtle {
 }
 
 #[derive(Default)]
-pub struct Starmie {}
-impl CardArchetype for Starmie {
+pub struct Starmie64 {}
+impl CardArchetype for Starmie64 {
+    identifier!("Starmie (BS 64)");
     card_name!("Starmie");
     stage1!("Staryu");
     hp!(60);
@@ -2560,7 +2626,7 @@ impl CardArchetype for Starmie {
         vec![]
     }
 }
-impl Starmie {
+impl Starmie64 {
     pub fn recover(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Water, Type::Water])
@@ -2577,8 +2643,9 @@ impl Starmie {
 }
 
 #[derive(Default)]
-pub struct Staryu {}
-impl CardArchetype for Staryu {
+pub struct Staryu65 {}
+impl CardArchetype for Staryu65 {
+    identifier!("Staryu (BS 65)");
     card_name!("Staryu");
     basic!();
     hp!(40);
@@ -2603,7 +2670,7 @@ impl CardArchetype for Staryu {
         vec![]
     }
 }
-impl Staryu {
+impl Staryu65 {
     pub fn slap(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Water])
@@ -2612,8 +2679,9 @@ impl Staryu {
 }
 
 #[derive(Default)]
-pub struct Tangela {}
-impl CardArchetype for Tangela {
+pub struct Tangela66 {}
+impl CardArchetype for Tangela66 {
+    identifier!("Tangela (BS 66)");
     card_name!("Tangela");
     basic!();
     hp!(50);
@@ -2639,7 +2707,7 @@ impl CardArchetype for Tangela {
         vec![]
     }
 }
-impl Tangela {
+impl Tangela66 {
     pub fn bind(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Grass, Type::Colorless])
@@ -2656,8 +2724,9 @@ impl Tangela {
 }
 
 #[derive(Default)]
-pub struct Voltorb {}
-impl CardArchetype for Voltorb {
+pub struct Voltorb67 {}
+impl CardArchetype for Voltorb67 {
+    identifier!("Voltorb (BS 67)");
     card_name!("Voltorb");
     basic!();
     hp!(40);
@@ -2682,7 +2751,7 @@ impl CardArchetype for Voltorb {
         vec![]
     }
 }
-impl Voltorb {
+impl Voltorb67 {
     pub fn tackle(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Colorless])
@@ -2691,8 +2760,9 @@ impl Voltorb {
 }
 
 #[derive(Default)]
-pub struct Vulpix {}
-impl CardArchetype for Vulpix {
+pub struct Vulpix68 {}
+impl CardArchetype for Vulpix68 {
+    identifier!("Vulpix (BS 68)");
     card_name!("Vulpix");
     basic!();
     hp!(50);
@@ -2717,7 +2787,7 @@ impl CardArchetype for Vulpix {
         vec![]
     }
 }
-impl Vulpix {
+impl Vulpix68 {
     pub fn confuse_ray(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fire, Type::Fire])
@@ -2728,8 +2798,9 @@ impl Vulpix {
 }
 
 #[derive(Default)]
-pub struct Weedle {}
-impl CardArchetype for Weedle {
+pub struct Weedle69 {}
+impl CardArchetype for Weedle69 {
+    identifier!("Weedle (BS 69)");
     card_name!("Weedle");
     basic!();
     hp!(40);
@@ -2754,7 +2825,7 @@ impl CardArchetype for Weedle {
         vec![]
     }
 }
-impl Weedle {
+impl Weedle69 {
     pub fn poison_sting(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Grass])

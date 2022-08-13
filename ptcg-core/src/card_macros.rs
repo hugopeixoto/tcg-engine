@@ -1,4 +1,11 @@
 #[macro_export]
+macro_rules! identifier {
+    ($id:literal) => {
+        fn identifier(&self) -> String { $id.into() }
+    }
+}
+
+#[macro_export]
 macro_rules! card_name {
     ($name:literal) => {
         fn name(&self) -> String { $name.into() }

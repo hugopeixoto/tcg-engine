@@ -1,12 +1,11 @@
-use crate::state::*;
-use crate::cli::CLIDrawTarget;
-use std::ops::Deref;
+use crate::state::*; use crate::cli::CLIDrawTarget;
 use crate::attack_builder::AttackBuilder;
 
 pub type Weakness = (usize, Vec<Type>);
 pub type Resistance = (usize, Vec<Type>);
 
 pub trait CardArchetype {
+    fn identifier(&self) -> String;
     // probably want to add the Zone of the card
     fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action>;
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
@@ -26,6 +25,8 @@ pub trait CardArchetype {
     fn is_trainer(&self, _card: &Card, _engine: &GameEngine) -> bool {
         false
     }
+
+    // TODO: turn this into a effect::Effect somehow? it's the same API
     fn defending_damage_effect(&self, _card: &Card, _engine: &GameEngine, _damage: usize) -> Option<usize> {
         None
     }
@@ -34,16 +35,6 @@ pub trait CardArchetype {
     }
     fn on_turn_end(&self, _card: &Card, _engine: &GameEngine) -> Option<GameEngine> {
         None
-    }
-}
-
-pub trait CardDB {
-    fn archetype<'a>(&self, format: &'a dyn Format) -> &'a dyn CardArchetype;
-}
-
-impl CardDB for Card {
-    fn archetype<'a>(&self, format: &'a dyn Format) -> &'a dyn CardArchetype {
-        format.behavior(self)
     }
 }
 
@@ -545,7 +536,7 @@ impl GameEngine {
     }
 
     pub fn archetype(&self, card: &Card) -> &dyn CardArchetype {
-        card.archetype(self.format.deref())
+        self.format.behavior(card)
     }
 
     pub fn apply_weakness(&self, mut damage: usize) -> usize {
@@ -583,10 +574,12 @@ impl GameEngine {
     }
 
     pub fn effects_on_defending(&self, mut damage: usize) -> usize {
-        if self.state.effects.iter()
+        let damage_blocked = self.state.effects.iter()
             .filter(|e| e.target == EffectTarget::InPlay(self.defending().owner, self.defending().id))
-            .filter(|e| e.consequence == EffectConsequence::BlockDamage)
-            .count() == 0 {
+            .filter(|e| (e.consequence == EffectConsequence::BlockDamage || e.consequence == EffectConsequence::BlockDamageAndEffects) && !e.target.is_player(self.player()))
+            .count() == 0;
+
+        if !damage_blocked {
                 for card in self.state.all_cards() {
                     if let Some(new_damage) = self.archetype(&card).defending_damage_effect(&card, self, damage) {
                         damage = new_damage;
@@ -599,29 +592,26 @@ impl GameEngine {
             }
     }
 
-    pub fn paralyze(&self) -> Self {
-        self.with_state(self.state.paralyze(self.defending()))
-    }
-
-    pub fn asleep(&self) -> Self {
-        self.with_state(self.state.asleep(self.defending()))
-    }
-
-    pub fn poison(&self) -> Self {
-        self.with_state(self.state.poison(self.defending(), 1))
-    }
-
-    pub fn severe_poison(&self, counters: usize) -> Self {
-        self.with_state(self.state.poison(self.defending(), counters))
-    }
-
-    pub fn confuse(&self) -> Self {
-        self.with_state(self.state.confuse(self.defending()))
-    }
-
     // end attack in flight
 
+    pub fn paralyze(&self, target: &InPlayCard) -> Self {
+        self.with_state(self.state.paralyze(target))
+    }
+
+    pub fn asleep(&self, target: &InPlayCard) -> Self {
+        self.with_state(self.state.asleep(target))
+    }
+
+    pub fn poison(&self, target: &InPlayCard, counters: usize) -> Self {
+        self.with_state(self.state.poison(target, counters))
+    }
+
+    pub fn confuse(&self, target: &InPlayCard) -> Self {
+        self.with_state(self.state.confuse(target))
+    }
+
     // trainer in flight?
+    // TODO: We have an AttackBuilder, we should have a TrainerBuilder
     pub fn trainer_card(&self) -> &Card {
         match self.resolving_actions.last() {
             Some(Action::TrainerFromHand(_player, card)) => card,
@@ -776,7 +766,6 @@ impl GameEngine {
     }
 
     // end trainer in flight?
-
 
     pub fn goto_pokemon_checkup(&self) -> Self {
         match &self.state.stage {

@@ -15,8 +15,9 @@ EOF
 
 TEMPLATE = <<~EOF
 #[derive(Default)]
-pub struct <%= card.struct_name %> {}
-impl CardArchetype for <%= card.struct_name %> {
+pub struct <%= card.struct_name %><%= card.set_number %> {}
+impl CardArchetype for <%= card.struct_name %><%= card.set_number %> {
+    identifier!("<%= card.display_name %> (<%= card.set_abbreviation %> <%= card.set_number %>)");
     card_name!("<%= card.display_name %>");
     <%= card.stage %>;
     hp!(<%= card.hp %>);
@@ -43,7 +44,7 @@ impl CardArchetype for <%= card.struct_name %> {
         vec![]
     }
 }
-impl <%= card.struct_name %> {
+impl <%= card.struct_name %><%= card.set_number %> {
 <% card.attacks.each do |attack| -%>
     pub fn <%= attack.fn_name %>(<%= attack.impl.include?("builder") ? "" : "_" %>builder: AttackBuilder) -> AttackBuilder {
         <%= attack.impl %>
@@ -59,7 +60,7 @@ def status_to_verb(status)
     'confused' => 'confuse',
     'paralyzed' => 'paralyze',
     'poisoned' => 'poison',
-  }[status]
+  }[status.downcase]
 end
 
 class Builder
@@ -180,6 +181,11 @@ class Builder
     self
   end
 
+  def prevent_attack_on_a_flip_during_opponents_next_turn
+    @text << ".prevent_attack_on_a_flip_during_opponents_next_turn()"
+    self
+  end
+
   def damage_per_damage_counter_on_itself(damage_per_counter)
     @text << ".damage_per_damage_counter_on_itself(#{damage_per_counter})"
     self
@@ -251,182 +257,164 @@ class Builder
   end
 end
 
+$patterns = [
+  {
+    pattern: /^$/,
+    build: ->(damage:) { damage(damage) },
+  },
+  {
+    pattern: /^The Defending Pokémon is now (?<status>Asleep|Paralyzed|Confused|Poisoned)\.$/,
+    build: ->(damage:, status:) { damage(damage).inflict(status_to_verb(status.downcase)) },
+  },
+  {
+    pattern: /^The Defending Pokémon is now Poisoned\. It now takes (?<counters>\w+) Poison damage instead of 10 after each player's turn\.$/,
+    build: ->(damage:, counters:) { damage(damage).severe_poison(counters.to_i / 10) },
+  },
+  {
+    pattern: /^Flip a coin\. If heads, the Defending Pokémon is now (?<status>Asleep|Paralyzed|Confused|Poisoned)\.$/,
+    build: ->(damage:, status:) { flip_a_coin.damage(damage).if_heads{ inflict(status_to_verb(status)) } }
+  },
+  {
+    pattern: /^Flip a coin\. If heads, the Defending Pokémon is now (?<status_heads>Asleep|Paralyzed|Confused|Poisoned)\. If tails, it is now (?<status_tails>Asleep|Paralyzed|Confused|Confused)\.$/,
+    build: ->(damage:, status_heads:, status_tails:) {
+      flip_a_coin.damage(damage).if_heads { inflict(status_to_verb(status_heads)) }.if_tails { inflict(status_to_verb(status_tails)) }
+    }
+  },
+  {
+    pattern: /^Flip a coin\. If tails, \w+ does (?<self_damage>\d+) damage to itself\.$/,
+    build: ->(damage:, self_damage:) { flip_a_coin.damage(damage).if_tails { damage_itself(self_damage.to_i) } },
+  },
+  {
+    pattern: /^Flip (?<coins>\d+) coins\. This attack does (?<damage_per_heads>\d+) damage times the number of heads\./,
+    build: ->(damage:, coins:, damage_per_heads:) { flip_coins(coins.to_i).damage_per_heads(damage_per_heads.to_i) },
+  },
+  {
+    pattern: /^Does (?<damage_per_counter>\d+) damage times the number of damage counters on \w+\.$/,
+    build: ->(damage:, damage_per_counter:) { damage_per_damage_counter_on_itself(damage_per_counter.to_i) },
+  },
+  {
+    pattern: /^Does (?<base_damage>\d+) damage minus (?<minus_damage>\d+) damage for each damage counter on \w+\.$/,
+    build: ->(damage:, base_damage:, minus_damage:) { damage_minus_per_damage_counter_on_itself(base_damage, minus_damage) },
+  },
+  {
+    pattern: /^Does (?<base_damage>\d+) damage plus (?<plus_damage>\d+) more damage for each damage counter on the Defending Pokémon\.$/,
+    build: ->(base_damage:, plus_damage:) { damage_plus_per_damage_counter_on_defending(base_damage.to_i, plus_damage.to_i) },
+  },
+  {
+    pattern: /^Does damage to the Defending Pokémon equal to half the Defending Pokémon's remaining HP\.$/,
+    build: ->() { damage_half_defending_remaining_hp },
+  },
+  {
+    pattern: /^Does (?<base_damage>\d+) damage plus (?<plus_damage>\d+) more damage for each Energy card attached to the Defending Pokémon\.$/,
+    build: ->(base_damage:, plus_damage:) { damage_plus_per_energy_card_on_defending(base_damage.to_i, plus_damage.to_i) },
+  },
+  {
+    pattern: /^\w+ does (?<damage_self>\d+) damage to itself.$/,
+    build: ->(damage:, damage_self:) { damage(damage).damage_itself(damage_self.to_i) },
+  },
+  {
+    pattern: /^Flip a coin\. If heads, prevent all damage done to \w+ during your opponent's next turn\.$/,
+    build: ->(damage:) { flip_a_coin.damage(damage).if_heads { prevent_damage_during_opponents_next_turn } },
+  },
+  {
+    pattern: /^Discard (?<how_many>\d+) (?<energy_type>\w+) Energy card attached to \w+ in order to prevent all effects of attacks, including damage, done to \w+ during your opponent's next turn\.$/,
+    build: ->(damage:, how_many:, energy_type:) {
+      must { discard_attacking_energy_cards([energy_type] * how_many.to_i) }
+        .damage(damage)
+        .prevent_damage_and_effects_during_opponents_next_turn
+    },
+  },
+  {
+    pattern: /^Flip a coin. If heads, during your opponent's next turn, prevent all effects of attacks, including damage, done to \w+\.$/,
+    build: ->() { flip_a_coin.if_heads { prevent_damage_and_effects_during_opponents_next_turn } },
+  },
+  {
+    pattern: /^If the Defending Pokémon tries to attack during your opponent's next turn, your opponent flips a coin\. If tails, that attack does nothing\.$/,
+    build: ->() { prevent_attack_on_a_flip_during_opponents_next_turn },
+  },
+  {
+    pattern: /^Discard (?<how_many>\d+) (?<energy_type>\w+) Energy card attached to \w+ in order to use this attack\.$/,
+    build: ->(damage:, how_many:, energy_type:) { must { discard_attacking_energy_cards([energy_type] * how_many.to_i) }.damage(damage) },
+  },
+  {
+    pattern: /^Discard (?<how_many>\d+) Energy cards attached to \w+ in order to use this attack\.$/,
+    build: ->(damage:, how_many:) { must { discard_attacking_energy_cards(["Any"] * how_many.to_i) }.damage(damage) },
+  },
+  {
+    pattern: /^Discard all Energy cards attached to \w+ in order to use this attack\.$/,
+    build: ->(damage:) { must { discard_all_attacking_energy_cards }.damage(damage) },
+  },
+  {
+    pattern: /^Discard (?<how_many>\d+) (?<energy_type>\w+) Energy cards? attached to \w+ in order to use this attack\. Remove all damage counters from \w+\.$/,
+    build: ->(damage:, how_many:, energy_type:) { must { discard_attacking_energy_cards([energy_type] * how_many.to_i) }.heal_all_attacking },
+  },
+  {
+    pattern: /^If the Defending Pokémon has any Energy cards attached to it, choose (?<how_many>\d+) of them and discard it\.$/,
+    build: ->(damage:, how_many:) { discard_defending_attached_energy_cards(["Any"] * how_many.to_i).damage(damage) },
+  },
+  {
+    pattern: /^Flip a coin\. If heads, this attack does (?<base1>\d+) damage plus (?<damage_extra>\d+) more damage. If tails, this attack does (?<base2>\d+) damage (?:plus|and) \w+ does (?<damage_self>\d+) damage to itself\.$/,
+    build: ->(base1:, damage_extra:, base2:, damage_self:) { flip_a_coin.if_heads{ damage(base1 + damage_extra) }.if_tails{ damage(base2).damage_itself(damage_self) } },
+  },
+  {
+    pattern: /^Does (?<bench_damage>\d+) damage to each of your own Benched Pokémon\.$/,
+    build: ->(damage:, bench_damage:) { damage(damage).each_own_bench { damage(bench_damage) } },
+  },
+  {
+    pattern: /^Does (?<bench_damage>\d+) damage to each Pokémon on each player's Bench\. \w+ does (?<self_damage>\d+) damage to itself\.$/,
+    build: ->(damage:, bench_damage:, self_damage:) {
+      damage(damage)
+        .each_own_bench { damage(bench_damage) }
+        .each_opponents_bench { damage(bench_damage) }
+        .damage_itself(self_damage)
+    },
+  },
+  {
+    pattern: /^You can't use this attack unless the Defending Pokémon is Asleep\.$/,
+    build: ->(damage:) { defending_must_be_asleep.damage(damage) },
+  },
+  {
+    pattern: /^Discard (?<how_many>\d+) (?<energy_type>\w+) Energy card attached to \w+ in order to use this attack. If a Pokémon Knocks Out \w+ during your opponent's next turn, Knock Out that Pokémon\./,
+    build: ->(damage:, how_many:, energy_type:) { damage(damage).knock_out_attacker_if_attacking_is_knocked_out_next_turn },
+  },
+  {
+    pattern: /^Does (?<base_damage>\d+) damage plus (?<plus_damage>\d+) more damage for each (?<energy_type>\w+) Energy attached to \w+ but not used to pay for this attack's Energy cost. Extra \w+ Energy after the (?<energy_limit>\d+)(?:st|nd|rd|th) (?:doesn't|don't) count\.$/,
+    build: ->(base_damage:, plus_damage:, energy_type:, energy_limit:) { damage_plus_per_extra_energy_on_attacking(base_damage, plus_damage, energy_type, energy_limit) },
+  },
+  {
+    pattern: /^Flip a coin\. If tails, this attack does nothing\.$/,
+    build: ->(damage:) { flip_a_coin.if_heads { damage(damage) } },
+  },
+  {
+    pattern: /^Unless all damage from this attack is prevented, you may remove (?<counters>\d+) damage counter from \w+\.$/,
+    build: ->(damage:, counters:) { damage(damage).if_did_damage { heal_attacking(counters.to_i * 10) } },
+  },
+  {
+    pattern: /^If your opponent has any Benched Pokémon, he or she chooses 1 of them and switches it with the Defending Pokémon\.$/,
+    build: ->(damage:) { damage(damage).switch_defending() },
+  },
+  {
+    pattern: /^If your opponent has any Benched Pokémon, choose 1 of them and switch it with his or her Active Pokémon\.$/,
+    build: ->(damage:) { damage(damage).gust_defending() },
+  },
+]
+
 def attack_impl(attack)
   text = attack.fetch('text').gsub(/\([^)]+\)/, '').gsub(/ +/, " ").gsub(/\ +\./, ".").strip
   damage = attack.fetch('damage', "")
 
-  builder = Builder.new
-    .attack_cost(attack["cost"])
+  builder = Builder.new.attack_cost(attack["cost"])
 
-  if text.empty?
-    builder.damage(damage)
-  elsif text =~ /^The Defending Pokémon is now (Asleep|Paralyzed|Confused|Poisoned)\.$/
-    status = status_to_verb($1.downcase)
-    builder
-      .damage(damage)
-      .inflict(status)
-  elsif text =~ /^The Defending Pokémon is now Poisoned\. It now takes (\w+) Poison damage instead of 10 after each player's turn\.$/
-    counters = $1.to_i / 10
-    builder
-      .damage(damage)
-      .severe_poison(counters)
-  elsif text =~ /^Flip a coin\. If heads, the Defending Pokémon is now (Asleep|Paralyzed|Confused|Poisoned)\.$/
-    inflict = status_to_verb($1.downcase)
-    builder
-      .flip_a_coin
-      .damage(damage)
-      .if_heads{ inflict(inflict) }
-  elsif text =~ /^Flip a coin\. If heads, the Defending Pokémon is now (Asleep|Paralyzed|Confused|Poisoned)\; if tails, it is now (Asleep|Paralyzed|Confused|Confused)\.$/
-    inflict_yes = status_to_verb($1.downcase)
-    inflict_no = status_to_verb($2.downcase)
-    builder
-      .flip_a_coin
-      .damage(damage)
-      .if_heads { inflict(inflict_yes) }
-      .if_tails { inflict(inflict_no) }
-  elsif text =~ /^Flip a coin\. If tails, \w+ does (\d+) damage to itself\.$/
-    self_damage = $1.to_i
-    builder
-      .flip_a_coin.damage(damage)
-      .if_tails { damage_itself(self_damage) }
-  elsif text =~ /^Flip (\d+) coins\. This attack does (\d+) damage times the number of heads\./
-    coins = $1.to_i
-    damage = $2.to_i
-    builder
-      .flip_coins(coins)
-      .damage_per_heads(damage)
-  elsif text =~ /^Does (\d+) damage times the number of damage counters on \w+\.$/
-    damage_per_counter = $1.to_i
-    builder
-      .damage_per_damage_counter_on_itself(damage_per_counter)
-  elsif text =~ /^Does (\d+) damage minus (\d+) damage for each damage counter on \w+\.$/
-    base_damage = $1.to_i
-    minus_damage = $2.to_i
-    builder
-      .damage_minus_per_damage_counter_on_itself(base_damage, minus_damage)
-  elsif text =~ /^Does (\d+) damage plus (\d+) more damage for each damage counter on the Defending Pokémon\.$/
-    base_damage = $1.to_i
-    plus_damage = $2.to_i
-    builder
-      .damage_plus_per_damage_counter_on_defending(base_damage, plus_damage)
-  elsif text =~ /^Does damage to the Defending Pokémon equal to half the Defending Pokémon's remaining HP\.$/
-    builder
-      .damage_half_defending_remaining_hp
-  elsif text =~ /^Does (\d+) damage plus (\d+) more damage for each Energy card attached to the Defending Pokémon\.$/
-    base_damage = $1.to_i
-    plus_damage = $2.to_i
-    builder
-      .damage_plus_per_energy_card_on_defending(base_damage, plus_damage)
-  elsif text =~ /^\w+ does (\d+) damage to itself.$/
-    damage_self = $1.to_i
-    builder
-      .damage(damage)
-      .damage_itself(damage_self)
-  elsif text =~ /^Flip a coin\. If heads, prevent all damage done to (.+) during your opponent's next turn\.$/
-    builder
-      .flip_a_coin
-      .if_heads { prevent_damage_during_opponents_next_turn }
-  elsif text =~ /^Discard (\d+) (\w+) Energy card attached to \w+ in order to prevent all effects of attacks, including damage, done to \w+ during your opponent's next turn\.$/
-    how_many = $1.to_i
-    energy_type = $2
-    builder
-      .must { discard_attacking_energy_cards([energy_type] * how_many) }
-      .damage(damage)
-      .prevent_damage_and_effects_during_opponents_next_turn
-  elsif text =~ /^Flip a coin. If heads, during your opponent's next turn, prevent all effects of attacks, including damage, done to \w+\.$/
-    builder
-      .flip_a_coin
-      .if_heads { prevent_damage_and_effects_during_opponents_next_turn }
-  elsif text =~ /^Discard 1 (Fire|Water) Energy card attached to \w+ in order to use this attack\.$/
-    energy_type = $1
-    builder
-      .must { discard_attacking_energy_cards([energy_type]) }
-      .damage(damage)
-  elsif text =~ /^Discard (\d+) Energy cards attached to \w+ in order to use this attack\.$/
-    how_many = $1.to_i
-    builder
-      .must { discard_attacking_energy_cards(["Any"] * how_many) }
-      .damage(damage)
-  elsif text =~ /^Discard all Energy cards attached to \w+ in order to use this attack\.$/
-    builder
-      .must { discard_all_attacking_energy_cards }
-      .damage(damage)
-  elsif text =~ /^Discard (\d+) (\w+) Energy cards? attached to \w+ in order to use this attack\. Remove all damage counters from \w+\.$/
-    how_many = $1.to_i
-    energy_type = $2
-    builder
-      .must { discard_attacking_energy_cards([energy_type] * how_many) }
-      .heal_all_attacking
-  elsif text =~ /^If the Defending Pokémon has any Energy cards attached to it, choose (\d+) of them and discard it\.$/
-    how_many = $1.to_i
-    builder.discard_defending_attached_energy_cards(["Any"] * how_many).damage(damage)
-  elsif text =~ /^Flip a coin\. If heads, this attack does (\d+) damage plus (\d+) more damage; if tails, this attack does (\d+) damage (?:plus|and) \w+ does (\d+) damage to itself\.$/
-    damage_base1 = $1.to_i
-    damage_extra = $2.to_i
-    damage_base2 = $3.to_i
-    damage_self = $4.to_i
-
-    builder
-      .flip_a_coin
-      .if_heads{ damage(damage_base1 + damage_extra) }
-      .if_tails{ damage(damage_base2).damage_itself(damage_self) }
-  elsif text =~ /^Does (\d+) damage to each of your own Benched Pokémon\.$/
-    bench_damage = $1
-    builder
-      .damage(damage)
-      .each_own_bench { damage(bench_damage) }
-  elsif text =~ /^Does (\d+) damage to each Pokémon on each player's Bench\. \w+ does (\d+) damage to itself\.$/
-    bench_damage = $1.to_i
-    self_damage = $2.to_i
-    builder
-      .damage(damage)
-      .each_own_bench { damage(bench_damage) }
-      .each_opponents_bench { damage(bench_damage) }
-      .damage_itself(self_damage)
-  elsif text =~ /^You can't use this attack unless the Defending Pokémon is Asleep\.$/
-    builder
-      .defending_must_be_asleep
-      .damage(damage)
-  elsif text =~ /^Discard (\d+) (\w+) Energy card attached to \w+ in order to use this attack. If a Pokémon Knocks Out \w+ during your opponent's next turn, Knock Out that Pokémon\./
-    how_many = $1.to_i
-    energy_type = $2
-    builder
-      .damage(damage)
-      .knock_out_attacker_if_attacking_is_knocked_out_next_turn
-  elsif text =~ /^Does (\d+) damage plus (\d+) more damage for each (\w+) Energy attached to \w+ but not used to pay for this attack's Energy cost. Extra (\w+) Energy after the (\d+)(?:st|nd|rd|th) (?:doesn't|don't) count\.$/
-
-    base_damage = $1.to_i
-    plus_damage = $2.to_i
-    energy_type = $3
-    energy_type2 = $4
-    energy_limit = $5.to_i
-
-    raise unless energy_type == energy_type2
-
-    builder
-      .damage_plus_per_extra_energy_on_attacking(base_damage, plus_damage, energy_type, energy_limit)
-  elsif text =~ /^Flip a coin\. If tails, this attack does nothing\.$/
-    builder
-      .flip_a_coin
-      .if_heads { damage(damage) }
-  elsif text =~ /^Unless all damage from this attack is prevented, you may remove (\d+) damage counter from \w+\.$/
-    counters = $1.to_i
-    builder
-      .damage(damage)
-      .if_did_damage { heal_attacking(counters * 10) }
-  elsif text =~ /^If your opponent has any Benched Pokémon, he or she chooses 1 of them and switches it with the Defending Pokémon\.$/
-    builder
-      .damage(damage)
-      .switch_defending()
-  elsif text =~ /^If your opponent has any Benched Pokémon, choose 1 of them and switch it with his or her Active Pokémon\.$/
-    builder
-      .damage(damage)
-      .gust_defending()
-  elsif text =~ /^$/
-  else
-    return "unimplemented!();"
+  $patterns.each do |pattern|
+    m = pattern[:pattern].match(text)
+    if m
+      v = m.named_captures.transform_keys(&:to_sym)
+      v.merge!({ damage: attack.fetch('damage') }) if pattern[:build].parameters.include?([:keyreq, :damage])
+      return builder.instance_exec(**v, &pattern[:build]).to_s.rstrip.gsub("\n", "\n        ")
+    end
   end
-    .to_s.rstrip.gsub("\n", "\n        ")
+
+  "unimplemented!();"
 end
 
 def idify(name)
@@ -445,61 +433,109 @@ def namify(name)
     .gsub("'d", "D")
 end
 
-output = ""
-output << PRELUDE
 
+def process_set(contents)
+  output = ""
+  output << PRELUDE
 
+  # typos in dataset
+  contents = contents
+    .gsub(/Paralzyed/, "Paralyzed")
+    .gsub(/during your next turn, any damage done by the attack is reduced by/, "during your opponent's next turn, any damage done by the attack is reduced by")
 
-cards = JSON.parse(STDIN.read)['data']
-pokemon_cards = cards.filter { |c| c["supertype"] == "Pokémon" }
-pokemon_cards.each do |card|
-  stage = if card["subtypes"].include?("Basic")
-            "basic!()"
-          elsif card["subtypes"].include?("Stage 1")
-            'stage1!("' + card["evolvesFrom"] + '")'
-          elsif card["subtypes"].include?("Stage 2")
-            'stage2!("' + card["evolvesFrom"] + '")'
-          else
-            1/0
-          end
+  # normalization
+  contents = contents
+    .gsub(/not used to pay for this attack('s Energy cost)?/, "not used to pay for this attack's Energy cost")
+    .gsub(/do (that|the) damage/, "do that damage")
+    .gsub(/; if tails/, ". If tails")
+    .gsub(/ If \w+ has fewer damage counters than that, remove all of them\./, '')
 
-  weakness = if card["weaknesses"]
-               "weak_to!(#{card["weaknesses"].map{|w|w["type"]}.join(", ")})"
-             else
-               "no_weakness!()";
-             end
-  resistance = if card["resistances"]
-                 "resists!(#{card["resistances"].map{|w|w["type"]}.join(", ")}, 30)";
+  cards = JSON.parse(contents)['data']
+  pokemon_cards = cards.filter { |c| c["supertype"] == "Pokémon" }
+  pokemon_cards.each do |card|
+    stage = if card["subtypes"].include?("Basic")
+              "basic!()"
+            elsif card["subtypes"].include?("Stage 1")
+              'stage1!("' + card["evolvesFrom"] + '")'
+            elsif card["subtypes"].include?("Stage 2")
+              'stage2!("' + card["evolvesFrom"] + '")'
+            else
+              1/0
+            end
+
+    weakness = if card["weaknesses"]
+                 "weak_to!(#{card["weaknesses"].map{|w|w["type"]}.join(", ")})"
                else
-                 "no_resistance!()";
+                 "no_weakness!()";
                end
+    resistance = if card["resistances"]
+                   "resists!(#{card["resistances"].map{|w|w["type"]}.join(", ")}, 30)";
+                 else
+                   "no_resistance!()";
+                 end
 
-  card = OpenStruct.new(
-    struct_name: namify(card["name"]),
-    display_name: card["name"],
-    stage: stage,
-    weakness: weakness,
-    resistance: resistance,
-    retreat: card.fetch("retreatCost", []).size,
-    types: card["types"],
-    hp: card["hp"],
-    attacks: card["attacks"].map { |a|
-      OpenStruct.new(a.merge(
-        fn_name: idify(a["name"]),
-        impl: attack_impl(a),
-      ))
-    },
-  )
+    card = OpenStruct.new(
+      struct_name: namify(card["name"]),
+      display_name: card["name"],
+      set_number: card["number"],
+      set_abbreviation: card["set"]["ptcgoCode"],
+      stage: stage,
+      weakness: weakness,
+      resistance: resistance,
+      retreat: card.fetch("retreatCost", []).size,
+      types: card["types"],
+      hp: card["hp"],
+      attacks: card["attacks"].then { |as| Array(as) }.map { |a|
+        OpenStruct.new(a.merge(
+          fn_name: idify(a["name"]),
+          impl: attack_impl(a),
+        ))
+      },
+    )
 
-  output << ERB.new(TEMPLATE, trim_mode: "<>-").result_with_hash(card: card)
+    output << ERB.new(TEMPLATE, trim_mode: "<>-").result_with_hash(card: card)
+  end
+
+  output = output.strip.gsub(/^ +$/, '')
+
+  set_name = cards[0]['set']['name'].downcase.gsub(/ /, "_")
+  File.write("src/sets/#{set_name}/pokemon.rs", output)
+
+  poops = pokemon_cards
+    .flat_map { |card| card.fetch("attacks", []).map { |a| a.merge("card" => card) } }
+    .filter { |attack| attack_impl(attack) == "unimplemented!();" }
+    .map do |attack|
+      attack["text"]
+        .gsub(/\d+/, "X")
+        .gsub(/\s*\([^)]+\)\s*/, '')
+        .gsub(/\b(Water|Fire|Lightning|Psychic|Fighting)\b/, 'TYPE')
+        .gsub(/\b(Poisoned|Asleep|Confused|Paralyzed)\b/, 'SPECIAL_CONDITION')
+        .gsub(Regexp.new("\\b" + Regexp.escape(attack['card']['name']) + '\b'), 'THIS_POKEMON')
+        .split(".")
+        .map(&:strip)
+    end
+
+  {
+    total_attacks: pokemon_cards.sum { |card| card.fetch("attacks", []).size },
+    missing_attacks: pokemon_cards.sum { |card| card.fetch("attacks", []).filter{|attack| attack_impl(attack) == "unimplemented!();" }.size },
+    missing_patterns: poops,
+  }
 end
 
-puts output.strip.gsub(/^ +$/, '')
+if !ARGV.empty?
+  stats = ARGV
+    .map { |filename| process_set(File.read(filename)) }
 
-poops = pokemon_cards.flat_map { |card| card.fetch("attacks", []) }.filter do |attack|
-  attack_impl(attack) == "unimplemented!();"
-end.map do |attack|
-  [attack["text"].gsub(/\d+/, "X").gsub(/\([^)]+\)/, '').gsub(/\b(Water|Fire|Lightning|Psychic)\b/, 'TYPE').split(". "), attack["damage"]]
+  poops = stats.flat_map { |x| x[:missing_patterns] }.tally.map(&:reverse).sort
+  total_attacks = stats.sum { |x| x[:total_attacks] }
+  missing_attacks = stats.sum { |x| x[:missing_attacks] }
+
+  pp poops
+  puts "total attacks: #{total_attacks}"
+  puts "missing attacks: #{missing_attacks}"
+  puts "implemented attacks: #{total_attacks - missing_attacks}"
+  puts "missing patterns: #{poops.size}"
+  puts "implemented patterns: #{$patterns.size}"
+else
+  process_set(STDIN.read)
 end
-
-PP.pp poops.sort, out=$stderr

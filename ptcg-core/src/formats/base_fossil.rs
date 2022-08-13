@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use crate::state::Card;
 use crate::engine::{CardArchetype, Format, AttackingEffectsWhen};
-use crate::sets::{base_set, fossil};
+use crate::sets::{base, fossil};
 
 #[derive(Clone)]
 pub struct BaseFossil {
@@ -12,7 +12,7 @@ impl BaseFossil {
     pub fn new() -> Self {
         let mut cards = vec![];
 
-        cards.extend(base_set::build());
+        cards.extend(base::build());
         cards.extend(fossil::build());
 
         Self { archetypes: std::rc::Rc::new(cards) }

@@ -65,6 +65,7 @@ pub trait TrainerCardArchetype {
     }
 
     fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
+    fn identifier(&self) -> String;
     fn name(&self) -> String;
     fn cost(&self, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
@@ -93,6 +94,10 @@ impl Trainer {
     }
 }
 impl CardArchetype for Trainer {
+    fn identifier(&self) -> String {
+        self.archetype.identifier()
+    }
+
     fn name(&self) -> String {
         self.archetype.name()
     }
