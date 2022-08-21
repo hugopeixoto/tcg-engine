@@ -40,10 +40,6 @@ impl CardArchetype for <%= card.struct_name %><%= card.set_number %> {
 <% end -%>
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl <%= card.struct_name %><%= card.set_number %> {
 <% card.attacks.each do |attack| -%>

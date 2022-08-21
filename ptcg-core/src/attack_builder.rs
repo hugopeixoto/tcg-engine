@@ -547,8 +547,8 @@ impl AttackBuilder {
     pub fn prevent_attack_on_a_flip_during_opponents_next_turn(mut self) -> Self {
         let effect = effect::from_attack()
             .on_defending()
-            .until_opponents_end_of_turn();
-            //.effect<custom_effects::SandAttack>();
+            .until_opponents_end_of_turn()
+            .custom_effect::<custom_effects::FlipToAttack>();
 
         self.operations.push(Box::new(move |builder| effect.apply(builder)));
         self

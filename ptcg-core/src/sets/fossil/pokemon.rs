@@ -1,4 +1,5 @@
 use crate::*;
+use crate::state::Type;
 use crate::attack_builder::AttackBuilder;
 use crate::carddb::Attacks;
 
@@ -24,10 +25,6 @@ impl CardArchetype for Aerodactyl1 {
         Attacks::new(player, in_play, engine)
             .register("Wing Attack", Self::wing_attack)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Aerodactyl1 {
@@ -61,10 +58,6 @@ impl CardArchetype for Articuno2 {
             .register("Freeze Dry", Self::freeze_dry)
             .register("Blizzard", Self::blizzard)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Articuno2 {
@@ -102,10 +95,6 @@ impl CardArchetype for Ditto3 {
         Attacks::new(player, in_play, engine)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Ditto3 {
 }
@@ -132,10 +121,6 @@ impl CardArchetype for Dragonite4 {
         Attacks::new(player, in_play, engine)
             .register("Slam", Self::slam)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Dragonite4 {
@@ -170,10 +155,6 @@ impl CardArchetype for Gengar5 {
             .register("Dark Mind", Self::dark_mind)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Gengar5 {
     pub fn dark_mind(_builder: AttackBuilder) -> AttackBuilder {
@@ -203,10 +184,6 @@ impl CardArchetype for Haunter6 {
         Attacks::new(player, in_play, engine)
             .register("Nightmare", Self::nightmare)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Haunter6 {
@@ -241,10 +218,6 @@ impl CardArchetype for Hitmonlee7 {
             .register("Stretch Kick", Self::stretch_kick)
             .register("High Jump Kick", Self::high_jump_kick)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Hitmonlee7 {
@@ -282,10 +255,6 @@ impl CardArchetype for Hypno8 {
             .register("Dark Mind", Self::dark_mind)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Hypno8 {
     pub fn prophecy(_builder: AttackBuilder) -> AttackBuilder {
@@ -319,10 +288,6 @@ impl CardArchetype for Kabutops9 {
             .register("Sharp Sickle", Self::sharp_sickle)
             .register("Absorb", Self::absorb)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Kabutops9 {
@@ -359,10 +324,6 @@ impl CardArchetype for Lapras10 {
             .register("Water Gun", Self::water_gun)
             .register("Confuse Ray", Self::confuse_ray)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Lapras10 {
@@ -401,10 +362,6 @@ impl CardArchetype for Magneton11 {
             .register("Sonicboom", Self::sonicboom)
             .register("Selfdestruct", Self::selfdestruct)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Magneton11 {
@@ -445,10 +402,6 @@ impl CardArchetype for Moltres12 {
             .register("Dive Bomb", Self::dive_bomb)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Moltres12 {
     pub fn wildfire(_builder: AttackBuilder) -> AttackBuilder {
@@ -485,10 +438,6 @@ impl CardArchetype for Muk13 {
             .register("Sludge", Self::sludge)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Muk13 {
     pub fn sludge(builder: AttackBuilder) -> AttackBuilder {
@@ -523,10 +472,6 @@ impl CardArchetype for Raichu14 {
             .register("Gigashock", Self::gigashock)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Raichu14 {
     pub fn gigashock(_builder: AttackBuilder) -> AttackBuilder {
@@ -557,10 +502,6 @@ impl CardArchetype for Zapdos15 {
             .register("Thunderstorm", Self::thunderstorm)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Zapdos15 {
     pub fn thunderstorm(_builder: AttackBuilder) -> AttackBuilder {
@@ -590,10 +531,6 @@ impl CardArchetype for Aerodactyl16 {
         Attacks::new(player, in_play, engine)
             .register("Wing Attack", Self::wing_attack)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Aerodactyl16 {
@@ -627,10 +564,6 @@ impl CardArchetype for Articuno17 {
             .register("Freeze Dry", Self::freeze_dry)
             .register("Blizzard", Self::blizzard)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Articuno17 {
@@ -668,10 +601,6 @@ impl CardArchetype for Ditto18 {
         Attacks::new(player, in_play, engine)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Ditto18 {
 }
@@ -698,10 +627,6 @@ impl CardArchetype for Dragonite19 {
         Attacks::new(player, in_play, engine)
             .register("Slam", Self::slam)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Dragonite19 {
@@ -736,10 +661,6 @@ impl CardArchetype for Gengar20 {
             .register("Dark Mind", Self::dark_mind)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Gengar20 {
     pub fn dark_mind(_builder: AttackBuilder) -> AttackBuilder {
@@ -769,10 +690,6 @@ impl CardArchetype for Haunter21 {
         Attacks::new(player, in_play, engine)
             .register("Nightmare", Self::nightmare)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Haunter21 {
@@ -807,10 +724,6 @@ impl CardArchetype for Hitmonlee22 {
             .register("Stretch Kick", Self::stretch_kick)
             .register("High Jump Kick", Self::high_jump_kick)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Hitmonlee22 {
@@ -848,10 +761,6 @@ impl CardArchetype for Hypno23 {
             .register("Dark Mind", Self::dark_mind)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Hypno23 {
     pub fn prophecy(_builder: AttackBuilder) -> AttackBuilder {
@@ -885,10 +794,6 @@ impl CardArchetype for Kabutops24 {
             .register("Sharp Sickle", Self::sharp_sickle)
             .register("Absorb", Self::absorb)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Kabutops24 {
@@ -925,10 +830,6 @@ impl CardArchetype for Lapras25 {
             .register("Water Gun", Self::water_gun)
             .register("Confuse Ray", Self::confuse_ray)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Lapras25 {
@@ -967,10 +868,6 @@ impl CardArchetype for Magneton26 {
             .register("Sonicboom", Self::sonicboom)
             .register("Selfdestruct", Self::selfdestruct)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Magneton26 {
@@ -1011,10 +908,6 @@ impl CardArchetype for Moltres27 {
             .register("Dive Bomb", Self::dive_bomb)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Moltres27 {
     pub fn wildfire(_builder: AttackBuilder) -> AttackBuilder {
@@ -1051,10 +944,6 @@ impl CardArchetype for Muk28 {
             .register("Sludge", Self::sludge)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Muk28 {
     pub fn sludge(builder: AttackBuilder) -> AttackBuilder {
@@ -1089,10 +978,6 @@ impl CardArchetype for Raichu29 {
             .register("Gigashock", Self::gigashock)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Raichu29 {
     pub fn gigashock(_builder: AttackBuilder) -> AttackBuilder {
@@ -1122,10 +1007,6 @@ impl CardArchetype for Zapdos30 {
         Attacks::new(player, in_play, engine)
             .register("Thunderstorm", Self::thunderstorm)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Zapdos30 {
@@ -1157,10 +1038,6 @@ impl CardArchetype for Arbok31 {
             .register("Terror Strike", Self::terror_strike)
             .register("Poison Fang", Self::poison_fang)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Arbok31 {
@@ -1199,10 +1076,6 @@ impl CardArchetype for Cloyster32 {
             .register("Spike Cannon", Self::spike_cannon)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Cloyster32 {
     pub fn clamp(_builder: AttackBuilder) -> AttackBuilder {
@@ -1239,10 +1112,6 @@ impl CardArchetype for Gastly33 {
             .register("Lick", Self::lick)
             .register("Energy Conversion", Self::energy_conversion)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Gastly33 {
@@ -1282,10 +1151,6 @@ impl CardArchetype for Golbat34 {
             .register("Leech Life", Self::leech_life)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Golbat34 {
     pub fn wing_attack(builder: AttackBuilder) -> AttackBuilder {
@@ -1321,10 +1186,6 @@ impl CardArchetype for Golduck35 {
             .register("Psyshock", Self::psyshock)
             .register("Hyper Beam", Self::hyper_beam)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Golduck35 {
@@ -1367,10 +1228,6 @@ impl CardArchetype for Golem36 {
             .register("Selfdestruct", Self::selfdestruct)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Golem36 {
     pub fn avalanche(builder: AttackBuilder) -> AttackBuilder {
@@ -1412,10 +1269,6 @@ impl CardArchetype for Graveler37 {
             .register("Rock Throw", Self::rock_throw)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Graveler37 {
     pub fn harden(_builder: AttackBuilder) -> AttackBuilder {
@@ -1451,10 +1304,6 @@ impl CardArchetype for Kingler38 {
             .register("Flail", Self::flail)
             .register("Crabhammer", Self::crabhammer)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Kingler38 {
@@ -1493,10 +1342,6 @@ impl CardArchetype for Magmar39 {
             .register("Smokescreen", Self::smokescreen)
             .register("Smog", Self::smog)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Magmar39 {
@@ -1538,10 +1383,6 @@ impl CardArchetype for Omastar40 {
             .register("Spike Cannon", Self::spike_cannon)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Omastar40 {
     pub fn water_gun(_builder: AttackBuilder) -> AttackBuilder {
@@ -1578,10 +1419,6 @@ impl CardArchetype for Sandslash41 {
             .register("Slash", Self::slash)
             .register("Fury Swipes", Self::fury_swipes)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Sandslash41 {
@@ -1622,10 +1459,6 @@ impl CardArchetype for Seadra42 {
             .register("Agility", Self::agility)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Seadra42 {
     pub fn water_gun(_builder: AttackBuilder) -> AttackBuilder {
@@ -1662,10 +1495,6 @@ impl CardArchetype for Slowbro43 {
             .register("Psyshock", Self::psyshock)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Slowbro43 {
     pub fn psyshock(builder: AttackBuilder) -> AttackBuilder {
@@ -1700,10 +1529,6 @@ impl CardArchetype for Tentacruel44 {
             .register("Supersonic", Self::supersonic)
             .register("Jellyfish Sting", Self::jellyfish_sting)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Tentacruel44 {
@@ -1744,10 +1569,6 @@ impl CardArchetype for Weezing45 {
             .register("Smog", Self::smog)
             .register("Selfdestruct", Self::selfdestruct)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Weezing45 {
@@ -1792,10 +1613,6 @@ impl CardArchetype for Ekans46 {
             .register("Wrap", Self::wrap)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Ekans46 {
     pub fn spit_poison(builder: AttackBuilder) -> AttackBuilder {
@@ -1836,10 +1653,6 @@ impl CardArchetype for Geodude47 {
             .register("Stone Barrage", Self::stone_barrage)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Geodude47 {
     pub fn stone_barrage(_builder: AttackBuilder) -> AttackBuilder {
@@ -1870,10 +1683,6 @@ impl CardArchetype for Grimer48 {
             .register("Nasty Goo", Self::nasty_goo)
             .register("Minimize", Self::minimize)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Grimer48 {
@@ -1912,10 +1721,6 @@ impl CardArchetype for Horsea49 {
             .register("Smokescreen", Self::smokescreen)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Horsea49 {
     pub fn smokescreen(builder: AttackBuilder) -> AttackBuilder {
@@ -1947,10 +1752,6 @@ impl CardArchetype for Kabuto50 {
         Attacks::new(player, in_play, engine)
             .register("Scratch", Self::scratch)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Kabuto50 {
@@ -1984,10 +1785,6 @@ impl CardArchetype for Krabby51 {
             .register("Call for Family", Self::call_for_family)
             .register("Irongrip", Self::irongrip)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Krabby51 {
@@ -2024,10 +1821,6 @@ impl CardArchetype for Omanyte52 {
             .register("Water Gun", Self::water_gun)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Omanyte52 {
     pub fn water_gun(_builder: AttackBuilder) -> AttackBuilder {
@@ -2058,10 +1851,6 @@ impl CardArchetype for Psyduck53 {
             .register("Headache", Self::headache)
             .register("Fury Swipes", Self::fury_swipes)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Psyduck53 {
@@ -2099,10 +1888,6 @@ impl CardArchetype for Shellder54 {
             .register("Supersonic", Self::supersonic)
             .register("Hide in Shell", Self::hide_in_shell)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Shellder54 {
@@ -2144,10 +1929,6 @@ impl CardArchetype for Slowpoke55 {
             .register("Scavenge", Self::scavenge)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Slowpoke55 {
     pub fn spacing_out(_builder: AttackBuilder) -> AttackBuilder {
@@ -2181,10 +1962,6 @@ impl CardArchetype for Tentacool56 {
             .register("Acid", Self::acid)
             .into()
     }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
-    }
 }
 impl Tentacool56 {
     pub fn acid(builder: AttackBuilder) -> AttackBuilder {
@@ -2217,10 +1994,6 @@ impl CardArchetype for Zubat57 {
             .register("Supersonic", Self::supersonic)
             .register("Leech Life", Self::leech_life)
             .into()
-    }
-
-    fn provides(&self) -> Vec<Type> {
-        vec![]
     }
 }
 impl Zubat57 {

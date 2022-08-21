@@ -143,3 +143,23 @@ impl CustomEffect for DisableAttack {
         }
     }
 }
+
+pub struct FlipToAttack {}
+impl CustomEffect for FlipToAttack {
+    fn identifier() -> String {
+        "FLIP_TO_ATTACK".into()
+    }
+
+    fn on_attempt_to_attack(&self, effect: &Effect, in_play: &InPlayCard, _engine: &GameEngine) -> Option<AttackBuilder> {
+        let this_pokemon = effect.target.is_in_play(in_play);
+
+        if this_pokemon {
+            AttackBuilder::new()
+                .flip_a_coin()
+                .if_tails(|e| e.prevent())
+                .into()
+        } else {
+            None
+        }
+    }
+}

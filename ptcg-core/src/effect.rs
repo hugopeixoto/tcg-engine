@@ -105,6 +105,7 @@ pub trait CustomEffect {
     fn get_weakness(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _weakness: Weakness) -> Option<Weakness> { None }
     fn get_attacks(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _actions: Vec<Action>) -> Option<Vec<Action>> { None }
 
+    fn on_attempt_to_attack(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine) -> Option<AttackBuilder> { None }
     fn on_affected(&self) -> Option<AttackBuilder> { None }
     fn on_turn_end(&self) -> Option<AttackBuilder> { None }
     fn on_would_be_knocked_out(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine) -> Option<AttackBuilder> { None }

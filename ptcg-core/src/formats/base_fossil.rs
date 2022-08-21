@@ -27,6 +27,7 @@ impl BaseFossil {
                 (ChangeResistance::identifier(), Box::new(ChangeResistance{})),
                 (ChangeWeakness::identifier(), Box::new(ChangeWeakness{})),
                 (DisableAttack::identifier(), Box::new(DisableAttack{})),
+                (FlipToAttack::identifier(), Box::new(FlipToAttack{})),
             ]),
         }
     }

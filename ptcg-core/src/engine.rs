@@ -338,7 +338,7 @@ impl GameEngine {
                        self
                             .push_action(action.clone())
                             .push_target(attacking, &self.state.side(player.opponent()).active[0])
-                            .then(|e| executor.run(&e, dm))
+                            .then(|e| e.execute_attack(executor, dm))
                             .check_kos_and_stuff(dm)
                             .pop_target()
                             .pop_action()
@@ -460,6 +460,25 @@ impl GameEngine {
         for chosen in choices {
             engine = engine.with_state(engine.state.prize_to_hand(player, &chosen));
         }
+
+        engine
+    }
+
+    pub fn execute_attack(&self, body: &Box<dyn AttackBody>, dm: &mut dyn DecisionMaker) -> Self {
+        let mut engine = self.clone();
+
+        let attack_effects = self.state.effects.iter()
+            .flat_map(|e| self.effect(e).on_attempt_to_attack(e, self.attacking(), self))
+            .collect::<Vec<_>>();
+        for effect in attack_effects {
+            let ctx = effect.apply(engine, dm);
+            engine = ctx.engine();
+            if ctx.prevented() {
+                return engine;
+            }
+        }
+
+        engine = body.run(&engine, dm);
 
         engine
     }
@@ -1575,7 +1594,10 @@ impl GameEngine {
 
     pub fn is_basic_energy(&self, card: &Card) -> bool {
         match card.archetype.as_str() {
+            "Fighting Energy (BS 97)" => true,
+            "Fire Energy (BS 98)" => true,
             "Grass Energy (BS 99)" => true,
+            "Lightning Energy (BS 100)" => true,
             "Psychic Energy (BS 101)" => true,
             "Water Energy (BS 102)" => true,
             _ => false,
