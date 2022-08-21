@@ -531,6 +531,18 @@ impl GameEngine {
     }
 
     // attack in flight
+
+    pub fn current_action(&self) -> Option<Action> {
+        self.resolving_actions.last().cloned()
+    }
+
+    pub fn current_attack_name(&self) -> Option<String> {
+        match self.resolving_actions.last() {
+            Some(Action::Attack(_, _, name, _)) => Some(name.clone()),
+            _ => None,
+        }
+    }
+
     pub fn is_someone_attacking(&self) -> bool {
         match self.resolving_actions.last() {
             Some(Action::Attack(_, _, _, _)) => true,

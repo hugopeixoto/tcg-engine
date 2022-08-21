@@ -257,6 +257,11 @@ class Builder
     @text << ".gust_defending()"
     self
   end
+
+  def once_while_in_play
+    @text << ".once_while_in_play()"
+    self
+  end
 end
 
 $patterns = [
@@ -402,6 +407,14 @@ $patterns = [
   {
     pattern: /^Flip a coin\. If tails, this attack does nothing\.$/,
     build: ->(damage:) { flip_a_coin.if_heads { damage(damage) } },
+  },
+  {
+    pattern: /^Flip a coin\. If tails, this attack does nothing\. Either way, you can't use this attack again as long as [\w']+ stays in play\.$/,
+    build: ->(damage:) {
+      flip_a_coin
+        .if_heads { damage(damage) }
+        .once_while_in_play
+    },
   },
   {
     pattern: /^Unless all damage from this attack is prevented, you may remove (?<counters>\d+) damage counter from \w+\.$/,

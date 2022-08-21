@@ -553,4 +553,18 @@ impl AttackBuilder {
         self.operations.push(Box::new(move |builder| effect.apply(builder)));
         self
     }
+
+    pub fn once_while_in_play(mut self) -> Self {
+        self.operations.push(Box::new(move |builder| {
+            let effect = effect::from_attack()
+                .on_attacking()
+                .while_in_play()
+                .string_parameter(builder.engine.current_attack_name().unwrap())
+                .custom_effect::<custom_effects::DisableAttack>();
+
+            effect.apply(builder)
+        }));
+
+        self
+    }
 }

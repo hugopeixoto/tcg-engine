@@ -55,6 +55,14 @@ impl AttackEffectBuilder {
         self
     }
 
+    pub fn while_in_play(mut self) -> Self {
+        self.expires = Some(Box::new(|_ab| {
+            EffectExpiration::RestOfTheGame
+        }));
+
+        self
+    }
+
     pub fn type_parameter(mut self, t: Type) -> Self {
         self.parameters.push(Box::new(move |_ab| {
             EffectParameter::Type(t.clone())
