@@ -512,12 +512,21 @@ pub type EffectConsequence = String;
 #[derive(Clone, Debug)]
 pub enum EffectParameter {
     Type(Type),
+    String(String),
 }
 
 impl EffectParameter {
     pub fn get_type(&self) -> Option<Type> {
         match self {
             Self::Type(t) => Some(t.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn get_string(&self) -> Option<String> {
+        match self {
+            Self::String(s) => Some(s.clone()),
+            _ => None,
         }
     }
 }
@@ -538,6 +547,14 @@ impl Effect {
             .parameters
             .iter()
             .flat_map(|p| p.get_type())
+            .nth(index)
+    }
+
+    pub fn get_parameter_string(&self, index: usize) -> Option<String> {
+        self
+            .parameters
+            .iter()
+            .flat_map(|p| p.get_string())
             .nth(index)
     }
 }

@@ -252,6 +252,11 @@ class Builder
     self
   end
 
+  def disable_defending_attack
+    @text << ".disable_defending_attack()"
+    self
+  end
+
   def gust_defending
     @text << ".gust_defending()"
     self
@@ -438,6 +443,13 @@ $patterns = [
     build: ->(damage:, except:) {
       damage(damage)
         .change_defending_weakness_except([except])
+    },
+  },
+  {
+    pattern: /^Choose 1 of the Defending Pokémon's attacks\. That Pokémon can't use that attack during your opponent's next turn\.$/,
+    build: ->(damage:) {
+      damage(damage)
+        .disable_defending_attack()
     },
   },
 ]

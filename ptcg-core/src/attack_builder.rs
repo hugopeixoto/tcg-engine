@@ -482,6 +482,27 @@ impl AttackBuilder {
         self
     }
 
+    pub fn disable_defending_attack(mut self) -> Self {
+        self.operations.push(Box::new(move |builder| {
+            let attacks = builder.engine.attacks(builder.defending());
+
+            let chosen = builder.dm.pick_action(builder.player(), &attacks);
+            let chosen = match chosen {
+                Action::Attack(_, _, name, _) => name,
+                _ => { panic!("Picked an action that isn't an attack: {:?}", chosen); }
+            };
+
+            let effect = effect::from_attack()
+                .on_defending()
+                .until_opponents_end_of_turn()
+                .string_parameter(chosen.clone())
+                .custom_effect::<custom_effects::DisableAttack>();
+
+            effect.apply(builder)
+        }));
+
+        self
+    }
 
     pub fn prevent_damage_during_opponents_next_turn(mut self) -> Self {
         let effect = effect::from_attack()

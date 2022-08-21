@@ -1586,8 +1586,10 @@ impl CardArchetype for Poliwhirl38 {
     }
 }
 impl Poliwhirl38 {
-    pub fn amnesia(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn amnesia(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Water, Type::Water])
+            .disable_defending_attack()
     }
     pub fn doubleslap(builder: AttackBuilder) -> AttackBuilder {
         builder

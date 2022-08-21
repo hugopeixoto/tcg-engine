@@ -1082,10 +1082,22 @@ impl GameEngine {
 
     pub fn in_play_actions(&self, player: Player, in_play: &InPlayCard, active: bool) -> Vec<Action> {
         if active && in_play.rotational_status != RotationalStatus::Paralyzed && self.can_attack(player, in_play) {
-            self.archetype(in_play.stack[0].card()).attacks(player, in_play, self)
+            self.attacks(in_play)
         } else {
             vec![]
         }
+    }
+
+    pub fn attacks(&self, in_play: &InPlayCard) -> Vec<Action> {
+        let mut attacks = self.archetype(in_play.stack[0].card()).attacks(in_play.owner, in_play, self);
+
+        for effect in self.state.effects.iter() {
+            if let Some(new_attacks) = self.effect(effect).get_attacks(effect, in_play, self, attacks.clone()) {
+                attacks = new_attacks;
+            }
+        }
+
+        attacks
     }
 
     pub fn can_attack(&self, _player: Player, _in_play: &InPlayCard) -> bool {

@@ -1,7 +1,7 @@
 use crate::attack_builder::{AttackBuilder, AttackBuilderContext};
 use crate::state::{Effect, EffectConsequence, EffectExpiration, EffectSource, EffectTarget, EffectParameter, Type};
 use crate::state::{Player, InPlayCard};
-use crate::engine::{GameEngine, Resistance, Weakness};
+use crate::engine::{GameEngine, Resistance, Weakness, Action};
 
 #[derive(Default)]
 pub struct AttackEffectBuilder {
@@ -62,6 +62,13 @@ impl AttackEffectBuilder {
         self
     }
 
+    pub fn string_parameter(mut self, s: String) -> Self {
+        self.parameters.push(Box::new(move |_ab| {
+            EffectParameter::String(s.clone())
+        }));
+        self
+    }
+
     pub fn custom_effect<T: CustomEffect>(mut self) -> Self {
         let identifier = T::identifier();
         self.effect = Some(Box::new(move |_ab: &AttackBuilderContext| {
@@ -92,11 +99,11 @@ impl AttackEffectBuilder {
 pub trait CustomEffect {
     fn identifier() -> String where Self: Sized;
 
-    // getters
     fn defending_damage(&self, _damage: usize) -> Option<usize> { None }
     fn attacking_damage(&self, _damage: usize) -> Option<usize> { None }
     fn get_resistance(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _resistance: Resistance) -> Option<Resistance> { None }
     fn get_weakness(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _weakness: Weakness) -> Option<Weakness> { None }
+    fn get_attacks(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _actions: Vec<Action>) -> Option<Vec<Action>> { None }
 
     fn on_affected(&self) -> Option<AttackBuilder> { None }
     fn on_turn_end(&self) -> Option<AttackBuilder> { None }
