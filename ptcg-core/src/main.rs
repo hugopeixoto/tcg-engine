@@ -10,6 +10,7 @@ mod carddb;
 mod card_macros;
 mod attack_builder;
 mod effect;
+mod custom_effects;
 
 mod sets;
 mod formats;

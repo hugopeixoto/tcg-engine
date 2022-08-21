@@ -1,28 +1,32 @@
 use crate::engine::*;
 use crate::state::*;
+use crate::effect;
+use crate::custom_effects;
 
-pub struct AttackBuilder<'a> {
-    engine: GameEngine,
+pub struct AttackBuilderContext<'a> {
+    pub engine: GameEngine,
     dm: &'a mut dyn DecisionMaker,
     flips: Vec<Flips>,
 
     attack_cost: Vec<Type>,
+    prevented: bool,
     failed: bool,
     damage_done: usize,
     results: Vec<ActionResult>,
     original: GameEngine,
 }
 
-impl<'a> AttackBuilder<'a> {
+impl<'a> AttackBuilderContext<'a> {
     pub fn new(engine: GameEngine, dm: &'a mut dyn DecisionMaker) -> Self {
         let original = engine.clone();
-        AttackBuilder {
+        AttackBuilderContext {
             engine,
             dm,
             flips: vec![],
 
             attack_cost: vec![],
             results: vec![],
+            prevented: false,
             failed: false,
             damage_done: 0,
             original,
@@ -31,6 +35,14 @@ impl<'a> AttackBuilder<'a> {
 
     pub fn failed(&self) -> bool {
         self.failed
+    }
+
+    pub fn prevented(&self) -> bool {
+        self.prevented
+    }
+
+    pub fn heads(&self) -> usize {
+        self.flips.last().unwrap().heads()
     }
 
     pub fn player(&self) -> Player {
@@ -49,303 +61,436 @@ impl<'a> AttackBuilder<'a> {
         self.engine.defending()
     }
 
-    pub fn attack_cost(mut self, energy_requirements: &[Type]) -> Self {
-        self.attack_cost = energy_requirements.iter().cloned().collect();
-
-        if !self.engine.is_attack_energy_cost_met(self.engine.attacking(), energy_requirements) {
-            self.failed = true;
+    pub fn engine(&self) -> GameEngine {
+        if self.failed {
+            self.original.clone()
+        } else {
+            self.engine.clone()
         }
+    }
+}
+
+pub struct AttackBuilder {
+    operations: Vec<Box<dyn Fn(AttackBuilderContext) -> AttackBuilderContext>>,
+}
+
+impl AttackBuilder {
+    pub fn new() -> Self {
+        Self {
+            operations: vec![],
+        }
+    }
+
+    pub fn apply<'a>(&self, engine: GameEngine, dm: &'a mut dyn DecisionMaker) -> AttackBuilderContext<'a> {
+        let mut ctx = AttackBuilderContext::new(engine, dm);
+
+        for operation in self.operations.iter() {
+            ctx = operation(ctx);
+        }
+
+        ctx
+    }
+
+    pub fn chain(mut self, other: AttackBuilder) -> Self {
+        self.operations.extend(other.operations);
+        self
+    }
+
+    // fluent api
+
+    pub fn prevent(mut self) -> Self {
+        self.operations.push(Box::new(move |mut builder| {
+            builder.prevented = true;
+            builder
+        }));
+        self
+    }
+
+    pub fn attack_cost(mut self, energy_requirements: &[Type]) -> Self {
+        let cost = energy_requirements.iter().cloned().collect::<Vec<_>>();
+
+        self.operations.push(Box::new(move |mut builder| {
+            builder.attack_cost = cost.clone();
+
+            if !builder.engine.is_attack_energy_cost_met(builder.engine.attacking(), &builder.attack_cost) {
+                builder.failed = true;
+            }
+            builder
+        }));
+
         self
     }
 
     pub fn flip_a_coin(mut self) -> Self {
-        self.flips.push(self.dm.flip(1));
+        self.operations.push(Box::new(|mut builder| {
+            builder.flips.push(builder.dm.flip(1));
+            builder
+        }));
         self
     }
 
     pub fn flip_coins(mut self, how_many: usize) -> Self {
-        self.flips.push(self.dm.flip(how_many));
+        self.operations.push(Box::new(move |mut builder| {
+            builder.flips.push(builder.dm.flip(how_many));
+            builder
+        }));
         self
     }
 
-    pub fn heads(&self) -> usize {
-        self.flips.last().unwrap().heads()
-    }
-
     pub fn damage(mut self, damage: usize) -> Self {
-        (self.engine, self.damage_done) = self.engine.damage(damage);
+        self.operations.push(Box::new(move |mut builder| {
+            (builder.engine, builder.damage_done) = builder.engine.damage(damage);
+            builder
+        }));
         self
     }
 
     pub fn damage_self(mut self, damage: usize) -> Self {
-        (self.engine, _) = self.engine.damage_self(damage);
+        self.operations.push(Box::new(move |mut builder| {
+            (builder.engine, _) = builder.engine.damage_self(damage);
+            builder
+        }));
         self
     }
 
-    pub fn if_heads<F>(self, f: F) -> Self where F: Fn(Self) -> Self {
-        if self.heads() == 1 {
-            f(self)
-        } else {
-            self
-        }
+    fn wrap<F>(builder: AttackBuilderContext, f: F) -> AttackBuilderContext where F: Fn(Self) -> Self {
+        let mut b2 = Self::new();
+        b2 = f(b2);
+        b2.apply(builder.engine, builder.dm)
     }
 
-    pub fn if_tails<F>(self, f: F) -> Self where F: Fn(Self) -> Self {
-        if self.heads() == 0 {
-            f(self)
-        } else {
-            self
-        }
+    pub fn if_heads<F>(mut self, f: F) -> Self where F: Fn(Self) -> Self + 'static {
+        self.operations.push(Box::new(move |builder| {
+            if builder.heads() == 1 {
+                Self::wrap(builder, &f)
+            } else {
+                builder
+            }
+        }));
+        self
     }
 
-    pub fn if_did_damage<F>(self, f: F) -> Self where F: Fn(Self) -> Self {
-        if self.damage_done > 0 {
-            f(self)
-        } else {
-            self
-        }
+    pub fn if_tails<F>(mut self, f: F) -> Self where F: Fn(Self) -> Self + 'static {
+        self.operations.push(Box::new(move |builder| {
+            if builder.heads() == 0 {
+                Self::wrap(builder, &f)
+            } else {
+                builder
+            }
+        }));
+        self
     }
 
-    pub fn then<F>(self, f: F) -> Self where F: Fn(Self) -> Self {
-        f(self)
+    pub fn if_did_damage<F>(mut self, f: F) -> Self where F: Fn(Self) -> Self + 'static {
+        self.operations.push(Box::new(move |builder| {
+            if builder.damage_done > 0 {
+                Self::wrap(builder, &f)
+            } else {
+                builder
+            }
+        }));
+        self
     }
 
-    pub fn must<F>(mut self, f: F) -> Self where F: Fn(Self) -> Self {
-        let idx = self.results.len();
-        self = f(self);
-        if !self.results[idx..].iter().all(|x| match x { ActionResult::Full => true, _ => false }) {
-            self.failed = true;
-        }
+    pub fn then<F>(mut self, f: F) -> Self where F: Fn(Self) -> Self + 'static {
+        self.operations.push(Box::new(move |builder| {
+            Self::wrap(builder, &f)
+        }));
+        self
+    }
+
+    pub fn must<F>(mut self, f: F) -> Self where F: Fn(Self) -> Self + 'static {
+        self.operations.push(Box::new(move |mut builder| {
+            let idx = builder.results.len();
+            builder = Self::wrap(builder, &f);
+            if !builder.results[idx..].iter().all(|x| match x { ActionResult::Full => true, _ => false }) {
+                builder.failed = true;
+            }
+            builder
+        }));
         self
     }
 
     pub fn defending_must_be_asleep(mut self) -> Self {
-        if !self.defending().is_asleep() {
-            self.failed = true;
-        }
+        self.operations.push(Box::new(move |mut builder| {
+            if !builder.defending().is_asleep() {
+                builder.failed = true;
+            }
+            builder
+        }));
         self
     }
 
-    pub fn each_own_bench<F>(mut self, f: F) -> Self where F: Fn(Self) -> Self {
-        for target in self.engine.bench(self.player()) {
-            self.engine = self.engine.push_target(self.attacking(), &target);
-            self = f(self);
-            self.engine = self.engine.pop_target();
-        }
+    pub fn each_own_bench<F>(mut self, f: F) -> Self where F: Fn(Self) -> Self + 'static {
+        self.operations.push(Box::new(move |mut builder| {
+            for target in builder.engine.bench(builder.player()) {
+                builder.engine = builder.engine.push_target(builder.attacking(), &target);
+                builder = Self::wrap(builder, &f);
+                builder.engine = builder.engine.pop_target();
+            }
+            builder
+        }));
         self
     }
 
-    pub fn each_opponents_bench<F>(mut self, f: F) -> Self where F: Fn(Self) -> Self {
-        for target in self.engine.bench(self.opponent()) {
-            self.engine = self.engine.push_target(self.attacking(), &target);
-            self = f(self);
-            self.engine = self.engine.pop_target();
-        }
+    pub fn each_opponents_bench<F>(mut self, f: F) -> Self where F: Fn(Self) -> Self + 'static {
+        self.operations.push(Box::new(move |mut builder| {
+            for target in builder.engine.bench(builder.opponent()) {
+                builder.engine = builder.engine.push_target(builder.attacking(), &target);
+                builder = Self::wrap(builder, &f);
+                builder.engine = builder.engine.pop_target();
+            }
+            builder
+        }));
         self
     }
 
     pub fn with_effect(mut self, effect: Effect) -> Self {
-        self.engine = self.engine.with_effect(effect);
+        self.operations.push(Box::new(move |mut builder| {
+            builder.engine = builder.engine.with_effect(effect.clone());
+            builder
+        }));
         self
     }
 
     pub fn asleep(mut self) -> Self {
-        self.engine = self.engine.asleep(self.engine.defending());
+        self.operations.push(Box::new(move |mut builder| {
+            builder.engine = builder.engine.asleep(builder.engine.defending());
+            builder
+        }));
         self
     }
 
     pub fn confuse(mut self) -> Self {
-        self.engine = self.engine.confuse(self.engine.defending());
+        self.operations.push(Box::new(move |mut builder| {
+            builder.engine = builder.engine.confuse(builder.engine.defending());
+            builder
+        }));
         self
     }
 
     pub fn paralyze(mut self) -> Self {
-        self.engine = self.engine.paralyze(self.engine.defending());
+        self.operations.push(Box::new(move |mut builder| {
+            builder.engine = builder.engine.paralyze(builder.engine.defending());
+            builder
+        }));
         self
     }
 
     pub fn poison(mut self) -> Self {
-        self.engine = self.engine.poison(self.engine.defending(), 1);
+        self.operations.push(Box::new(move |mut builder| {
+            builder.engine = builder.engine.poison(builder.engine.defending(), 1);
+            builder
+        }));
         self
     }
 
     pub fn severe_poison(mut self, counters: usize) -> Self {
-        self.engine = self.engine.poison(self.engine.defending(), counters);
+        self.operations.push(Box::new(move |mut builder| {
+            builder.engine = builder.engine.poison(builder.engine.defending(), counters);
+            builder
+        }));
         self
     }
 
     pub fn discard_defending_energy_cards(mut self, energy_requirements: &[Type]) -> Self {
-        let (engine, result) = self.engine.discard_attached_energy_cards(self.player(), &self.engine.defending(), energy_requirements, self.dm);
+        let energy_requirements = energy_requirements.iter().cloned().collect::<Vec<_>>();
 
-        self.engine = engine;
-        self.results.push(result);
+        self.operations.push(Box::new(move |mut builder| {
+            let (engine, result) = builder.engine.discard_attached_energy_cards(builder.player(), &builder.engine.defending(), &energy_requirements, builder.dm);
+
+            builder.engine = engine;
+            builder.results.push(result);
+            builder
+        }));
         self
     }
 
     pub fn discard_all_attacking_energy_cards(mut self) -> Self {
-        self.engine = self.engine.discard_all_attached_energy_cards(self.player(), &self.engine.attacking(), self.dm);
+        self.operations.push(Box::new(move |mut builder| {
+            builder.engine = builder.engine.discard_all_attached_energy_cards(builder.player(), &builder.engine.attacking(), builder.dm);
+            builder
+        }));
         self
     }
 
     pub fn discard_attacking_energy_cards(mut self, energy_requirements: &[Type]) -> Self {
-        let (engine, result) = self.engine.discard_attached_energy_cards(self.player(), &self.engine.attacking(), energy_requirements, self.dm);
+        let energy_requirements = energy_requirements.iter().cloned().collect::<Vec<_>>();
 
-        self.engine = engine;
-        self.results.push(result);
+        self.operations.push(Box::new(move |mut builder| {
+            let (engine, result) = builder.engine.discard_attached_energy_cards(builder.player(), &builder.engine.attacking(), &energy_requirements, builder.dm);
+
+            builder.engine = engine;
+            builder.results.push(result);
+            builder
+        }));
         self
     }
 
     pub fn heal_all_attacking(mut self) -> Self {
-        self.engine = self.engine.heal_all(self.attacking());
+        self.operations.push(Box::new(move |mut builder| {
+            builder.engine = builder.engine.heal_all(builder.attacking());
+            builder
+        }));
         self
     }
 
     pub fn heal_attacking(mut self, damage: usize) -> Self {
-        self.engine = self.engine.heal(self.attacking(), damage);
+        self.operations.push(Box::new(move |mut builder| {
+            builder.engine = builder.engine.heal(builder.attacking(), damage);
+            builder
+        }));
         self
     }
 
-    pub fn damage_per_heads(mut self, damage: usize) -> Self {
-        let heads = self.heads();
-        self = self.damage(damage * heads);
+    pub fn damage_per_heads(mut self, damage_per_heads: usize) -> Self {
+        self.operations.push(Box::new(move |mut builder| {
+            let damage = damage_per_heads * builder.heads();
+            (builder.engine, builder.damage_done) = builder.engine.damage(damage);
+            builder
+        }));
         self
     }
 
-    pub fn damage_plus_per_energy_card_on_defending(mut self, base_damage: usize, plus: usize) -> Self {
-        let energy_cards = self.defending().attached.iter().filter(|c| self.engine.is_energy(c.card())).count();
-        self = self.damage(base_damage.saturating_add(energy_cards * plus));
+    pub fn damage_plus_per_energy_card_on_defending(mut self, base_damage: usize, damage_per_energy_card: usize) -> Self {
+        self.operations.push(Box::new(move |mut builder| {
+            let energy_cards = builder.defending().attached.iter().filter(|c| builder.engine.is_energy(c.card())).count();
+            let damage = base_damage + damage_per_energy_card * energy_cards;
+            (builder.engine, builder.damage_done) = builder.engine.damage(damage);
+            builder
+        }));
         self
     }
 
     pub fn damage_plus_per_damage_counter_on_defending(mut self, base_damage: usize, damage_per_counter: usize) -> Self {
-        let damage_counters = self.engine.damage_counters_on(self.defending());
-        self = self.damage(base_damage.saturating_add(damage_counters * damage_per_counter));
+        self.operations.push(Box::new(move |mut builder| {
+            let damage_counters = builder.engine.damage_counters_on(builder.defending());
+            let damage = base_damage + damage_per_counter * damage_counters;
+            (builder.engine, builder.damage_done) = builder.engine.damage(damage);
+            builder
+        }));
         self
     }
 
     pub fn damage_per_damage_counter_on_itself(mut self, damage_per_counter: usize) -> Self {
-        let damage_counters = self.engine.damage_counters_on(self.attacking());
-        self = self.damage(damage_counters * damage_per_counter);
+        self.operations.push(Box::new(move |mut builder| {
+            let damage_counters = builder.engine.damage_counters_on(builder.attacking());
+            let damage = damage_per_counter * damage_counters;
+            (builder.engine, builder.damage_done) = builder.engine.damage(damage);
+            builder
+        }));
         self
     }
-    pub fn damage_minus_per_damage_counter_on_itself(mut self, base_damage: usize, minus: usize) -> Self {
-        let damage_counters = self.engine.damage_counters_on(self.attacking());
-        self = self.damage(base_damage.saturating_sub(damage_counters * minus));
+    pub fn damage_minus_per_damage_counter_on_itself(mut self, base_damage: usize, damage_per_counter: usize) -> Self {
+        self.operations.push(Box::new(move |mut builder| {
+            let damage_counters = builder.engine.damage_counters_on(builder.attacking());
+            let damage = base_damage.saturating_sub(damage_counters * damage_per_counter);
+            (builder.engine, builder.damage_done) = builder.engine.damage(damage);
+            builder
+        }));
         self
     }
 
     pub fn damage_half_defending_remaining_hp(mut self) -> Self {
-        let remaining_hp = self.engine.remaining_hp(self.defending());
-        self = self.damage(remaining_hp.div_ceil(2));
+        self.operations.push(Box::new(move |mut builder| {
+            let remaining_hp = builder.engine.remaining_hp(builder.defending());
+            let damage = remaining_hp.div_ceil(2);
+            (builder.engine, builder.damage_done) = builder.engine.damage(damage);
+            builder
+        }));
         self
     }
 
-    pub fn damage_plus_per_extra_energy_on_attacking(mut self, damage: usize, per_energy: usize, energy_type: Type, energy_limit: usize) -> Self {
-        let mut additional = 0;
-        let mut requirements = self.attack_cost.clone();
-        while additional < energy_limit {
-            requirements.push(energy_type.clone());
-            if !self.engine.is_attack_energy_cost_met(self.attacking(), &requirements) {
-                break;
+    pub fn damage_plus_per_extra_energy_on_attacking(mut self, base_damage: usize, per_energy: usize, energy_type: Type, energy_limit: usize) -> Self {
+        self.operations.push(Box::new(move |mut builder| {
+            let mut additional = 0;
+            let mut requirements = builder.attack_cost.clone();
+            while additional < energy_limit {
+                requirements.push(energy_type.clone());
+                if !builder.engine.is_attack_energy_cost_met(builder.attacking(), &requirements) {
+                    break;
+                }
+                additional += 1;
             }
-            additional += 1;
-        }
 
-        self = self.damage(damage.saturating_add(additional * per_energy));
+            let damage = base_damage + additional * per_energy;
+            (builder.engine, builder.damage_done) = builder.engine.damage(damage);
+            builder
+        }));
         self
     }
 
     pub fn switch_defending(mut self) -> Self {
-        self.engine = self.engine.switch(self.opponent(), self.dm);
+        self.operations.push(Box::new(move |mut builder| {
+            builder.engine = builder.engine.switch(builder.opponent(), builder.dm);
+            builder
+        }));
         self
     }
 
     pub fn gust_defending(mut self) -> Self {
-        self.engine = self.engine.gust(self.player(), self.dm);
+        self.operations.push(Box::new(move |mut builder| {
+            builder.engine = builder.engine.gust(builder.player(), builder.dm);
+            builder
+        }));
+        self
+    }
+
+    pub fn knock_out_attacking(mut self) -> Self {
+        self.operations.push(Box::new(move |mut builder| {
+            builder.engine = builder.engine.knock_out(&builder.attacking().clone(), builder.dm);
+            builder
+        }));
         self
     }
 
     pub fn prevent_damage_during_opponents_next_turn(mut self) -> Self {
-        // effect::from_attack(self)
-        //     .on_attacking()
-        //     .until_opponents_end_of_turn()
-        //     .on_damaged(|e| e.if_opponents_turn().prevent_damage())
-        self.engine = self.engine.with_effect(Effect {
-            name: "NO_DAMAGE_DURING_OPPONENTS_NEXT_TURN".into(),
-            source: EffectSource::Attack(self.player(), self.attacking().id),
-            target: EffectTarget::InPlay(self.player(), self.attacking().id),
-            consequence: EffectConsequence::BlockDamage,
-            expires: EffectExpiration::EndOfTurn(self.opponent(), 0),
-            system: false,
-        });
+        let effect = effect::from_attack()
+            .on_attacking()
+            .until_opponents_end_of_turn()
+            .custom_effect::<custom_effects::PreventDamageDuringOpponentsTurn>();
+
+        self.operations.push(Box::new(move |builder| effect.apply(builder)));
         self
     }
 
     pub fn prevent_damage_and_effects_during_opponents_next_turn(mut self) -> Self {
-        // effect::from_attack(&self)
-        //     .on_attacking()
-        //     .until_opponents_end_of_turn()
-        //     .on_damaged(|e| e.if_opponents_turn().prevent())
-        //     .on_affected(|e| e.if_opponents_turn().prevent())
-        self.engine = self.engine.with_effect(Effect {
-            name: "NO_DAMAGE_NO_EFFECTS_DURING_OPPONENTS_NEXT_TURN".into(),
-            source: EffectSource::Attack(self.player(), self.attacking().id),
-            target: EffectTarget::InPlay(self.player(), self.attacking().id),
-            consequence: EffectConsequence::BlockDamageAndEffects,
-            expires: EffectExpiration::EndOfTurn(self.opponent(), 0),
-            system: false,
-        });
+        let effect = effect::from_attack()
+            .on_attacking()
+            .until_opponents_end_of_turn()
+            .custom_effect::<custom_effects::PreventDamageAndEffectsDuringOpponentsTurn>();
+
+        self.operations.push(Box::new(move |builder| effect.apply(builder)));
         self
     }
 
     pub fn prevent_trainers_during_opponents_next_turn(mut self) -> Self {
-        // effect::from_attack(self)
-        //     .on_opponent()
-        //     .until_opponents_end_of_turn()
-        //     .on_trainer(|e| e.played_from_hand().prevent())
-        self.engine = self.engine.with_effect(Effect {
-            name: "PSYDUCK_FO_HEADACHE_NO_TRAINERS".into(),
-            source: EffectSource::Attack(self.player(), self.attacking().id),
-            target: EffectTarget::Player(self.opponent()),
-            consequence: EffectConsequence::BlockTrainerFromHand,
-            expires: EffectExpiration::EndOfTurn(self.opponent(), 0),
-            system: false,
-        });
+        let effect = effect::from_attack()
+            .on_defending()
+            .until_opponents_end_of_turn()
+            .custom_effect::<custom_effects::BlockTrainerFromHand>();
+
+        self.operations.push(Box::new(move |builder| effect.apply(builder)));
         self
     }
 
-    pub fn knock_out_attacker_if_attacking_is_knocked_out_next_turn(self) -> Self {
-        // effect::from_attack(self)
-        //     .on_attacking()
-        //     .until_opponents_end_of_turn()
-        //     .on_knocked_out(|e| e.if_opponents_turn().knockout_defending())
+    pub fn knock_out_attacker_if_attacking_is_knocked_out_next_turn(mut self) -> Self {
+        let effect = effect::from_attack()
+            .on_attacking()
+            .until_opponents_end_of_turn()
+            .custom_effect::<custom_effects::RevengeKnockOut>();
 
-        // self.engine = self.engine.with_effect(Effect {
-        //     name: "KNOCK_OUT_IF_WE_ARE_KNOCKED_OUT".into(),
-        //     source: EffectSource::Attack(self.player(), self.attacking().id),
-        //     target: EffectTarget::InPlay(self.player(), self.attacking().id),
-        //     consequence: TODO
-        //     expires: EffectExpiration::EndOfTurn(self.opponent(), 0)
-        //     system: false,
-        // });
+        self.operations.push(Box::new(move |builder| effect.apply(builder)));
         self
     }
 
-    pub fn prevent_attack_on_a_flip_during_opponents_next_turn(self) -> Self {
-        // effect::from_attack(self)
-        //     .on_defending()
-        //     .until_opponents_end_of_turn()
-        //     .on_attack(|e| e.flip_a_coin().if_heads(|e2| e2.prevent()))
-        self
-    }
-}
+    pub fn prevent_attack_on_a_flip_during_opponents_next_turn(mut self) -> Self {
+        let effect = effect::from_attack()
+            .on_defending()
+            .until_opponents_end_of_turn();
+            //.effect<custom_effects::SandAttack>();
 
-impl<'a> From<&AttackBuilder<'a>> for GameEngine {
-    fn from(ab: &AttackBuilder<'a>) -> Self {
-        if ab.failed {
-            ab.original.clone()
-        } else {
-            ab.engine.clone()
-        }
+        self.operations.push(Box::new(move |builder| effect.apply(builder)));
+        self
     }
 }

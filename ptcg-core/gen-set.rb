@@ -70,6 +70,14 @@ class Builder
     @engine_name = engine_name
   end
 
+  def to_s(compact: false)
+    if compact
+      @text.join
+    else
+      @text.map { |x| if x.start_with?(".") then "    #{x}\n" else "#{x}\n" end }.join
+    end
+  end
+
   def damage(amount)
     if !amount.to_s.empty?
       @text << ".damage(#{amount})"
@@ -138,11 +146,6 @@ class Builder
 
   def discard_all_attacking_energy_cards
     @text << ".discard_all_attacking_energy_cards()"
-    self
-  end
-
-  def attacking
-    @text << ".attacking()"
     self
   end
 
@@ -241,19 +244,6 @@ class Builder
   def gust_defending
     @text << ".gust_defending()"
     self
-  end
-
-  def done
-    @text[-1] += ";"
-    self
-  end
-
-  def to_s(compact: false)
-    if compact
-      @text.join
-    else
-      @text.map { |x| if x.start_with?(".") then "    #{x}\n" else "#{x}\n" end }.join
-    end
   end
 end
 
@@ -387,7 +377,11 @@ $patterns = [
   },
   {
     pattern: /^Discard (?<how_many>\d+) (?<energy_type>\w+) Energy card attached to \w+ in order to use this attack. If a Pokémon Knocks Out \w+ during your opponent's next turn, Knock Out that Pokémon\./,
-    build: ->(damage:, how_many:, energy_type:) { damage(damage).knock_out_attacker_if_attacking_is_knocked_out_next_turn },
+    build: ->(damage:, how_many:, energy_type:) {
+      must { discard_attacking_energy_cards([energy_type] * how_many.to_i) }
+        .damage(damage)
+        .knock_out_attacker_if_attacking_is_knocked_out_next_turn
+    },
   },
   {
     pattern: /^Does (?<base_damage>\d+) damage plus (?<plus_damage>\d+) more damage for each (?<energy_type>\w+) Energy attached to \w+ but not used to pay for this attack's Energy cost. Extra \w+ Energy after the (?<energy_limit>\d+)(?:st|nd|rd|th) (?:doesn't|don't) count\.$/,
@@ -562,6 +556,7 @@ if !ARGV.empty?
   puts "implemented attacks: #{total_attacks - missing_attacks}"
   puts "missing patterns: #{poops.size}"
   puts "implemented patterns: #{$patterns.size}"
+  puts "implemented verbs: #{(Builder.instance_methods(false) - %i[initialize to_s]).size}"
 else
   process_set(STDIN.read)
 end

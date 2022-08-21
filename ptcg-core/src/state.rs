@@ -326,6 +326,7 @@ pub struct PlayerSide {
     pub stadium: Option<Card>,
     pub supporter: Option<Card>,
     pub working_area: Vec<Card>,
+    pub manual_attachments_this_turn: usize,
 }
 
 impl PlayerSide {
@@ -344,6 +345,7 @@ impl PlayerSide {
             stadium: None,
             supporter: None,
             working_area: vec![],
+            manual_attachments_this_turn: 0,
         }
     }
 
@@ -465,6 +467,13 @@ impl EffectTarget {
             Self::InPlay(p, _) => p,
         }) == player
     }
+
+    pub fn is_in_play(&self, in_play: &InPlayCard) -> bool {
+        match self {
+            Self::InPlay(_, ip) => *ip == in_play.id,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -482,13 +491,7 @@ pub enum EffectExpiration {
     EndOfTurn(Player, usize), // 0: this turn; 1: next turn
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum EffectConsequence {
-    BlockAttachmentFromHand,
-    BlockTrainerFromHand,
-    BlockDamage,
-    BlockDamageAndEffects,
-}
+pub type EffectConsequence = String;
 
 #[derive(Clone, Debug)]
 pub struct Effect {
@@ -708,6 +711,15 @@ impl GameState {
         });
 
         self.with_player_side(side)
+    }
+
+    pub fn manual_attach_from_hand(&self, player: Player, card: &Card, target: &InPlayID) -> Self {
+        let mut side = self.side(player).clone();
+        side.manual_attachments_this_turn += 1;
+
+        self
+            .with_player_side(side)
+            .attach_from_hand(player, card, target)
     }
 
     pub fn attach_from_hand(&self, player: Player, card: &Card, target: &InPlayID) -> Self {
@@ -1026,7 +1038,15 @@ impl GameState {
         let mut turns = self.turns.clone();
         turns.push(player);
 
+        let mut p1 = self.side(Player::One).clone();
+        let mut p2 = self.side(Player::Two).clone();
+
+        p1.manual_attachments_this_turn = 0;
+        p2.manual_attachments_this_turn = 0;
+
         Self {
+            p1,
+            p2,
             turn: self.turn + 1,
             turns,
             ..self.clone()

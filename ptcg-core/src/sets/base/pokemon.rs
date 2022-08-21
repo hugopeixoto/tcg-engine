@@ -2073,6 +2073,7 @@ impl Gastly50 {
     pub fn destiny_bond(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Psychic, Type::Colorless])
+            .must(|e| e.discard_attacking_energy_cards(&[Type::Psychic]))
             .knock_out_attacker_if_attacking_is_knocked_out_next_turn()
     }
 }

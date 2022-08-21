@@ -19,7 +19,12 @@ impl<'a> Attacks<'a> {
     }
 
     pub fn register(mut self, name: &str, f: fn(AttackBuilder) -> AttackBuilder) -> Attacks<'a> {
-        let action = Action::Attack(self.player, self.in_play.clone(), name.into(), Box::new(RFA::new(f)));
+        let action = Action::Attack(
+            self.player,
+            self.in_play.clone(),
+            name.into(),
+            Box::new(RFA::new(f)),
+        );
 
         if self.are_attack_requirements_met(&action) {
             self.attacks.push(action);
@@ -35,7 +40,7 @@ impl<'a> Attacks<'a> {
                 .push_action(action.clone())
                 .push_target(&attacking, &self.engine.state.side(player.opponent()).active[0]);
 
-            !executor.build(&engine, &mut dm).failed()
+            !executor.build().apply(engine, &mut dm).failed()
         } else {
             panic!("Can't check the attack requirements for {:?}", action);
         }

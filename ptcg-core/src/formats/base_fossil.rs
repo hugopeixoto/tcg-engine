@@ -2,10 +2,13 @@ use std::ops::Deref;
 use crate::state::Card;
 use crate::engine::{CardArchetype, Format, AttackingEffectsWhen};
 use crate::sets::{base, fossil};
+use crate::effect::CustomEffect;
+use crate::custom_effects::*;
 
 #[derive(Clone)]
 pub struct BaseFossil {
     archetypes: std::rc::Rc<Vec<(String, Box<dyn CardArchetype>)>>,
+    custom_effects: std::rc::Rc<Vec<(String, Box<dyn CustomEffect>)>>,
 }
 
 impl BaseFossil {
@@ -15,19 +18,40 @@ impl BaseFossil {
         cards.extend(base::build());
         cards.extend(fossil::build());
 
-        Self { archetypes: std::rc::Rc::new(cards) }
+        Self {
+            archetypes: std::rc::Rc::new(cards),
+            custom_effects: std::rc::Rc::new(vec![
+                (PreventDamageDuringOpponentsTurn::identifier(), Box::new(PreventDamageDuringOpponentsTurn{})),
+                (BlockAttachmentFromHand::identifier(), Box::new(BlockAttachmentFromHand{})),
+                (RevengeKnockOut::identifier(), Box::new(RevengeKnockOut{})),
+            ]),
+        }
     }
 }
 
 impl Format for BaseFossil {
-    fn behavior(&self, card: &Card) -> &dyn CardArchetype {
+    fn behavior_from_id(&self, id: &String) -> &dyn CardArchetype {
         for (identifier, archetype) in self.archetypes.iter() {
-            if *identifier == card.archetype {
+            if identifier == id {
                 return archetype.deref();
             }
         }
 
-        panic!("Couldn't find card {}", card.archetype);
+        panic!("Couldn't find card {}", id);
+    }
+
+    fn behavior(&self, card: &Card) -> &dyn CardArchetype {
+        self.behavior_from_id(&card.archetype)
+    }
+
+    fn effect(&self, id: &String) -> &dyn CustomEffect {
+        for (identifier, effect) in self.custom_effects.iter() {
+            if identifier == id {
+                return effect.deref();
+            }
+        }
+
+        panic!("Couldn't find effect {}", id);
     }
 
     fn attacking_effects(&self) -> AttackingEffectsWhen {

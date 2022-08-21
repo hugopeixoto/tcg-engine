@@ -1,5 +1,6 @@
 use crate::state::*; use crate::cli::CLIDrawTarget;
 use crate::attack_builder::AttackBuilder;
+use crate::effect::CustomEffect;
 
 pub type Weakness = (usize, Vec<Type>);
 pub type Resistance = (usize, Vec<Type>);
@@ -7,12 +8,12 @@ pub type Resistance = (usize, Vec<Type>);
 pub trait CardArchetype {
     fn identifier(&self) -> String;
     // probably want to add the Zone of the card
-    fn card_actions(&self, player: Player, card: &Card, engine: &GameEngine) -> Vec<Action>;
-    fn execute(&self, player: Player, card: &Card, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
+    fn card_actions(&self, _player: Player, _card: &Card, _engine: &GameEngine) -> Vec<Action> { vec![] }
+    fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine { unimplemented!(); }
     fn stage(&self) -> Option<Stage>;
     fn evolves_from(&self) -> Option<String>;
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action>;
-    fn provides(&self) -> Vec<Type>;
+    fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> { vec![] }
+    fn provides(&self) -> Vec<Type> { vec![] }
     fn hp(&self, card: &Card, engine: &GameEngine) -> Option<usize>;
     fn weakness(&self) -> Weakness;
     fn resistance(&self) -> Resistance;
@@ -23,6 +24,9 @@ pub trait CardArchetype {
         self.stage().is_some()
     }
     fn is_trainer(&self, _card: &Card, _engine: &GameEngine) -> bool {
+        false
+    }
+    fn attachable_as_energy_for_turn(&self, _card: &Card, _engine: &GameEngine) -> bool {
         false
     }
 
@@ -45,7 +49,9 @@ pub enum AttackingEffectsWhen {
 }
 
 pub trait Format {
+    fn behavior_from_id(&self, id: &String) -> &dyn CardArchetype;
     fn behavior(&self, card: &Card) -> &dyn CardArchetype;
+    fn effect(&self, id: &String) -> &dyn CustomEffect;
     fn attacking_effects(&self) -> AttackingEffectsWhen;
     fn basic_for_stage2(&self, card: &Card) -> String;
     fn boxed_clone(&self) -> Box<dyn Format>;
@@ -69,13 +75,13 @@ impl RFA {
 }
 
 impl AttackBody for RFA {
-    fn build<'a>(&self, engine: &GameEngine, dm: &'a mut dyn DecisionMaker) -> AttackBuilder<'a> {
-        let builder = AttackBuilder::new(engine.clone(), dm);
+    fn build(&self) -> AttackBuilder {
+        let builder = AttackBuilder::new();
         (self.code)(builder)
     }
 
     fn run(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        (&self.build(engine, dm)).into()
+        self.build().apply(engine.clone(), dm).engine()
     }
 
     fn boxed_clone(&self) -> Box<dyn AttackBody> {
@@ -91,6 +97,7 @@ pub struct GameEngine {
     pub attack_target_stack: Vec<(InPlayID, InPlayID)>,
     pub good: bool,
     pub format: Box<dyn Format>,
+    prize_queue: Vec<PrizeAward>,
 }
 
 #[derive(Default)]
@@ -220,7 +227,7 @@ pub enum SetupActiveSelection {
 
 pub trait AttackBody {
     fn run(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
-    fn build<'a>(&self, engine: &GameEngine, dm: &'a mut dyn DecisionMaker) -> AttackBuilder<'a>;
+    fn build(&self) -> AttackBuilder;
     fn boxed_clone(&self) -> Box<dyn AttackBody>;
 }
 
@@ -260,15 +267,21 @@ pub struct PrizeAward {
     how_many: usize,
 }
 
+macro_rules! affected {
+    ($engine: expr, $target: expr) => {
+        // TODO: on_affected
+    }
+}
 
 impl GameEngine {
     pub fn from_state(state: GameState, format: Box<dyn Format>) -> Self {
         Self {
+            state,
+            format,
+            good: true,
             attack_target_stack: vec![],
             resolving_actions: vec![],
-            state,
-            good: true,
-            format,
+            prize_queue: vec![],
         }
     }
 
@@ -290,7 +303,7 @@ impl GameEngine {
     }
 
     pub fn step(&self, dm: &mut dyn DecisionMaker) -> Self {
-        let mut engine = match self.state.stage {
+        match self.state.stage {
             GameStage::Uninitialized => { self.setup(dm) },
             GameStage::Winner(_) => { self.clone() },
             GameStage::Tie => { self.clone() },
@@ -313,30 +326,40 @@ impl GameEngine {
                         self
                             .push_action(action.clone())
                             .then(|e| self.archetype(card).execute(player, card, &e, dm))
+                            .check_kos_and_stuff(dm)
                             .pop_action()
                     },
-                    Action::AttachFromHand(_, card) => {
-                        self.archetype(card).execute(player, card, &self, dm)
+                    Action::AttachFromHand(player, card) => {
+                        self
+                            .manual_attach_energy_card(*player, card, dm)
+                            .check_kos_and_stuff(dm)
                     },
                     Action::EvolveFromHand(player, card) => {
-                        self.evolve(*player, card, dm)
+                        self
+                            .evolve(*player, card, dm)
+                            .check_kos_and_stuff(dm)
                     },
                     Action::Retreat(player, in_play) => {
-                        self.retreat(*player, in_play, dm)
+                        self
+                            .retreat(*player, in_play, dm)
+                            .check_kos_and_stuff(dm)
                     },
                     Action::Attack(player, attacking, _name, executor) => {
                        self
                             .push_action(action.clone())
                             .push_target(attacking, &self.state.side(player.opponent()).active[0])
                             .then(|e| executor.run(&e, dm))
+                            .check_kos_and_stuff(dm)
                             .pop_target()
                             .pop_action()
                             .end_turn()
                     },
                     Action::BenchFromHand(_, card) => {
-                        self.bench_from_hand(player, card)
+                        self
+                            .bench_from_hand(player, card)
+                            .check_kos_and_stuff(dm)
                     },
-                }.check_for_knockouts(dm)
+                }
             },
             GameStage::EndOfTurn(_) => {
                 self.goto_pokemon_checkup()
@@ -344,11 +367,15 @@ impl GameEngine {
             GameStage::PokemonCheckup(player) => {
                 self.with_state(self.state.with_stage(GameStage::StartOfTurn(player)).next_turn(player))
             }
-        };
+        }
+    }
 
-        engine = engine.check_promotion_needed(dm);
-        engine = engine.check_win_conditions();
-        engine
+    pub fn check_kos_and_stuff(&self, dm: &mut dyn DecisionMaker) -> Self {
+        self
+            .check_for_knockouts(dm)
+            .draw_prize_cards(dm)
+            .check_promotion_needed(dm)
+            .check_win_conditions()
     }
 
     pub fn check_win_conditions(&self) -> Self {
@@ -400,36 +427,33 @@ impl GameEngine {
 
     pub fn check_for_knockouts(&self, dm: &mut dyn DecisionMaker) -> Self {
         let mut engine = self.clone();
-        // attack:
-        //   damage calculation
-        //   damage counters
-        //   attack effects
-        //   hp check: check for pokemon with more damage counters than HP
-        //   knock out:
-        //     discard cards
-        //     take prizes
-        //   promote active
-
-        // TODO: (billowing smoke) how do I know that the damage was from an attack?
-        let mut prizes = vec![];
 
         loop {
-            let mut at_zero = engine.state.all_in_play().into_iter().filter(|in_play| engine.remaining_hp(in_play) == 0);
+            let mut at_zero = engine
+                .state
+                .all_in_play()
+                .into_iter()
+                .filter(|in_play| engine.remaining_hp(in_play) == 0);
+
             match at_zero.next() {
                 None => { break; },
                 Some(in_play) => {
-                    let (p, e) = engine.knock_out(in_play);
-                    engine = e;
-                    prizes.push(p);
+                    engine = engine.knock_out(in_play, dm);
                 },
             }
-
-            break;
         }
 
-        // take n prizes
-        for prize in prizes {
-            engine = engine.take_prize_card(prize.player, prize.how_many, dm);
+        engine
+    }
+
+    pub fn draw_prize_cards(&self, dm: &mut dyn DecisionMaker) -> Self {
+        let mut engine = self.clone();
+
+        while !engine.prize_queue.is_empty() {
+            let prize = engine.prize_queue.pop().unwrap();
+            if prize.how_many > 0 {
+                engine = engine.take_prize_card(prize.player, prize.how_many, dm);
+            }
         }
 
         engine
@@ -437,6 +461,7 @@ impl GameEngine {
 
     pub fn take_prize_card(&self, player: Player, how_many: usize, dm: &mut dyn DecisionMaker) -> Self {
         // TODO: intercept for greedy dice, treasure energy, dream ball
+        // TODO: (billowing smoke) how do I know that the damage was from an attack?
 
         let prizes = self.state.side(player).prizes.clone();
         let choices = dm.pick_from_prizes(player, player, how_many, &prizes);
@@ -449,14 +474,47 @@ impl GameEngine {
         engine
     }
 
-    pub fn knock_out(&self, in_play: &InPlayCard) -> (PrizeAward, Self) {
-        // calculate prizes
+    pub fn knock_out(&self, in_play: &InPlayCard, dm: &mut dyn DecisionMaker) -> Self {
         let mut engine = self.clone();
+
+        // it will be knocked out, trigger effects that might prevent it (eg: Focus Band, Fortitude).
+        // TODO: other effects, like abilities and attached cards
+        let would_be_knocked_out_effects = self.state.effects.iter()
+            .flat_map(|e| self.effect(e).on_would_be_knocked_out(&e, in_play, &self))
+            .collect::<Vec<_>>();
+
+        // TODO: if would_be_knocked_out_effects.len() > 1, someone must pick the order
+        for effect in would_be_knocked_out_effects {
+            let ctx = effect.apply(engine, dm);
+            engine = ctx.engine();
+            if ctx.prevented() {
+                return engine;
+            }
+        }
+
+        // it is knocked out, trigger response effects (eg: Destiny Bond, Swelling Spite).
+        // TODO: other effects, like abilities and attached cards
+        let knock_out_effects = self.state.effects.iter()
+            .flat_map(|e| self.effect(e).on_knocked_out(&e, in_play, &self))
+            .collect::<Vec<_>>();
+        println!("knocked out, all effects: {}", self.state.effects.len());
+        println!("knocked out, kod effects: {}", knock_out_effects.len());
+        for effect in knock_out_effects {
+            let ctx = effect.apply(engine, dm);
+            engine = ctx.engine();
+        }
+
+        // TODO: calculate prizes (Leap Through Time, Hero's Medal)
+        // TODO: implement multi prizers (EX, GX, V, VMAX, VSTAR)
+        let prizes = 1;
+
+        // TODO: effects that affect discarded cards (Splash Energy, Leap Through Time, Exp. Share)
         for card in in_play.cards() {
             engine = engine.with_state(engine.state.move_card_to_discard(card));
         }
 
-        (PrizeAward { player: in_play.owner.opponent(), how_many: 1 }, engine)
+        engine.prize_queue.push(PrizeAward { player: in_play.owner.opponent(), how_many: prizes });
+        engine
     }
 
     pub fn attach_from_hand(&self, player: Player, card: &Card, target: &InPlayCard) -> Self {
@@ -464,6 +522,13 @@ impl GameEngine {
     }
 
     // attack in flight
+    pub fn is_someone_attacking(&self) -> bool {
+        match self.resolving_actions.last() {
+            Some(Action::Attack(_, _, _, _)) => true,
+            _ => false,
+        }
+    }
+
     pub fn player(&self) -> Player {
         match self.resolving_actions.last() {
             Some(Action::Attack(player, _, _, _)) => *player,
@@ -539,6 +604,10 @@ impl GameEngine {
         self.format.behavior(card)
     }
 
+    pub fn effect(&self, effect: &Effect) -> &dyn CustomEffect {
+        self.format.effect(&effect.consequence)
+    }
+
     pub fn apply_weakness(&self, mut damage: usize) -> usize {
         // TODO: +X weaknesses instead of *X
         // TODO: Super effective glasses changing weakness to *3
@@ -570,43 +639,50 @@ impl GameEngine {
             }
         }
 
+        for effect in self.state.effects.iter() {
+            if let Some(new_damage) = self.effect(effect).attacking_damage(damage) {
+                damage = new_damage;
+            }
+        }
+
+
         damage
     }
 
     pub fn effects_on_defending(&self, mut damage: usize) -> usize {
-        let damage_blocked = self.state.effects.iter()
-            .filter(|e| e.target == EffectTarget::InPlay(self.defending().owner, self.defending().id))
-            .filter(|e| (e.consequence == EffectConsequence::BlockDamage || e.consequence == EffectConsequence::BlockDamageAndEffects) && !e.target.is_player(self.player()))
-            .count() == 0;
-
-        if !damage_blocked {
-                for card in self.state.all_cards() {
-                    if let Some(new_damage) = self.archetype(&card).defending_damage_effect(&card, self, damage) {
-                        damage = new_damage;
-                    }
-                }
-
-                damage
-            } else {
-                0
+        for card in self.state.all_cards() {
+            if let Some(new_damage) = self.archetype(&card).defending_damage_effect(&card, self, damage) {
+                damage = new_damage;
             }
+        }
+
+        for effect in self.state.effects.iter() {
+            if let Some(new_damage) = self.effect(effect).defending_damage(damage) {
+                damage = new_damage;
+            }
+        }
+
+        damage
     }
 
     // end attack in flight
-
     pub fn paralyze(&self, target: &InPlayCard) -> Self {
+        affected!(self, target);
         self.with_state(self.state.paralyze(target))
     }
 
     pub fn asleep(&self, target: &InPlayCard) -> Self {
+        affected!(self, target);
         self.with_state(self.state.asleep(target))
     }
 
     pub fn poison(&self, target: &InPlayCard, counters: usize) -> Self {
+        affected!(self, target);
         self.with_state(self.state.poison(target, counters))
     }
 
     pub fn confuse(&self, target: &InPlayCard) -> Self {
+        affected!(self, target);
         self.with_state(self.state.confuse(target))
     }
 
@@ -778,6 +854,11 @@ impl GameEngine {
 
     pub fn end_turn(&self) -> Self {
         let mut engine = self.clone();
+
+        if self.is_finished() {
+            return engine;
+        }
+
         let player = match engine.state.stage {
             GameStage::Turn(player) => player,
             stage => { panic!("Can't end turn while in stage {:?}", stage); }
@@ -853,6 +934,14 @@ impl GameEngine {
         // attach energy from hand
         // use ability actions
         // attack
+
+        for card in self.state.side(player).hand.iter() {
+            if self.archetype(card).attachable_as_energy_for_turn(card, &self) {
+                if self.state.side(player).manual_attachments_this_turn == 0 {
+                    actions.push(Action::AttachFromHand(player, card.clone()));
+                }
+            }
+        }
 
         for card in self.state.side(player).hand.iter() {
             actions.extend(self.card_actions(player, card));
@@ -978,11 +1067,15 @@ impl GameEngine {
     }
 
     pub fn in_play_actions(&self, player: Player, in_play: &InPlayCard, active: bool) -> Vec<Action> {
-        if active && in_play.rotational_status != RotationalStatus::Paralyzed {
+        if active && in_play.rotational_status != RotationalStatus::Paralyzed && self.can_attack(player, in_play) {
             self.archetype(in_play.stack[0].card()).attacks(player, in_play, self)
         } else {
             vec![]
         }
+    }
+
+    pub fn can_attack(&self, _player: Player, _in_play: &InPlayCard) -> bool {
+        true
     }
 
     pub fn card_actions(&self, player: Player, card: &Card) -> Vec<Action> {
@@ -1082,8 +1175,10 @@ impl GameEngine {
     pub fn can_play_trainer_from_hand(&self, card: &Card) -> bool {
         self.state.effects.iter()
             .filter(|e| e.target == EffectTarget::Player(card.owner))
-            .filter(|e| e.consequence == EffectConsequence::BlockTrainerFromHand)
-            .count() == 0
+            .map(|e| self.effect(e).on_trainer())
+            .filter(|e| e.is_some())
+            .map(|e| e.unwrap())
+            .all(|e| e.apply(self.clone(), &mut FakeDM{}).prevented())
     }
 
     pub fn is_attack_energy_cost_met(&self, in_play: &InPlayCard, cost: &[Type]) -> bool {
@@ -1119,11 +1214,25 @@ impl GameEngine {
         true
     }
 
+    pub fn manual_attach_energy_card(&self, player: Player, card: &Card, dm: &mut dyn DecisionMaker) -> Self {
+        let targets = self.attachment_from_hand_targets(player, card);
+        let target = dm.pick_in_play(player, 1, &targets)[0];
+
+        self.with_state(self.state.manual_attach_from_hand(player, card, &target.id))
+    }
+
+    pub fn can_attach_energy_from_hand(&self, player: Player) -> bool {
+        self.state.effects.iter()
+            .map(|e| self.effect(e).on_energy_attachment(e, player))
+            .filter(|e| e.is_some())
+            .map(|e| e.unwrap())
+            .all(|e| e.apply(self.clone(), &mut FakeDM{}).prevented())
+    }
+
     pub fn attachment_from_hand_targets(&self, player: Player, _card: &Card) -> Vec<InPlayCard> {
-        let blocks = self.state.effects.iter()
-            .filter(|e| e.consequence == EffectConsequence::BlockAttachmentFromHand)
-            .filter(|e| e.target.is_player(player))
-            .collect::<Vec<_>>();
+        if !self.can_attach_energy_from_hand(player) {
+            return vec![];
+        }
 
         let mut targets = vec![];
 
@@ -1133,17 +1242,6 @@ impl GameEngine {
 
         for benched in self.state.side(player).bench.iter() {
             targets.push(benched.clone());
-        }
-
-        for block in blocks {
-            match &block.target {
-                EffectTarget::Player(_) => {
-                    return vec![];
-                },
-                EffectTarget::InPlay(_, id) => {
-                    targets.retain(|x| x.id != *id);
-                },
-            }
         }
 
         targets

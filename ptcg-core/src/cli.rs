@@ -191,12 +191,15 @@ impl CLIDrawable for GameEngine {
             FaceCard::Up(card.clone()).draw(i*8, 1, target);
         }
 
+        target.draw_line(&format!("Player One manual attachments: {}", self.state.p1.manual_attachments_this_turn), x + 80, 8);
+        target.draw_line(&format!("Player Two manual attachments: {}", self.state.p2.manual_attachments_this_turn), x + 80, 9);
+
         for (i, effect) in self.state.effects.iter().enumerate() {
-            target.draw_line(&format!("Effect on {:?}", effect.target), x + 80, 8 + i*5 + 0);
-            target.draw_line(&format!("  what: {:?}", effect.consequence), x + 80, 8 + i*5 + 1);
-            target.draw_line(&format!("  name: {}", effect.name), x + 80, 8 + i*5 + 2);
-            target.draw_line(&format!("  source: {:?}", effect.source), x + 80, 8 + i*5 + 3);
-            target.draw_line(&format!("  expires: {:?}", effect.expires), x + 80, 8 + i*5 + 4);
+            target.draw_line(&format!("Effect on {:?}", effect.target), x + 80, 10 + i*5 + 0);
+            target.draw_line(&format!("  what: {:?}", effect.consequence), x + 80, 10 + i*5 + 1);
+            target.draw_line(&format!("  name: {}", effect.name), x + 80, 10 + i*5 + 2);
+            target.draw_line(&format!("  source: {:?}", effect.source), x + 80, 10 + i*5 + 3);
+            target.draw_line(&format!("  expires: {:?}", effect.expires), x + 80, 10 + i*5 + 4);
         }
     }
 }
