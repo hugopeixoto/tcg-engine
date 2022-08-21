@@ -62,6 +62,25 @@ impl DecisionMaker for CLI {
         cards.clone()
     }
 
+    fn pick_type<'a>(&mut self, player: Player, types: &'a Vec<Type>) -> &'a Type {
+        let mut choice = None;
+
+        println!("<Player {:?}> pick a type:", player);
+        for (i, t) in types.iter().enumerate() {
+            println!(" {}. {:?}", i + 1, t);
+        }
+
+        while choice.is_none() {
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+            match input.trim() {
+                text => { choice = text.parse::<usize>().ok(); },
+            }
+        }
+
+        &types[choice.unwrap() - 1]
+    }
+
     fn pick_action<'a>(&mut self, player: Player, actions: &'a Vec<Action>) -> &'a Action {
         let mut choice = None;
 

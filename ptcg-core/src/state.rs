@@ -20,6 +20,22 @@ pub enum Player {
     Two,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Type {
+    Fighting,
+    Fire,
+    Grass,
+    Lightning,
+    Psychic,
+    Water,
+    Dark,
+    Metal,
+    Fairy,
+    Dragon,
+    Colorless,
+    Any,
+}
+
 impl Player {
     pub fn opponent(&self) -> Self {
         match self {
@@ -494,18 +510,35 @@ pub enum EffectExpiration {
 pub type EffectConsequence = String;
 
 #[derive(Clone, Debug)]
+pub enum EffectParameter {
+    Type(Type),
+}
+
+impl EffectParameter {
+    pub fn get_type(&self) -> Option<Type> {
+        match self {
+            Self::Type(t) => Some(t.clone()),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Effect {
     pub source: EffectSource,
     pub target: EffectTarget,
     pub expires: EffectExpiration,
     pub consequence: EffectConsequence,
+    pub parameters: Vec<EffectParameter>,
     pub name: String,
-    pub system: bool
 }
 
 impl Effect {
-    pub fn energy_attach_for_turn(effect: &Effect) -> bool {
-        effect.name == "ENERGY_ATTACH_FOR_TURN"
+    pub fn get_parameter_type(&self, index: usize) -> Option<Type> {
+        self
+            .parameters
+            .iter()
+            .flat_map(|p| p.get_type())
+            .nth(index)
     }
 }
 

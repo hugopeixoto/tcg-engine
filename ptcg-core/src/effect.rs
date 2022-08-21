@@ -1,7 +1,7 @@
 use crate::attack_builder::{AttackBuilder, AttackBuilderContext};
-use crate::state::{Effect, EffectConsequence, EffectExpiration, EffectSource, EffectTarget};
+use crate::state::{Effect, EffectConsequence, EffectExpiration, EffectSource, EffectTarget, EffectParameter, Type};
 use crate::state::{Player, InPlayCard};
-use crate::engine::GameEngine;
+use crate::engine::{GameEngine, Resistance, Weakness};
 
 #[derive(Default)]
 pub struct AttackEffectBuilder {
@@ -9,6 +9,7 @@ pub struct AttackEffectBuilder {
     source: Option<Box<dyn Fn(&AttackBuilderContext) -> EffectSource>>,
     target: Option<Box<dyn Fn(&AttackBuilderContext) -> EffectTarget>>,
     expires: Option<Box<dyn Fn(&AttackBuilderContext) -> EffectExpiration>>,
+    parameters: Vec<Box<dyn Fn(&AttackBuilderContext) -> EffectParameter>>,
 }
 
 pub fn from_attack() -> AttackEffectBuilder {
@@ -46,6 +47,21 @@ impl AttackEffectBuilder {
         self
     }
 
+    pub fn while_active(mut self) -> Self {
+        self.expires = Some(Box::new(|_ab| {
+            EffectExpiration::DefendingPokemon
+        }));
+
+        self
+    }
+
+    pub fn type_parameter(mut self, t: Type) -> Self {
+        self.parameters.push(Box::new(move |_ab| {
+            EffectParameter::Type(t.clone())
+        }));
+        self
+    }
+
     pub fn custom_effect<T: CustomEffect>(mut self) -> Self {
         let identifier = T::identifier();
         self.effect = Some(Box::new(move |_ab: &AttackBuilderContext| {
@@ -59,14 +75,15 @@ impl AttackEffectBuilder {
         let source = (self.source.as_ref().unwrap())(&builder);
         let expires = (self.expires.as_ref().unwrap())(&builder);
         let consequence = (self.effect.as_ref().unwrap())(&builder);
+        let parameters = self.parameters.iter().map(|e| e(&builder)).collect();
 
         builder.engine = builder.engine.with_effect(Effect {
             consequence,
             expires,
             name: "batata".into(),
             source,
-            system: false,
             target,
+            parameters,
         });
         builder
     }
@@ -75,8 +92,11 @@ impl AttackEffectBuilder {
 pub trait CustomEffect {
     fn identifier() -> String where Self: Sized;
 
+    // getters
     fn defending_damage(&self, _damage: usize) -> Option<usize> { None }
     fn attacking_damage(&self, _damage: usize) -> Option<usize> { None }
+    fn get_resistance(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _resistance: Resistance) -> Option<Resistance> { None }
+    fn get_weakness(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _weakness: Weakness) -> Option<Weakness> { None }
 
     fn on_affected(&self) -> Option<AttackBuilder> { None }
     fn on_turn_end(&self) -> Option<AttackBuilder> { None }

@@ -1,4 +1,5 @@
 use crate::engine::*;
+use crate::state::Type;
 use crate::carddb::{Pokemon, Trainer};
 
 mod pokemon;

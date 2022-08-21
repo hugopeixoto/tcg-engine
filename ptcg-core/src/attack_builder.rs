@@ -444,6 +444,45 @@ impl AttackBuilder {
         self
     }
 
+    pub fn change_attacking_resistance_except(mut self, exceptions: &[Type]) -> Self {
+        let except_types = exceptions.iter().cloned().collect::<Vec<_>>();
+
+        self.operations.push(Box::new(move |builder| {
+            let mut types = builder.engine.format.available_types();
+            types.retain(|t| !except_types.contains(t));
+            let chosen_type = builder.dm.pick_type(builder.player(), &types);
+
+            let effect = effect::from_attack()
+                .on_attacking()
+                .while_active()
+                .type_parameter(chosen_type.clone())
+                .custom_effect::<custom_effects::ChangeResistance>();
+
+            effect.apply(builder)
+        }));
+        self
+    }
+
+    pub fn change_defending_weakness_except(mut self, exceptions: &[Type]) -> Self {
+        let except_types = exceptions.iter().cloned().collect::<Vec<_>>();
+
+        self.operations.push(Box::new(move |builder| {
+            let mut types = builder.engine.format.available_types();
+            types.retain(|t| !except_types.contains(t));
+            let chosen_type = builder.dm.pick_type(builder.player(), &types);
+
+            let effect = effect::from_attack()
+                .on_defending()
+                .while_active()
+                .type_parameter(chosen_type.clone())
+                .custom_effect::<custom_effects::ChangeWeakness>();
+
+            effect.apply(builder)
+        }));
+        self
+    }
+
+
     pub fn prevent_damage_during_opponents_next_turn(mut self) -> Self {
         let effect = effect::from_attack()
             .on_attacking()

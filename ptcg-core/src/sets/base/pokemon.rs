@@ -1,4 +1,5 @@
 use crate::*;
+use crate::state::Type;
 use crate::attack_builder::AttackBuilder;
 use crate::carddb::Attacks;
 
@@ -1626,11 +1627,15 @@ impl CardArchetype for Porygon39 {
     }
 }
 impl Porygon39 {
-    pub fn conversion_1(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn conversion_1(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
+            .change_defending_weakness_except(&[Type::Colorless])
     }
-    pub fn conversion_2(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn conversion_2(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .change_attacking_resistance_except(&[Type::Colorless])
     }
 }
 

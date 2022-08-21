@@ -8,6 +8,7 @@ require 'erb'
 
 PRELUDE = <<~EOF
 use crate::*;
+use crate::state::Type;
 use crate::attack_builder::AttackBuilder;
 use crate::carddb::Attacks;
 
@@ -241,6 +242,16 @@ class Builder
     self
   end
 
+  def change_attacking_resistance_except(exceptions)
+    @text << ".change_attacking_resistance_except(&[#{exceptions.map{|c| "Type::#{c}"}.join(", ")}])"
+    self
+  end
+
+  def change_defending_weakness_except(exceptions)
+    @text << ".change_defending_weakness_except(&[#{exceptions.map{|c| "Type::#{c}"}.join(", ")}])"
+    self
+  end
+
   def gust_defending
     @text << ".gust_defending()"
     self
@@ -414,7 +425,21 @@ $patterns = [
             .if_tails{ each_own_bench{ damage(damage_tails) } }
         }
     }
-  }
+  },
+  {
+    pattern: /^Change \w+'s Resistance to a type of your choice other than (?<except>\w+)\.$/,
+    build: ->(damage:, except:) {
+      damage(damage)
+        .change_attacking_resistance_except([except])
+    },
+  },
+  {
+    pattern: /^If the Defending Pokémon has a Weakness, you may change it to a type of your choice other than (?<except>\w+)\.$/,
+    build: ->(damage:, except:) {
+      damage(damage)
+        .change_defending_weakness_except([except])
+    },
+  },
 ]
 
 def attack_impl(attack)

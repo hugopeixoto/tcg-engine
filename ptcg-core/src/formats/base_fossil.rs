@@ -1,5 +1,5 @@
 use std::ops::Deref;
-use crate::state::Card;
+use crate::state::{Card, Type};
 use crate::engine::{CardArchetype, Format, AttackingEffectsWhen};
 use crate::sets::{base, fossil};
 use crate::effect::CustomEffect;
@@ -24,6 +24,8 @@ impl BaseFossil {
                 (PreventDamageDuringOpponentsTurn::identifier(), Box::new(PreventDamageDuringOpponentsTurn{})),
                 (BlockAttachmentFromHand::identifier(), Box::new(BlockAttachmentFromHand{})),
                 (RevengeKnockOut::identifier(), Box::new(RevengeKnockOut{})),
+                (ChangeResistance::identifier(), Box::new(ChangeResistance{})),
+                (ChangeWeakness::identifier(), Box::new(ChangeWeakness{})),
             ]),
         }
     }
@@ -68,6 +70,18 @@ impl Format for BaseFossil {
         }
 
         panic!("Couldn't find basic that matches card {}", card.archetype);
+    }
+
+    fn available_types(&self) -> Vec<Type> {
+        vec![
+            Type::Fighting,
+            Type::Fire,
+            Type::Grass,
+            Type::Lightning,
+            Type::Psychic,
+            Type::Water,
+            Type::Colorless,
+        ]
     }
 
     fn boxed_clone(&self) -> Box<dyn Format> {

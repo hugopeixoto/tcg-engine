@@ -1,7 +1,7 @@
 use crate::attack_builder::AttackBuilder;
 use crate::effect::CustomEffect;
 use crate::state::{Effect, Player, InPlayCard};
-use crate::engine::GameEngine;
+use crate::engine::{GameEngine, Resistance, Weakness};
 
 // TODO: the attackbuilder builds a bunch of objects, maybe it
 // should be stored in the struct and reused here.
@@ -74,17 +74,52 @@ impl CustomEffect for RevengeKnockOut {
 
     fn on_knocked_out(&self, effect: &Effect, in_play: &InPlayCard, engine: &GameEngine) -> Option<AttackBuilder> {
         let opponents_turn = !effect.target.is_player(engine.player());
-        // effect target is knocked out?
-        let this_pokemon_is_kod = effect.target.is_in_play(in_play);
+        let this_pokemon = effect.target.is_in_play(in_play);
         // there's an attacking pokemon?
 
         // TODO: Revenge knock out: Sky Return?
         // TODO: Revenge knock out: Quick shooting?
         println!("knocked out? {} && {}", engine.is_someone_attacking(), effect.target.is_player(engine.player()));
-        if opponents_turn && this_pokemon_is_kod && engine.is_someone_attacking() {
+        if opponents_turn && this_pokemon && engine.is_someone_attacking() {
             AttackBuilder::new()
                 .knock_out_attacking()
                 .into()
+        } else {
+            None
+        }
+    }
+}
+
+pub struct ChangeResistance {}
+impl CustomEffect for ChangeResistance {
+    fn identifier() -> String {
+        "CHANGE_RESISTANCE".into()
+    }
+
+    fn get_resistance(&self, effect: &Effect, in_play: &InPlayCard, _engine: &GameEngine, resistance: Resistance) -> Option<Resistance> {
+        let chosen = effect.get_parameter_type(0).unwrap();
+        let this_pokemon = effect.target.is_in_play(in_play);
+
+        if this_pokemon {
+            Some((resistance.0, vec![chosen]))
+        } else {
+            None
+        }
+    }
+}
+
+pub struct ChangeWeakness {}
+impl CustomEffect for ChangeWeakness {
+    fn identifier() -> String {
+        "CHANGE_WEAKNESS".into()
+    }
+
+    fn get_weakness(&self, effect: &Effect, in_play: &InPlayCard, _engine: &GameEngine, weakness: Weakness) -> Option<Weakness> {
+        let chosen = effect.get_parameter_type(0).unwrap();
+        let this_pokemon = effect.target.is_in_play(in_play);
+
+        if this_pokemon {
+            Some((weakness.0, vec![chosen]))
         } else {
             None
         }

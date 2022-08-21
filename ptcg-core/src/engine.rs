@@ -1,4 +1,5 @@
-use crate::state::*; use crate::cli::CLIDrawTarget;
+use crate::state::*;
+use crate::cli::CLIDrawTarget;
 use crate::attack_builder::AttackBuilder;
 use crate::effect::CustomEffect;
 
@@ -52,8 +53,11 @@ pub trait Format {
     fn behavior_from_id(&self, id: &String) -> &dyn CardArchetype;
     fn behavior(&self, card: &Card) -> &dyn CardArchetype;
     fn effect(&self, id: &String) -> &dyn CustomEffect;
+
     fn attacking_effects(&self) -> AttackingEffectsWhen;
     fn basic_for_stage2(&self, card: &Card) -> String;
+    fn available_types(&self) -> Vec<Type>;
+
     fn boxed_clone(&self) -> Box<dyn Format>;
 }
 
@@ -136,6 +140,7 @@ pub trait DecisionMaker {
     fn confirm_setup_active(&mut self, p: Player, yes: &Vec<Card>, maybe: &Vec<Card>) -> Card;
     fn confirm_mulligan_draw(&mut self, p: Player, upto: usize) -> usize;
     fn confirm_setup_bench_selection(&mut self, p: Player, cards: &Vec<Card>) -> Vec<Card>;
+    fn pick_type<'a>(&mut self, p: Player, types: &'a Vec<Type>) -> &'a Type;
     fn pick_action<'a>(&mut self, p: Player, actions: &'a Vec<Action>) -> &'a Action;
     fn pick_stage<'a>(&mut self, p: Player, items: &'a Vec<Stage>) -> &'a Stage;
     fn pick_from_hand<'a>(&mut self, p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card>;
@@ -163,6 +168,7 @@ impl DecisionMaker for FakeDM {
     fn confirm_setup_active(&mut self, _p: Player, yes: &Vec<Card>, maybe: &Vec<Card>) -> Card { if !yes.is_empty() { yes[0].clone() } else { maybe[0].clone() } }
     fn confirm_mulligan_draw(&mut self, _p: Player, upto: usize) -> usize { upto }
     fn confirm_setup_bench_selection(&mut self, _p: Player, _cards: &Vec<Card>) -> Vec<Card> { vec![] }
+    fn pick_type<'a>(&mut self, _p: Player, types: &'a Vec<Type>) -> &'a Type { &types[0] }
     fn pick_action<'a>(&mut self, _p: Player, actions: &'a Vec<Action>) -> &'a Action { &actions[0] }
     fn pick_stage<'a>(&mut self, _p: Player, items: &'a Vec<Stage>) -> &'a Stage { &items[0] }
     fn pick_from_hand<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card> { hand[0..how_many].iter().collect() }
@@ -194,22 +200,6 @@ pub enum Stage {
     Stage2,
     // VStar,
     // VUnion,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Type {
-    Fighting,
-    Fire,
-    Grass,
-    Lightning,
-    Psychic,
-    Water,
-    Dark,
-    Metal,
-    Fairy,
-    Dragon,
-    Colorless,
-    Any,
 }
 
 //#[derive(Debug, Clone, PartialEq, Eq)]
@@ -608,10 +598,34 @@ impl GameEngine {
         self.format.effect(&effect.consequence)
     }
 
+    pub fn get_weakness(&self, in_play: &InPlayCard) -> Resistance {
+        let mut weakness = self.archetype(in_play.stack[0].card()).weakness();
+
+        for effect in self.state.effects.iter() {
+            if let Some(new_weakness) = self.effect(effect).get_weakness(effect, in_play, self, weakness.clone()) {
+                weakness = new_weakness;
+            }
+        }
+
+        weakness
+    }
+
+    pub fn get_resistance(&self, in_play: &InPlayCard) -> Resistance {
+        let mut resistance = self.archetype(in_play.stack[0].card()).resistance();
+
+        for effect in self.state.effects.iter() {
+            if let Some(new_resistance) = self.effect(effect).get_resistance(effect, in_play, self, resistance.clone()) {
+                resistance = new_resistance;
+            }
+        }
+
+        resistance
+    }
+
     pub fn apply_weakness(&self, mut damage: usize) -> usize {
         // TODO: +X weaknesses instead of *X
         // TODO: Super effective glasses changing weakness to *3
-        let (multiplier, types) = self.archetype(self.defending().stack[0].card()).weakness();
+        let (multiplier, types) = self.get_weakness(self.defending());
         for weakness in types {
             if self.archetype(self.attacking().stack[0].card()).pokemon_type().contains(&weakness) {
                 damage = damage * multiplier;
@@ -622,10 +636,10 @@ impl GameEngine {
     }
 
     pub fn apply_resistance(&self, mut damage: usize) -> usize {
-        let (offset, types) = self.archetype(self.defending().stack[0].card()).resistance();
+        let (offset, types) = self.get_resistance(self.defending());
         for weakness in types {
             if self.archetype(self.attacking().stack[0].card()).pokemon_type().contains(&weakness) {
-                damage = damage - offset;
+                damage = damage.saturating_sub(offset);
             }
         }
 
