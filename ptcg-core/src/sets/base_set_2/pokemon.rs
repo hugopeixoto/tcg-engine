@@ -1458,8 +1458,12 @@ impl CardArchetype for FarfetchD40 {
     }
 }
 impl FarfetchD40 {
-    pub fn leek_slap(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn leek_slap(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
+            .flip_a_coin()
+            .if_heads(|e| e.damage(30))
+            .once_while_in_play()
     }
     pub fn pot_smash(builder: AttackBuilder) -> AttackBuilder {
         builder
