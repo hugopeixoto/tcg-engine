@@ -444,6 +444,14 @@ impl AttackBuilder {
         self
     }
 
+    pub fn draw(mut self, how_many: usize) -> Self {
+        self.operations.push(Box::new(move |mut builder| {
+            builder.engine = builder.engine.draw(builder.engine.player(), how_many, builder.dm);
+            builder
+        }));
+        self
+    }
+
     pub fn change_attacking_resistance_except(mut self, exceptions: &[Type]) -> Self {
         let except_types = exceptions.iter().cloned().collect::<Vec<_>>();
 

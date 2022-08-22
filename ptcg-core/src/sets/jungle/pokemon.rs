@@ -181,8 +181,10 @@ impl CardArchetype for Kangaskhan5 {
     }
 }
 impl Kangaskhan5 {
-    pub fn fetch(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn fetch(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
+            .draw(1)
     }
     pub fn comet_punch(builder: AttackBuilder) -> AttackBuilder {
         builder
@@ -759,8 +761,10 @@ impl CardArchetype for Kangaskhan21 {
     }
 }
 impl Kangaskhan21 {
-    pub fn fetch(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn fetch(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
+            .draw(1)
     }
     pub fn comet_punch(builder: AttackBuilder) -> AttackBuilder {
         builder

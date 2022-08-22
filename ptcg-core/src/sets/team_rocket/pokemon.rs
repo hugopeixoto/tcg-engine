@@ -2145,8 +2145,10 @@ impl CardArchetype for Psyduck65 {
     }
 }
 impl Psyduck65 {
-    pub fn dizziness(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn dizziness(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Psychic])
+            .draw(1)
     }
     pub fn water_gun(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();

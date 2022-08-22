@@ -267,6 +267,11 @@ class Builder
     @text << ".once_while_in_play()"
     self
   end
+
+  def draw(n)
+    @text << ".draw(#{n})"
+    self
+  end
 end
 
 $patterns = [
@@ -471,6 +476,22 @@ $patterns = [
     build: ->(damage:, up_to:) {
       damage(damage)
         .prevent_up_to_damage_during_opponents_next_turn(up_to)
+    }
+  },
+
+  {
+    pattern: /^Draw a card\.$/,
+    build: ->(damage:) {
+      damage(damage)
+        .draw(1)
+    }
+  },
+  {
+    pattern: /^Flip a coin\. If heads, draw a card\.$/,
+    build: ->(damage:) {
+      flip_a_coin
+        .damage(damage)
+        .if_heads { draw(1) }
     }
   },
 ]
