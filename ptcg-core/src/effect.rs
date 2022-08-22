@@ -63,16 +63,16 @@ impl AttackEffectBuilder {
         self
     }
 
-    pub fn type_parameter(mut self, t: Type) -> Self {
+    pub fn type_parameter(mut self, p: Type) -> Self {
         self.parameters.push(Box::new(move |_ab| {
-            EffectParameter::Type(t.clone())
+            EffectParameter::Type(p.clone())
         }));
         self
     }
 
-    pub fn string_parameter(mut self, s: String) -> Self {
+    pub fn string_parameter(mut self, p: String) -> Self {
         self.parameters.push(Box::new(move |_ab| {
-            EffectParameter::String(s.clone())
+            EffectParameter::String(p.clone())
         }));
         self
     }
@@ -107,7 +107,7 @@ impl AttackEffectBuilder {
 pub trait CustomEffect {
     fn identifier() -> String where Self: Sized;
 
-    fn defending_damage(&self, _damage: usize) -> Option<usize> { None }
+    fn defending_damage(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _damage: usize) -> Option<usize> { None }
     fn attacking_damage(&self, _damage: usize) -> Option<usize> { None }
     fn get_resistance(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _resistance: Resistance) -> Option<Resistance> { None }
     fn get_weakness(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _weakness: Weakness) -> Option<Weakness> { None }

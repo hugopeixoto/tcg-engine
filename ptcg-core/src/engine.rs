@@ -597,8 +597,8 @@ impl GameEngine {
     }
 
     pub fn damage(&self, mut damage: usize) -> (Self, usize) {
-        // TODO: when targetting benched pokémon, we shouldn't apply weakness and resistance by
-        // default, but leave the door open for some attacks that do apply them.
+        // TODO: don't apply weakness and resistance by default to benched pokémon
+        // TODO: leave the door open for some attacks that do apply them.
 
         if self.format.attacking_effects() == AttackingEffectsWhen::BeforeWR {
             damage = self.effects_on_attacking(damage);
@@ -702,7 +702,7 @@ impl GameEngine {
         }
 
         for effect in self.state.effects.iter() {
-            if let Some(new_damage) = self.effect(effect).defending_damage(damage) {
+            if let Some(new_damage) = self.effect(effect).defending_damage(effect, self.defending(), self, damage) {
                 damage = new_damage;
             }
         }
@@ -814,7 +814,6 @@ impl GameEngine {
 
             let cost = dm.pick_from_hand(player, player, how_many, &shuffleable_cards);
 
-            // TODO: reveal
             for shuffled in cost {
                 engine.state = engine.state.shuffle_from_hand_into_deck(player, shuffled);
             }
@@ -835,6 +834,7 @@ impl GameEngine {
             let mut engine = self.clone();
 
             let cost = dm.pick_from_hand(player, player, how_many, &shuffleable_cards);
+            // TODO: reveal cards before shuffling them in
             for shuffled in cost {
                 engine.state = engine.state.shuffle_from_hand_into_deck(player, shuffled);
             }
@@ -1083,7 +1083,7 @@ impl GameEngine {
     }
 
     pub fn shuffle_all_from_hand_into_deck<F>(&self, player: Player, filter: F, _dm: &mut dyn DecisionMaker) -> Self where F: Fn(&GameEngine, &Card) -> bool {
-        // TODO: reveal all!
+        // TODO: reveal all before shuffling (Lass)
         let mut engine = self.clone();
 
         let selected = engine.state.side(player).hand.iter().filter(|c| filter(&engine, c)).cloned().collect::<Vec<_>>();
@@ -1107,7 +1107,7 @@ impl GameEngine {
     }
 
     pub fn just_switch(&self, _player: Player, _this: &InPlayCard, with: &InPlayCard) -> Self {
-        // TODO: clear effects
+        // TODO: clear effects and special conditions
         self.with_state(self.state.switch_active_with(with))
     }
 
@@ -1460,7 +1460,7 @@ impl GameEngine {
         // TODO: flip coin to decide who goes first, or check for First Ticket DRV 19.
         engine = engine.setup_bench(dm).setup_prizes(dm).setup_reveal_pokemon();
 
-        // TODO: check for abilities that activate on reveal, like Sableye SF 48
+        // TODO: check for abilities that activate on reveal (Sableye SF 48)
 
         engine.state = engine.state
             .with_stage(GameStage::StartOfTurn(Player::One))

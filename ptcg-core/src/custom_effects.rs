@@ -12,9 +12,15 @@ impl CustomEffect for PreventDamageDuringOpponentsTurn {
         "PREVENT_DAMAGE_DURING_OPPONENTS_TURN".into()
     }
 
-    fn defending_damage(&self, _damage: usize) -> Option<usize> {
-        // TODO: if opponent's turn
-        Some(0)
+    fn defending_damage(&self, effect: &Effect, in_play: &InPlayCard, engine: &GameEngine, _damage: usize) -> Option<usize> {
+        let opponents_turn = !effect.target.is_player(engine.player());
+        let this_pokemon = effect.target.is_in_play(in_play);
+
+        if opponents_turn && this_pokemon {
+            Some(0)
+        } else {
+            None
+        }
     }
 }
 
@@ -30,9 +36,15 @@ impl CustomEffect for PreventDamageAndEffectsDuringOpponentsTurn {
             .into()
     }
 
-    fn defending_damage(&self, _damage: usize) -> Option<usize> {
-        // TODO: if opponent's turn
-        Some(0)
+    fn defending_damage(&self, effect: &Effect, in_play: &InPlayCard, engine: &GameEngine, _damage: usize) -> Option<usize> {
+        let opponents_turn = !effect.target.is_player(engine.player());
+        let this_pokemon = effect.target.is_in_play(in_play);
+
+        if opponents_turn && this_pokemon {
+            Some(0)
+        } else {
+            None
+        }
     }
 }
 

@@ -518,14 +518,14 @@ pub enum EffectParameter {
 impl EffectParameter {
     pub fn get_type(&self) -> Option<Type> {
         match self {
-            Self::Type(t) => Some(t.clone()),
+            Self::Type(v) => Some(v.clone()),
             _ => None,
         }
     }
 
     pub fn get_string(&self) -> Option<String> {
         match self {
-            Self::String(s) => Some(s.clone()),
+            Self::String(v) => Some(v.clone()),
             _ => None,
         }
     }

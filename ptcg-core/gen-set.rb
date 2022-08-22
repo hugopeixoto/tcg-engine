@@ -464,7 +464,13 @@ $patterns = [
 ]
 
 def attack_impl(attack)
-  text = attack.fetch('text').gsub(/\([^)]+\)/, '').gsub(/ +/, " ").gsub(/\ +\./, ".").strip
+  text = attack
+    .fetch('text')
+    .gsub(/\([^)]+\)/, '')
+    .gsub(/ +/, " ")
+    .gsub(/\ +\./, ".")
+    .gsub(/\ +\,/, ",")
+    .strip
   damage = attack.fetch('damage', "")
 
   builder = Builder.new.attack_cost(attack["cost"])
