@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use crate::state::{Card, Type};
 use crate::engine::{CardArchetype, Format, AttackingEffectsWhen};
-use crate::sets::{base, fossil};
+use crate::sets::{base, fossil, jungle};
 use crate::effect::CustomEffect;
 use crate::custom_effects::*;
 
@@ -16,6 +16,7 @@ impl BaseFossil {
         let mut cards = vec![];
 
         cards.extend(base::build());
+        cards.extend(jungle::build());
         cards.extend(fossil::build());
 
         Self {

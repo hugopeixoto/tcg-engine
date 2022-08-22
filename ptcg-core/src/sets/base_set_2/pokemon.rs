@@ -970,8 +970,8 @@ impl Kangaskhan26 {
 }
 
 #[derive(Default)]
-pub struct Mr.Mime27 {}
-impl CardArchetype for Mr.Mime27 {
+pub struct MrMime27 {}
+impl CardArchetype for MrMime27 {
     identifier!("Mr. Mime (B2 27)");
     card_name!("Mr. Mime");
     basic!();
@@ -993,7 +993,7 @@ impl CardArchetype for Mr.Mime27 {
             .into()
     }
 }
-impl Mr.Mime27 {
+impl MrMime27 {
     pub fn meditate(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Psychic, Type::Colorless])
@@ -2998,8 +2998,8 @@ impl Metapod81 {
 }
 
 #[derive(Default)]
-pub struct Nidoran♀82 {}
-impl CardArchetype for Nidoran♀82 {
+pub struct NidoranF82 {}
+impl CardArchetype for NidoranF82 {
     identifier!("Nidoran ♀ (B2 82)");
     card_name!("Nidoran ♀");
     basic!();
@@ -3022,7 +3022,7 @@ impl CardArchetype for Nidoran♀82 {
             .into()
     }
 }
-impl Nidoran♀82 {
+impl NidoranF82 {
     pub fn fury_swipes(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Grass])

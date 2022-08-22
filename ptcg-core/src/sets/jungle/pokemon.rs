@@ -193,8 +193,8 @@ impl Kangaskhan5 {
 }
 
 #[derive(Default)]
-pub struct Mr.Mime6 {}
-impl CardArchetype for Mr.Mime6 {
+pub struct MrMime6 {}
+impl CardArchetype for MrMime6 {
     identifier!("Mr. Mime (JU 6)");
     card_name!("Mr. Mime");
     basic!();
@@ -216,7 +216,7 @@ impl CardArchetype for Mr.Mime6 {
             .into()
     }
 }
-impl Mr.Mime6 {
+impl MrMime6 {
     pub fn meditate(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Psychic, Type::Colorless])
@@ -771,8 +771,8 @@ impl Kangaskhan21 {
 }
 
 #[derive(Default)]
-pub struct Mr.Mime22 {}
-impl CardArchetype for Mr.Mime22 {
+pub struct MrMime22 {}
+impl CardArchetype for MrMime22 {
     identifier!("Mr. Mime (JU 22)");
     card_name!("Mr. Mime");
     basic!();
@@ -794,7 +794,7 @@ impl CardArchetype for Mr.Mime22 {
             .into()
     }
 }
-impl Mr.Mime22 {
+impl MrMime22 {
     pub fn meditate(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Psychic, Type::Colorless])
@@ -2031,14 +2031,18 @@ impl CardArchetype for Meowth56 {
     }
 }
 impl Meowth56 {
-    pub fn pay_day(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn pay_day(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless])
+            .flip_a_coin()
+            .damage(10)
+            .if_heads(|e| e.draw(1))
     }
 }
 
 #[derive(Default)]
-pub struct Nidoran♀57 {}
-impl CardArchetype for Nidoran♀57 {
+pub struct NidoranF57 {}
+impl CardArchetype for NidoranF57 {
     identifier!("Nidoran ♀ (JU 57)");
     card_name!("Nidoran ♀");
     basic!();
@@ -2061,7 +2065,7 @@ impl CardArchetype for Nidoran♀57 {
             .into()
     }
 }
-impl Nidoran♀57 {
+impl NidoranF57 {
     pub fn fury_swipes(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Grass])

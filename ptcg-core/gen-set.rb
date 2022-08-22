@@ -502,7 +502,9 @@ def namify(name)
   name
     .gsub(' ', '')
     .gsub('♂', 'M')
+    .gsub('♀', 'F')
     .gsub("'d", "D")
+    .gsub('.', "")
 end
 
 
