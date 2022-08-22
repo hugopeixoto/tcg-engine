@@ -514,6 +514,17 @@ impl AttackBuilder {
         self
     }
 
+    pub fn prevent_up_to_damage_during_opponents_next_turn(mut self, up_to: usize) -> Self {
+        let effect = effect::from_attack()
+            .on_attacking()
+            .until_opponents_end_of_turn()
+            .usize_parameter(up_to)
+            .custom_effect::<custom_effects::PreventUpToDamageDuringOpponentsTurn>();
+
+        self.operations.push(Box::new(move |builder| effect.apply(builder)));
+        self
+    }
+
     pub fn prevent_damage_and_effects_during_opponents_next_turn(mut self) -> Self {
         let effect = effect::from_attack()
             .on_attacking()

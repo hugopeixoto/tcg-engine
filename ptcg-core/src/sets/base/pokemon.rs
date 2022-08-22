@@ -2104,8 +2104,10 @@ impl Onix56 {
             .attack_cost(&[Type::Fighting])
             .damage(10)
     }
-    pub fn harden(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn harden(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Fighting, Type::Fighting])
+            .prevent_up_to_damage_during_opponents_next_turn(30)
     }
 }
 

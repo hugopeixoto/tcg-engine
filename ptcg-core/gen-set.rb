@@ -181,6 +181,11 @@ class Builder
     self
   end
 
+  def prevent_up_to_damage_during_opponents_next_turn(damage)
+    @text << ".prevent_up_to_damage_during_opponents_next_turn(#{damage})"
+    self
+  end
+
   def prevent_attack_on_a_flip_during_opponents_next_turn
     @text << ".prevent_attack_on_a_flip_during_opponents_next_turn()"
     self
@@ -460,6 +465,13 @@ $patterns = [
       damage(damage)
         .disable_defending_attack()
     },
+  },
+  {
+    pattern: /^During your opponent's next turn, whenever (?<up_to>\d+) or less damage is done to \w+, prevent that damage\.$/,
+    build: ->(damage:, up_to:) {
+      damage(damage)
+        .prevent_up_to_damage_during_opponents_next_turn(up_to)
+    }
   },
 ]
 

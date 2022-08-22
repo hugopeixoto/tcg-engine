@@ -77,6 +77,13 @@ impl AttackEffectBuilder {
         self
     }
 
+    pub fn usize_parameter(mut self, p: usize) -> Self {
+        self.parameters.push(Box::new(move |_ab| {
+            EffectParameter::USize(p.clone())
+        }));
+        self
+    }
+
     pub fn custom_effect<T: CustomEffect>(mut self) -> Self {
         let identifier = T::identifier();
         self.effect = Some(Box::new(move |_ab: &AttackBuilderContext| {

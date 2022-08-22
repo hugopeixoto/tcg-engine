@@ -513,6 +513,7 @@ pub type EffectConsequence = String;
 pub enum EffectParameter {
     Type(Type),
     String(String),
+    USize(usize),
 }
 
 impl EffectParameter {
@@ -526,6 +527,13 @@ impl EffectParameter {
     pub fn get_string(&self) -> Option<String> {
         match self {
             Self::String(v) => Some(v.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn get_usize(&self) -> Option<usize> {
+        match self {
+            Self::USize(v) => Some(v.clone()),
             _ => None,
         }
     }
@@ -555,6 +563,14 @@ impl Effect {
             .parameters
             .iter()
             .flat_map(|p| p.get_string())
+            .nth(index)
+    }
+
+    pub fn get_parameter_usize(&self, index: usize) -> Option<usize> {
+        self
+            .parameters
+            .iter()
+            .flat_map(|p| p.get_usize())
             .nth(index)
     }
 }

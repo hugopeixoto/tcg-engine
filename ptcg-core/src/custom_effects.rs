@@ -24,6 +24,25 @@ impl CustomEffect for PreventDamageDuringOpponentsTurn {
     }
 }
 
+pub struct PreventUpToDamageDuringOpponentsTurn {}
+impl CustomEffect for PreventUpToDamageDuringOpponentsTurn {
+    fn identifier() -> String {
+        "PREVENT_UP_TO_DAMAGE_DURING_OPPONENTS_TURN".into()
+    }
+
+    fn defending_damage(&self, effect: &Effect, in_play: &InPlayCard, engine: &GameEngine, damage: usize) -> Option<usize> {
+        let opponents_turn = !effect.target.is_player(engine.player());
+        let this_pokemon = effect.target.is_in_play(in_play);
+
+        let limit = effect.get_parameter_usize(0).unwrap();
+        if opponents_turn && this_pokemon && damage <= limit {
+            Some(0)
+        } else {
+            None
+        }
+    }
+}
+
 pub struct PreventDamageAndEffectsDuringOpponentsTurn {}
 impl CustomEffect for PreventDamageAndEffectsDuringOpponentsTurn {
     fn identifier() -> String {
