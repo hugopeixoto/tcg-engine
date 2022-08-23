@@ -1,7 +1,6 @@
 use crate::*;
 use crate::state::Type;
 use crate::attack_builder::AttackBuilder;
-use crate::carddb::Attacks;
 
 #[derive(Default)]
 pub struct Alakazam1 {}
@@ -21,10 +20,10 @@ impl CardArchetype for Alakazam1 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Confuse Ray", Self::confuse_ray)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Confuse Ray", Self::confuse_ray),
+      ]
     }
 }
 impl Alakazam1 {
@@ -55,10 +54,10 @@ impl CardArchetype for Blastoise2 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Hydro Pump", Self::hydro_pump)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Hydro Pump", Self::hydro_pump),
+      ]
     }
 }
 impl Blastoise2 {
@@ -85,11 +84,11 @@ impl CardArchetype for Chansey3 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Scrunch", Self::scrunch)
-            .register("Double-edge", Self::double_edge)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Scrunch", Self::scrunch),
+        Attack::new("Double-edge", Self::double_edge),
+      ]
     }
 }
 impl Chansey3 {
@@ -125,17 +124,17 @@ impl CardArchetype for Charizard4 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Fire Spin", Self::fire_spin)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Fire Spin", Self::fire_spin),
+      ]
     }
 }
 impl Charizard4 {
     pub fn fire_spin(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fire, Type::Fire, Type::Fire, Type::Fire])
-            .must(|e| e.discard_attacking_energy_cards(&[Type::Any, Type::Any]))
+            .cost(|e| e.discard_attacking_energy_cards(&[Type::Any, Type::Any]))
             .damage(100)
     }
 }
@@ -158,16 +157,18 @@ impl CardArchetype for Clefable5 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Metronome", Self::metronome)
-            .register("Minimize", Self::minimize)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Metronome", Self::metronome),
+        Attack::new("Minimize", Self::minimize),
+      ]
     }
 }
 impl Clefable5 {
-    pub fn metronome(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn metronome(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless])
+            .copy_defending_attack_without_costs()
     }
     pub fn minimize(_builder: AttackBuilder) -> AttackBuilder {
         unimplemented!();
@@ -192,11 +193,11 @@ impl CardArchetype for Clefairy6 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Sing", Self::sing)
-            .register("Metronome", Self::metronome)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Sing", Self::sing),
+        Attack::new("Metronome", Self::metronome),
+      ]
     }
 }
 impl Clefairy6 {
@@ -206,8 +207,10 @@ impl Clefairy6 {
             .flip_a_coin()
             .if_heads(|e| e.asleep())
     }
-    pub fn metronome(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn metronome(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .attack_cost(&[Type::Colorless, Type::Colorless, Type::Colorless])
+            .copy_defending_attack_without_costs()
     }
 }
 
@@ -229,11 +232,11 @@ impl CardArchetype for Gyarados7 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Dragon Rage", Self::dragon_rage)
-            .register("Bubblebeam", Self::bubblebeam)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Dragon Rage", Self::dragon_rage),
+        Attack::new("Bubblebeam", Self::bubblebeam),
+      ]
     }
 }
 impl Gyarados7 {
@@ -269,11 +272,11 @@ impl CardArchetype for Hitmonchan8 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Jab", Self::jab)
-            .register("Special Punch", Self::special_punch)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Jab", Self::jab),
+        Attack::new("Special Punch", Self::special_punch),
+      ]
     }
 }
 impl Hitmonchan8 {
@@ -307,11 +310,11 @@ impl CardArchetype for Magneton9 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Thunder Wave", Self::thunder_wave)
-            .register("Selfdestruct", Self::selfdestruct)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Thunder Wave", Self::thunder_wave),
+        Attack::new("Selfdestruct", Self::selfdestruct),
+      ]
     }
 }
 impl Magneton9 {
@@ -345,11 +348,11 @@ impl CardArchetype for Mewtwo10 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Psychic", Self::psychic)
-            .register("Barrier", Self::barrier)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Psychic", Self::psychic),
+        Attack::new("Barrier", Self::barrier),
+      ]
     }
 }
 impl Mewtwo10 {
@@ -381,11 +384,11 @@ impl CardArchetype for Nidoking11 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Thrash", Self::thrash)
-            .register("Toxic", Self::toxic)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Thrash", Self::thrash),
+        Attack::new("Toxic", Self::toxic),
+      ]
     }
 }
 impl Nidoking11 {
@@ -422,11 +425,11 @@ impl CardArchetype for Nidoqueen12 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Boyfriends", Self::boyfriends)
-            .register("Mega Punch", Self::mega_punch)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Boyfriends", Self::boyfriends),
+        Attack::new("Mega Punch", Self::mega_punch),
+      ]
     }
 }
 impl Nidoqueen12 {
@@ -458,11 +461,11 @@ impl CardArchetype for Ninetales13 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Lure", Self::lure)
-            .register("Fire Blast", Self::fire_blast)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Lure", Self::lure),
+        Attack::new("Fire Blast", Self::fire_blast),
+      ]
     }
 }
 impl Ninetales13 {
@@ -472,7 +475,7 @@ impl Ninetales13 {
     pub fn fire_blast(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fire, Type::Fire, Type::Fire, Type::Fire])
-            .must(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
+            .cost(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
             .damage(80)
     }
 }
@@ -495,11 +498,11 @@ impl CardArchetype for Pidgeot14 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Wing Attack", Self::wing_attack)
-            .register("Hurricane", Self::hurricane)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Wing Attack", Self::wing_attack),
+        Attack::new("Hurricane", Self::hurricane),
+      ]
     }
 }
 impl Pidgeot14 {
@@ -531,11 +534,11 @@ impl CardArchetype for Poliwrath15 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Water Gun", Self::water_gun)
-            .register("Whirlpool", Self::whirlpool)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Water Gun", Self::water_gun),
+        Attack::new("Whirlpool", Self::whirlpool),
+      ]
     }
 }
 impl Poliwrath15 {
@@ -568,11 +571,11 @@ impl CardArchetype for Raichu16 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Agility", Self::agility)
-            .register("Thunder", Self::thunder)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Agility", Self::agility),
+        Attack::new("Thunder", Self::thunder),
+      ]
     }
 }
 impl Raichu16 {
@@ -609,11 +612,11 @@ impl CardArchetype for Scyther17 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Swords Dance", Self::swords_dance)
-            .register("Slash", Self::slash)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Swords Dance", Self::swords_dance),
+        Attack::new("Slash", Self::slash),
+      ]
     }
 }
 impl Scyther17 {
@@ -645,10 +648,10 @@ impl CardArchetype for Venusaur18 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Solarbeam", Self::solarbeam)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Solarbeam", Self::solarbeam),
+      ]
     }
 }
 impl Venusaur18 {
@@ -677,11 +680,11 @@ impl CardArchetype for Wigglytuff19 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Lullaby", Self::lullaby)
-            .register("Do the Wave", Self::do_the_wave)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Lullaby", Self::lullaby),
+        Attack::new("Do the Wave", Self::do_the_wave),
+      ]
     }
 }
 impl Wigglytuff19 {
@@ -713,11 +716,11 @@ impl CardArchetype for Zapdos20 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Thunder", Self::thunder)
-            .register("Thunderbolt", Self::thunderbolt)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Thunder", Self::thunder),
+        Attack::new("Thunderbolt", Self::thunderbolt),
+      ]
     }
 }
 impl Zapdos20 {
@@ -731,7 +734,7 @@ impl Zapdos20 {
     pub fn thunderbolt(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Lightning, Type::Lightning, Type::Lightning, Type::Lightning])
-            .must(|e| e.discard_all_attacking_energy_cards())
+            .cost(|e| e.discard_all_attacking_energy_cards())
             .damage(100)
     }
 }
@@ -754,11 +757,11 @@ impl CardArchetype for Beedrill21 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Twineedle", Self::twineedle)
-            .register("Poison Sting", Self::poison_sting)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Twineedle", Self::twineedle),
+        Attack::new("Poison Sting", Self::poison_sting),
+      ]
     }
 }
 impl Beedrill21 {
@@ -795,11 +798,11 @@ impl CardArchetype for Dragonair22 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Slam", Self::slam)
-            .register("Hyper Beam", Self::hyper_beam)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Slam", Self::slam),
+        Attack::new("Hyper Beam", Self::hyper_beam),
+      ]
     }
 }
 impl Dragonair22 {
@@ -835,11 +838,11 @@ impl CardArchetype for Dugtrio23 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Slash", Self::slash)
-            .register("Earthquake", Self::earthquake)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Slash", Self::slash),
+        Attack::new("Earthquake", Self::earthquake),
+      ]
     }
 }
 impl Dugtrio23 {
@@ -874,11 +877,11 @@ impl CardArchetype for Electabuzz24 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Thundershock", Self::thundershock)
-            .register("Thunderpunch", Self::thunderpunch)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Thundershock", Self::thundershock),
+        Attack::new("Thunderpunch", Self::thunderpunch),
+      ]
     }
 }
 impl Electabuzz24 {
@@ -916,10 +919,10 @@ impl CardArchetype for Electrode25 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Electric Shock", Self::electric_shock)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Electric Shock", Self::electric_shock),
+      ]
     }
 }
 impl Electrode25 {
@@ -950,11 +953,11 @@ impl CardArchetype for Kangaskhan26 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Fetch", Self::fetch)
-            .register("Comet Punch", Self::comet_punch)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Fetch", Self::fetch),
+        Attack::new("Comet Punch", Self::comet_punch),
+      ]
     }
 }
 impl Kangaskhan26 {
@@ -989,10 +992,10 @@ impl CardArchetype for MrMime27 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Meditate", Self::meditate)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Meditate", Self::meditate),
+      ]
     }
 }
 impl MrMime27 {
@@ -1021,11 +1024,11 @@ impl CardArchetype for Pidgeotto28 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Whirlwind", Self::whirlwind)
-            .register("Mirror Move", Self::mirror_move)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Whirlwind", Self::whirlwind),
+        Attack::new("Mirror Move", Self::mirror_move),
+      ]
     }
 }
 impl Pidgeotto28 {
@@ -1058,11 +1061,11 @@ impl CardArchetype for Pinsir29 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Irongrip", Self::irongrip)
-            .register("Guillotine", Self::guillotine)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Irongrip", Self::irongrip),
+        Attack::new("Guillotine", Self::guillotine),
+      ]
     }
 }
 impl Pinsir29 {
@@ -1098,10 +1101,10 @@ impl CardArchetype for Snorlax30 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Body Slam", Self::body_slam)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Body Slam", Self::body_slam),
+      ]
     }
 }
 impl Snorlax30 {
@@ -1132,10 +1135,10 @@ impl CardArchetype for Venomoth31 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Venom Powder", Self::venom_powder)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Venom Powder", Self::venom_powder),
+      ]
     }
 }
 impl Venomoth31 {
@@ -1162,11 +1165,11 @@ impl CardArchetype for Victreebel32 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Lure", Self::lure)
-            .register("Acid", Self::acid)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Lure", Self::lure),
+        Attack::new("Acid", Self::acid),
+      ]
     }
 }
 impl Victreebel32 {
@@ -1198,18 +1201,18 @@ impl CardArchetype for Arcanine33 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Flamethrower", Self::flamethrower)
-            .register("Take Down", Self::take_down)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Flamethrower", Self::flamethrower),
+        Attack::new("Take Down", Self::take_down),
+      ]
     }
 }
 impl Arcanine33 {
     pub fn flamethrower(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fire, Type::Fire, Type::Colorless])
-            .must(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
+            .cost(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
             .damage(50)
     }
     pub fn take_down(builder: AttackBuilder) -> AttackBuilder {
@@ -1238,11 +1241,11 @@ impl CardArchetype for Butterfree34 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Whirlwind", Self::whirlwind)
-            .register("Mega Drain", Self::mega_drain)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Whirlwind", Self::whirlwind),
+        Attack::new("Mega Drain", Self::mega_drain),
+      ]
     }
 }
 impl Butterfree34 {
@@ -1275,11 +1278,11 @@ impl CardArchetype for Charmeleon35 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Slash", Self::slash)
-            .register("Flamethrower", Self::flamethrower)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Slash", Self::slash),
+        Attack::new("Flamethrower", Self::flamethrower),
+      ]
     }
 }
 impl Charmeleon35 {
@@ -1291,7 +1294,7 @@ impl Charmeleon35 {
     pub fn flamethrower(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fire, Type::Fire, Type::Colorless])
-            .must(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
+            .cost(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
             .damage(50)
     }
 }
@@ -1314,11 +1317,11 @@ impl CardArchetype for Dewgong36 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Aurora Beam", Self::aurora_beam)
-            .register("Ice Beam", Self::ice_beam)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Aurora Beam", Self::aurora_beam),
+        Attack::new("Ice Beam", Self::ice_beam),
+      ]
     }
 }
 impl Dewgong36 {
@@ -1354,10 +1357,10 @@ impl CardArchetype for Dodrio37 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Rage", Self::rage)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Rage", Self::rage),
+      ]
     }
 }
 impl Dodrio37 {
@@ -1384,10 +1387,10 @@ impl CardArchetype for Dratini38 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Pound", Self::pound)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Pound", Self::pound),
+      ]
     }
 }
 impl Dratini38 {
@@ -1416,11 +1419,11 @@ impl CardArchetype for Exeggutor39 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Teleport", Self::teleport)
-            .register("Big Eggsplosion", Self::big_eggsplosion)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Teleport", Self::teleport),
+        Attack::new("Big Eggsplosion", Self::big_eggsplosion),
+      ]
     }
 }
 impl Exeggutor39 {
@@ -1450,11 +1453,11 @@ impl CardArchetype for FarfetchD40 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Leek Slap", Self::leek_slap)
-            .register("Pot Smash", Self::pot_smash)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Leek Slap", Self::leek_slap),
+        Attack::new("Pot Smash", Self::pot_smash),
+      ]
     }
 }
 impl FarfetchD40 {
@@ -1490,11 +1493,11 @@ impl CardArchetype for Fearow41 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Agility", Self::agility)
-            .register("Drill Peck", Self::drill_peck)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Agility", Self::agility),
+        Attack::new("Drill Peck", Self::drill_peck),
+      ]
     }
 }
 impl Fearow41 {
@@ -1529,10 +1532,10 @@ impl CardArchetype for Growlithe42 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Flare", Self::flare)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Flare", Self::flare),
+      ]
     }
 }
 impl Growlithe42 {
@@ -1561,11 +1564,11 @@ impl CardArchetype for Haunter43 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Hypnosis", Self::hypnosis)
-            .register("Dream Eater", Self::dream_eater)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Hypnosis", Self::hypnosis),
+        Attack::new("Dream Eater", Self::dream_eater),
+      ]
     }
 }
 impl Haunter43 {
@@ -1600,11 +1603,11 @@ impl CardArchetype for Ivysaur44 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Vine Whip", Self::vine_whip)
-            .register("Poisonpowder", Self::poisonpowder)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Vine Whip", Self::vine_whip),
+        Attack::new("Poisonpowder", Self::poisonpowder),
+      ]
     }
 }
 impl Ivysaur44 {
@@ -1639,11 +1642,11 @@ impl CardArchetype for Jynx45 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Doubleslap", Self::doubleslap)
-            .register("Meditate", Self::meditate)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Doubleslap", Self::doubleslap),
+        Attack::new("Meditate", Self::meditate),
+      ]
     }
 }
 impl Jynx45 {
@@ -1678,18 +1681,18 @@ impl CardArchetype for Kadabra46 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Recover", Self::recover)
-            .register("Super Psy", Self::super_psy)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Recover", Self::recover),
+        Attack::new("Super Psy", Self::super_psy),
+      ]
     }
 }
 impl Kadabra46 {
     pub fn recover(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Psychic, Type::Psychic])
-            .must(|e| e.discard_attacking_energy_cards(&[Type::Psychic]))
+            .cost(|e| e.discard_attacking_energy_cards(&[Type::Psychic]))
             .heal_all_attacking()
     }
     pub fn super_psy(builder: AttackBuilder) -> AttackBuilder {
@@ -1717,11 +1720,11 @@ impl CardArchetype for Kakuna47 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Stiffen", Self::stiffen)
-            .register("Poisonpowder", Self::poisonpowder)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Stiffen", Self::stiffen),
+        Attack::new("Poisonpowder", Self::poisonpowder),
+      ]
     }
 }
 impl Kakuna47 {
@@ -1758,11 +1761,11 @@ impl CardArchetype for Lickitung48 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Tongue Wrap", Self::tongue_wrap)
-            .register("Supersonic", Self::supersonic)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Tongue Wrap", Self::tongue_wrap),
+        Attack::new("Supersonic", Self::supersonic),
+      ]
     }
 }
 impl Lickitung48 {
@@ -1799,11 +1802,11 @@ impl CardArchetype for Machoke49 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Karate Chop", Self::karate_chop)
-            .register("Submission", Self::submission)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Karate Chop", Self::karate_chop),
+        Attack::new("Submission", Self::submission),
+      ]
     }
 }
 impl Machoke49 {
@@ -1838,11 +1841,11 @@ impl CardArchetype for Magikarp50 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Tackle", Self::tackle)
-            .register("Flail", Self::flail)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Tackle", Self::tackle),
+        Attack::new("Flail", Self::flail),
+      ]
     }
 }
 impl Magikarp50 {
@@ -1876,11 +1879,11 @@ impl CardArchetype for Magmar51 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Fire Punch", Self::fire_punch)
-            .register("Flamethrower", Self::flamethrower)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Fire Punch", Self::fire_punch),
+        Attack::new("Flamethrower", Self::flamethrower),
+      ]
     }
 }
 impl Magmar51 {
@@ -1892,7 +1895,7 @@ impl Magmar51 {
     pub fn flamethrower(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fire, Type::Fire, Type::Colorless])
-            .must(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
+            .cost(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
             .damage(50)
     }
 }
@@ -1915,11 +1918,11 @@ impl CardArchetype for Marowak52 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Bonemerang", Self::bonemerang)
-            .register("Call for Friend", Self::call_for_friend)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Bonemerang", Self::bonemerang),
+        Attack::new("Call for Friend", Self::call_for_friend),
+      ]
     }
 }
 impl Marowak52 {
@@ -1952,11 +1955,11 @@ impl CardArchetype for Nidorina53 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Supersonic", Self::supersonic)
-            .register("Double Kick", Self::double_kick)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Supersonic", Self::supersonic),
+        Attack::new("Double Kick", Self::double_kick),
+      ]
     }
 }
 impl Nidorina53 {
@@ -1992,11 +1995,11 @@ impl CardArchetype for Nidorino54 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Double Kick", Self::double_kick)
-            .register("Horn Drill", Self::horn_drill)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Double Kick", Self::double_kick),
+        Attack::new("Horn Drill", Self::horn_drill),
+      ]
     }
 }
 impl Nidorino54 {
@@ -2031,11 +2034,11 @@ impl CardArchetype for Parasect55 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Spore", Self::spore)
-            .register("Slash", Self::slash)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Spore", Self::spore),
+        Attack::new("Slash", Self::slash),
+      ]
     }
 }
 impl Parasect55 {
@@ -2069,11 +2072,11 @@ impl CardArchetype for Persian56 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Scratch", Self::scratch)
-            .register("Pounce", Self::pounce)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Scratch", Self::scratch),
+        Attack::new("Pounce", Self::pounce),
+      ]
     }
 }
 impl Persian56 {
@@ -2105,11 +2108,11 @@ impl CardArchetype for Poliwhirl57 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Amnesia", Self::amnesia)
-            .register("Doubleslap", Self::doubleslap)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Amnesia", Self::amnesia),
+        Attack::new("Doubleslap", Self::doubleslap),
+      ]
     }
 }
 impl Poliwhirl57 {
@@ -2144,11 +2147,11 @@ impl CardArchetype for Raticate58 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Bite", Self::bite)
-            .register("Super Fang", Self::super_fang)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Bite", Self::bite),
+        Attack::new("Super Fang", Self::super_fang),
+      ]
     }
 }
 impl Raticate58 {
@@ -2182,11 +2185,11 @@ impl CardArchetype for Rhydon59 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Horn Attack", Self::horn_attack)
-            .register("Ram", Self::ram)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Horn Attack", Self::horn_attack),
+        Attack::new("Ram", Self::ram),
+      ]
     }
 }
 impl Rhydon59 {
@@ -2218,11 +2221,11 @@ impl CardArchetype for Seaking60 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Horn Attack", Self::horn_attack)
-            .register("Waterfall", Self::waterfall)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Horn Attack", Self::horn_attack),
+        Attack::new("Waterfall", Self::waterfall),
+      ]
     }
 }
 impl Seaking60 {
@@ -2256,10 +2259,10 @@ impl CardArchetype for Seel61 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Headbutt", Self::headbutt)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Headbutt", Self::headbutt),
+      ]
     }
 }
 impl Seel61 {
@@ -2288,11 +2291,11 @@ impl CardArchetype for Tauros62 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Stomp", Self::stomp)
-            .register("Rampage", Self::rampage)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Stomp", Self::stomp),
+        Attack::new("Rampage", Self::rampage),
+      ]
     }
 }
 impl Tauros62 {
@@ -2326,11 +2329,11 @@ impl CardArchetype for Wartortle63 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Withdraw", Self::withdraw)
-            .register("Bite", Self::bite)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Withdraw", Self::withdraw),
+        Attack::new("Bite", Self::bite),
+      ]
     }
 }
 impl Wartortle63 {
@@ -2365,11 +2368,11 @@ impl CardArchetype for Weepinbell64 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Poisonpowder", Self::poisonpowder)
-            .register("Razor Leaf", Self::razor_leaf)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Poisonpowder", Self::poisonpowder),
+        Attack::new("Razor Leaf", Self::razor_leaf),
+      ]
     }
 }
 impl Weepinbell64 {
@@ -2405,10 +2408,10 @@ impl CardArchetype for Abra65 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Psyshock", Self::psyshock)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Psyshock", Self::psyshock),
+      ]
     }
 }
 impl Abra65 {
@@ -2439,11 +2442,11 @@ impl CardArchetype for Bellsprout66 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Vine Whip", Self::vine_whip)
-            .register("Call for Family", Self::call_for_family)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Vine Whip", Self::vine_whip),
+        Attack::new("Call for Family", Self::call_for_family),
+      ]
     }
 }
 impl Bellsprout66 {
@@ -2475,10 +2478,10 @@ impl CardArchetype for Bulbasaur67 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Leech Seed", Self::leech_seed)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Leech Seed", Self::leech_seed),
+      ]
     }
 }
 impl Bulbasaur67 {
@@ -2508,10 +2511,10 @@ impl CardArchetype for Caterpie68 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("String Shot", Self::string_shot)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("String Shot", Self::string_shot),
+      ]
     }
 }
 impl Caterpie68 {
@@ -2542,11 +2545,11 @@ impl CardArchetype for Charmander69 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Scratch", Self::scratch)
-            .register("Ember", Self::ember)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Scratch", Self::scratch),
+        Attack::new("Ember", Self::ember),
+      ]
     }
 }
 impl Charmander69 {
@@ -2558,7 +2561,7 @@ impl Charmander69 {
     pub fn ember(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Fire, Type::Colorless])
-            .must(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
+            .cost(|e| e.discard_attacking_energy_cards(&[Type::Fire]))
             .damage(30)
     }
 }
@@ -2581,11 +2584,11 @@ impl CardArchetype for Cubone70 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Snivel", Self::snivel)
-            .register("Rage", Self::rage)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Snivel", Self::snivel),
+        Attack::new("Rage", Self::rage),
+      ]
     }
 }
 impl Cubone70 {
@@ -2615,11 +2618,11 @@ impl CardArchetype for Diglett71 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Dig", Self::dig)
-            .register("Mud Slap", Self::mud_slap)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Dig", Self::dig),
+        Attack::new("Mud Slap", Self::mud_slap),
+      ]
     }
 }
 impl Diglett71 {
@@ -2653,10 +2656,10 @@ impl CardArchetype for Doduo72 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Fury Attack", Self::fury_attack)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Fury Attack", Self::fury_attack),
+      ]
     }
 }
 impl Doduo72 {
@@ -2686,11 +2689,11 @@ impl CardArchetype for Drowzee73 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Pound", Self::pound)
-            .register("Confuse Ray", Self::confuse_ray)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Pound", Self::pound),
+        Attack::new("Confuse Ray", Self::confuse_ray),
+      ]
     }
 }
 impl Drowzee73 {
@@ -2726,11 +2729,11 @@ impl CardArchetype for Exeggcute74 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Hypnosis", Self::hypnosis)
-            .register("Leech Seed", Self::leech_seed)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Hypnosis", Self::hypnosis),
+        Attack::new("Leech Seed", Self::leech_seed),
+      ]
     }
 }
 impl Exeggcute74 {
@@ -2765,11 +2768,11 @@ impl CardArchetype for Gastly75 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Sleeping Gas", Self::sleeping_gas)
-            .register("Destiny Bond", Self::destiny_bond)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Sleeping Gas", Self::sleeping_gas),
+        Attack::new("Destiny Bond", Self::destiny_bond),
+      ]
     }
 }
 impl Gastly75 {
@@ -2782,7 +2785,7 @@ impl Gastly75 {
     pub fn destiny_bond(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Psychic, Type::Colorless])
-            .must(|e| e.discard_attacking_energy_cards(&[Type::Psychic]))
+            .cost(|e| e.discard_attacking_energy_cards(&[Type::Psychic]))
             .knock_out_attacker_if_attacking_is_knocked_out_next_turn()
     }
 }
@@ -2805,10 +2808,10 @@ impl CardArchetype for Goldeen76 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Horn Attack", Self::horn_attack)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Horn Attack", Self::horn_attack),
+      ]
     }
 }
 impl Goldeen76 {
@@ -2837,11 +2840,11 @@ impl CardArchetype for Jigglypuff77 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Lullaby", Self::lullaby)
-            .register("Pound", Self::pound)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Lullaby", Self::lullaby),
+        Attack::new("Pound", Self::pound),
+      ]
     }
 }
 impl Jigglypuff77 {
@@ -2875,10 +2878,10 @@ impl CardArchetype for Machop78 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Low Kick", Self::low_kick)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Low Kick", Self::low_kick),
+      ]
     }
 }
 impl Machop78 {
@@ -2907,11 +2910,11 @@ impl CardArchetype for Magnemite79 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Thunder Wave", Self::thunder_wave)
-            .register("Selfdestruct", Self::selfdestruct)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Thunder Wave", Self::thunder_wave),
+        Attack::new("Selfdestruct", Self::selfdestruct),
+      ]
     }
 }
 impl Magnemite79 {
@@ -2950,10 +2953,10 @@ impl CardArchetype for Meowth80 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Pay Day", Self::pay_day)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Pay Day", Self::pay_day),
+      ]
     }
 }
 impl Meowth80 {
@@ -2984,11 +2987,11 @@ impl CardArchetype for Metapod81 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Stiffen", Self::stiffen)
-            .register("Stun Spore", Self::stun_spore)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Stiffen", Self::stiffen),
+        Attack::new("Stun Spore", Self::stun_spore),
+      ]
     }
 }
 impl Metapod81 {
@@ -3025,11 +3028,11 @@ impl CardArchetype for NidoranF82 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Fury Swipes", Self::fury_swipes)
-            .register("Call for Family", Self::call_for_family)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Fury Swipes", Self::fury_swipes),
+        Attack::new("Call for Family", Self::call_for_family),
+      ]
     }
 }
 impl NidoranF82 {
@@ -3062,10 +3065,10 @@ impl CardArchetype for NidoranM83 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Horn Hazard", Self::horn_hazard)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Horn Hazard", Self::horn_hazard),
+      ]
     }
 }
 impl NidoranM83 {
@@ -3095,11 +3098,11 @@ impl CardArchetype for Onix84 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Rock Throw", Self::rock_throw)
-            .register("Harden", Self::harden)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Rock Throw", Self::rock_throw),
+        Attack::new("Harden", Self::harden),
+      ]
     }
 }
 impl Onix84 {
@@ -3133,11 +3136,11 @@ impl CardArchetype for Paras85 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Scratch", Self::scratch)
-            .register("Spore", Self::spore)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Scratch", Self::scratch),
+        Attack::new("Spore", Self::spore),
+      ]
     }
 }
 impl Paras85 {
@@ -3171,10 +3174,10 @@ impl CardArchetype for Pidgey86 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Whirlwind", Self::whirlwind)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Whirlwind", Self::whirlwind),
+      ]
     }
 }
 impl Pidgey86 {
@@ -3204,11 +3207,11 @@ impl CardArchetype for Pikachu87 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Gnaw", Self::gnaw)
-            .register("Thunder Jolt", Self::thunder_jolt)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Gnaw", Self::gnaw),
+        Attack::new("Thunder Jolt", Self::thunder_jolt),
+      ]
     }
 }
 impl Pikachu87 {
@@ -3244,10 +3247,10 @@ impl CardArchetype for Poliwag88 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Water Gun", Self::water_gun)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Water Gun", Self::water_gun),
+      ]
     }
 }
 impl Poliwag88 {
@@ -3274,10 +3277,10 @@ impl CardArchetype for Rattata89 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Bite", Self::bite)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Bite", Self::bite),
+      ]
     }
 }
 impl Rattata89 {
@@ -3306,11 +3309,11 @@ impl CardArchetype for Rhyhorn90 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Leer", Self::leer)
-            .register("Horn Attack", Self::horn_attack)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Leer", Self::leer),
+        Attack::new("Horn Attack", Self::horn_attack),
+      ]
     }
 }
 impl Rhyhorn90 {
@@ -3342,10 +3345,10 @@ impl CardArchetype for Sandshrew91 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Sand-attack", Self::sand_attack)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Sand-attack", Self::sand_attack),
+      ]
     }
 }
 impl Sandshrew91 {
@@ -3374,11 +3377,11 @@ impl CardArchetype for Spearow92 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Peck", Self::peck)
-            .register("Mirror Move", Self::mirror_move)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Peck", Self::peck),
+        Attack::new("Mirror Move", Self::mirror_move),
+      ]
     }
 }
 impl Spearow92 {
@@ -3410,11 +3413,11 @@ impl CardArchetype for Squirtle93 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Bubble", Self::bubble)
-            .register("Withdraw", Self::withdraw)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Bubble", Self::bubble),
+        Attack::new("Withdraw", Self::withdraw),
+      ]
     }
 }
 impl Squirtle93 {
@@ -3451,18 +3454,18 @@ impl CardArchetype for Starmie94 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Recover", Self::recover)
-            .register("Star Freeze", Self::star_freeze)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Recover", Self::recover),
+        Attack::new("Star Freeze", Self::star_freeze),
+      ]
     }
 }
 impl Starmie94 {
     pub fn recover(builder: AttackBuilder) -> AttackBuilder {
         builder
             .attack_cost(&[Type::Water, Type::Water])
-            .must(|e| e.discard_attacking_energy_cards(&[Type::Water]))
+            .cost(|e| e.discard_attacking_energy_cards(&[Type::Water]))
             .heal_all_attacking()
     }
     pub fn star_freeze(builder: AttackBuilder) -> AttackBuilder {
@@ -3492,10 +3495,10 @@ impl CardArchetype for Staryu95 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Slap", Self::slap)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Slap", Self::slap),
+      ]
     }
 }
 impl Staryu95 {
@@ -3524,11 +3527,11 @@ impl CardArchetype for Tangela96 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Bind", Self::bind)
-            .register("Poisonpowder", Self::poisonpowder)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Bind", Self::bind),
+        Attack::new("Poisonpowder", Self::poisonpowder),
+      ]
     }
 }
 impl Tangela96 {
@@ -3565,11 +3568,11 @@ impl CardArchetype for Venonat97 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Stun Spore", Self::stun_spore)
-            .register("Leech Life", Self::leech_life)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Stun Spore", Self::stun_spore),
+        Attack::new("Leech Life", Self::leech_life),
+      ]
     }
 }
 impl Venonat97 {
@@ -3603,10 +3606,10 @@ impl CardArchetype for Voltorb98 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Tackle", Self::tackle)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Tackle", Self::tackle),
+      ]
     }
 }
 impl Voltorb98 {
@@ -3635,10 +3638,10 @@ impl CardArchetype for Vulpix99 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Confuse Ray", Self::confuse_ray)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Confuse Ray", Self::confuse_ray),
+      ]
     }
 }
 impl Vulpix99 {
@@ -3669,10 +3672,10 @@ impl CardArchetype for Weedle100 {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
-            .register("Poison Sting", Self::poison_sting)
-            .into()
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
+        Attack::new("Poison Sting", Self::poison_sting),
+      ]
     }
 }
 impl Weedle100 {

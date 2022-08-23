@@ -1025,6 +1025,22 @@ impl GameState {
         self.with_player_side(side)
     }
 
+    pub fn wake_up(&self, in_play: &InPlayCard) -> Self {
+        let mut side = self.side(in_play.owner).clone();
+
+        side.in_play_mut(&in_play.id).unwrap().rotational_status = RotationalStatus::None;
+
+        self.with_player_side(side)
+    }
+
+    pub fn cure_paralysis(&self, in_play: &InPlayCard) -> Self {
+        let mut side = self.side(in_play.owner).clone();
+
+        side.in_play_mut(&in_play.id).unwrap().rotational_status = RotationalStatus::None;
+
+        self.with_player_side(side)
+    }
+
     pub fn promote(&self, in_play: &InPlayCard) -> Self {
         let mut side = self.side(in_play.owner).clone();
 

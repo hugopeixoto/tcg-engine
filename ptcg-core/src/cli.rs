@@ -90,9 +90,9 @@ impl InPlayCard {
         target.draw_line(&format!("{} HP", engine.remaining_hp(self)), x, y - 2);
 
         match self.rotational_status {
-            RotationalStatus::Paralyzed => {
-                target.draw_line("* Paralyzed", x, y - 3);
-            },
+            RotationalStatus::Paralyzed => { target.draw_line("* Paralyzed", x, y - 3); },
+            RotationalStatus::Asleep    => { target.draw_line("* Asleep", x, y - 3); },
+            RotationalStatus::Confused  => { target.draw_line("* Confused", x, y - 3); },
             _ => {},
         }
     }

@@ -10,7 +10,6 @@ PRELUDE = <<~EOF
 use crate::*;
 use crate::state::Type;
 use crate::attack_builder::AttackBuilder;
-use crate::carddb::Attacks;
 
 EOF
 
@@ -33,12 +32,12 @@ impl CardArchetype for <%= card.struct_name %><%= card.set_number %> {
     fn execute(&self, _player: Player, _card: &Card, engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine {
         engine.clone()
     }
-    fn attacks(&self, player: Player, in_play: &InPlayCard, engine: &GameEngine) -> Vec<Action> {
-        Attacks::new(player, in_play, engine)
+    fn attacks(&self) -> Vec<Attack> {
+      vec![
 <% card.attacks.each do |attack| -%>
-            .register("<%= attack.name %>", Self::<%= attack.fn_name %>)
+        Attack::new("<%= attack.name %>", Self::<%= attack.fn_name %>),
 <% end -%>
-            .into()
+      ]
     }
 }
 impl <%= card.struct_name %><%= card.set_number %> {
@@ -228,6 +227,11 @@ class Builder
     self
   end
 
+  def cost(&what)
+    @text << ".cost(|e| #{Builder.new("e").instance_eval(&what).to_s(compact: true)})"
+    self
+  end
+
   def must(&what)
     @text << ".must(|e| #{Builder.new("e").instance_eval(&what).to_s(compact: true)})"
     self
@@ -255,6 +259,11 @@ class Builder
 
   def disable_defending_attack
     @text << ".disable_defending_attack()"
+    self
+  end
+
+  def copy_defending_attack_without_costs
+    @text << ".copy_defending_attack_without_costs()"
     self
   end
 
@@ -336,7 +345,7 @@ $patterns = [
   {
     pattern: /^Discard (?<how_many>\d+) (?<energy_type>\w+) Energy card attached to \w+ in order to prevent all effects of attacks, including damage, done to \w+ during your opponent's next turn\.$/,
     build: ->(damage:, how_many:, energy_type:) {
-      must { discard_attacking_energy_cards([energy_type] * how_many.to_i) }
+      cost { discard_attacking_energy_cards([energy_type] * how_many.to_i) }
         .damage(damage)
         .prevent_damage_and_effects_during_opponents_next_turn
     },
@@ -351,19 +360,19 @@ $patterns = [
   },
   {
     pattern: /^Discard (?<how_many>\d+) (?<energy_type>\w+) Energy card attached to \w+ in order to use this attack\.$/,
-    build: ->(damage:, how_many:, energy_type:) { must { discard_attacking_energy_cards([energy_type] * how_many.to_i) }.damage(damage) },
+    build: ->(damage:, how_many:, energy_type:) { cost { discard_attacking_energy_cards([energy_type] * how_many.to_i) }.damage(damage) },
   },
   {
     pattern: /^Discard (?<how_many>\d+) Energy cards attached to \w+ in order to use this attack\.$/,
-    build: ->(damage:, how_many:) { must { discard_attacking_energy_cards(["Any"] * how_many.to_i) }.damage(damage) },
+    build: ->(damage:, how_many:) { cost { discard_attacking_energy_cards(["Any"] * how_many.to_i) }.damage(damage) },
   },
   {
     pattern: /^Discard all Energy cards attached to \w+ in order to use this attack\.$/,
-    build: ->(damage:) { must { discard_all_attacking_energy_cards }.damage(damage) },
+    build: ->(damage:) { cost { discard_all_attacking_energy_cards }.damage(damage) },
   },
   {
     pattern: /^Discard (?<how_many>\d+) (?<energy_type>\w+) Energy cards? attached to \w+ in order to use this attack\. Remove all damage counters from \w+\.$/,
-    build: ->(damage:, how_many:, energy_type:) { must { discard_attacking_energy_cards([energy_type] * how_many.to_i) }.heal_all_attacking },
+    build: ->(damage:, how_many:, energy_type:) { cost { discard_attacking_energy_cards([energy_type] * how_many.to_i) }.heal_all_attacking },
   },
   {
     pattern: /^If the Defending Pokémon has any Energy cards attached to it, choose (?<how_many>\d+) of them and discard it\.$/,
@@ -405,7 +414,7 @@ $patterns = [
   {
     pattern: /^Discard (?<how_many>\d+) (?<energy_type>\w+) Energy card attached to \w+ in order to use this attack. If a Pokémon Knocks Out \w+ during your opponent's next turn, Knock Out that Pokémon\./,
     build: ->(damage:, how_many:, energy_type:) {
-      must { discard_attacking_energy_cards([energy_type] * how_many.to_i) }
+      cost { discard_attacking_energy_cards([energy_type] * how_many.to_i) }
         .damage(damage)
         .knock_out_attacker_if_attacking_is_knocked_out_next_turn
     },
@@ -476,6 +485,13 @@ $patterns = [
     build: ->(damage:, up_to:) {
       damage(damage)
         .prevent_up_to_damage_during_opponents_next_turn(up_to)
+    }
+  },
+  {
+    pattern: /^Choose 1 of the Defending Pokémon's attacks\. Metronome copies that attack except for its Energy costs and anything else required in order to use that attack, such as discarding Energy cards\.$/,
+    build: ->(damage:) {
+      damage(damage)
+        .copy_defending_attack_without_costs()
     }
   },
 

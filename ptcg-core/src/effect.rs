@@ -1,7 +1,7 @@
 use crate::attack_builder::{AttackBuilder, AttackBuilderContext};
 use crate::state::{Effect, EffectConsequence, EffectExpiration, EffectSource, EffectTarget, EffectParameter, Type};
 use crate::state::{Player, InPlayCard};
-use crate::engine::{GameEngine, Resistance, Weakness, Action};
+use crate::engine::{GameEngine, Resistance, Weakness, Attack};
 
 #[derive(Default)]
 pub struct AttackEffectBuilder {
@@ -118,7 +118,7 @@ pub trait CustomEffect {
     fn attacking_damage(&self, _damage: usize) -> Option<usize> { None }
     fn get_resistance(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _resistance: Resistance) -> Option<Resistance> { None }
     fn get_weakness(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _weakness: Weakness) -> Option<Weakness> { None }
-    fn get_attacks(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _actions: Vec<Action>) -> Option<Vec<Action>> { None }
+    fn get_attacks(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _actions: Vec<Attack>) -> Option<Vec<Attack>> { None }
 
     fn on_attempt_to_attack(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine) -> Option<AttackBuilder> { None }
     fn on_affected(&self) -> Option<AttackBuilder> { None }

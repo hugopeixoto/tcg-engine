@@ -6,6 +6,31 @@ use crate::effect::CustomEffect;
 pub type Weakness = (usize, Vec<Type>);
 pub type Resistance = (usize, Vec<Type>);
 
+#[derive(Clone, Debug)]
+pub struct Attack {
+    name: String,
+    code: fn(AttackBuilder) -> AttackBuilder,
+}
+
+impl Attack {
+    pub fn new(name: &str, code: fn(AttackBuilder) -> AttackBuilder) -> Self {
+        Self { name: name.into(), code }
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn build(&self) -> AttackBuilder {
+        let builder = AttackBuilder::new();
+        (self.code)(builder)
+    }
+
+    pub fn run(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
+        self.build().apply(engine.clone(), dm).engine()
+    }
+}
+
 pub trait CardArchetype {
     fn identifier(&self) -> String;
     // probably want to add the Zone of the card
@@ -13,7 +38,7 @@ pub trait CardArchetype {
     fn execute(&self, _player: Player, _card: &Card, _engine: &GameEngine, _dm: &mut dyn DecisionMaker) -> GameEngine { unimplemented!(); }
     fn stage(&self) -> Option<Stage>;
     fn evolves_from(&self) -> Option<String>;
-    fn attacks(&self, _player: Player, _in_play: &InPlayCard, _engine: &GameEngine) -> Vec<Action> { vec![] }
+    fn attacks(&self) -> Vec<Attack> { vec![] }
     fn provides(&self) -> Vec<Type> { vec![] }
     fn hp(&self, card: &Card, engine: &GameEngine) -> Option<usize>;
     fn weakness(&self) -> Weakness;
@@ -68,33 +93,6 @@ impl Clone for Box<dyn Format> {
 }
 
 #[derive(Clone)]
-pub struct RFA {
-    code: fn(AttackBuilder) -> AttackBuilder,
-}
-
-impl RFA {
-    pub fn new(code: fn(AttackBuilder) -> AttackBuilder) -> Self {
-        RFA { code }
-    }
-}
-
-impl AttackBody for RFA {
-    fn build(&self) -> AttackBuilder {
-        let builder = AttackBuilder::new();
-        (self.code)(builder)
-    }
-
-    fn run(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine {
-        self.build().apply(engine.clone(), dm).engine()
-    }
-
-    fn boxed_clone(&self) -> Box<dyn AttackBody> {
-        Box::new(self.clone())
-    }
-}
-
-
-#[derive(Clone)]
 pub struct GameEngine {
     pub state: GameState,
     pub resolving_actions: Vec<Action>,
@@ -141,6 +139,7 @@ pub trait DecisionMaker {
     fn confirm_mulligan_draw(&mut self, p: Player, upto: usize) -> usize;
     fn confirm_setup_bench_selection(&mut self, p: Player, cards: &Vec<Card>) -> Vec<Card>;
     fn pick_type<'a>(&mut self, p: Player, types: &'a Vec<Type>) -> &'a Type;
+    fn pick_attack<'a>(&mut self, p: Player, attacks: &'a Vec<Attack>) -> &'a Attack;
     fn pick_action<'a>(&mut self, p: Player, actions: &'a Vec<Action>) -> &'a Action;
     fn pick_stage<'a>(&mut self, p: Player, items: &'a Vec<Stage>) -> &'a Stage;
     fn pick_from_hand<'a>(&mut self, p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card>;
@@ -169,6 +168,7 @@ impl DecisionMaker for FakeDM {
     fn confirm_mulligan_draw(&mut self, _p: Player, upto: usize) -> usize { upto }
     fn confirm_setup_bench_selection(&mut self, _p: Player, _cards: &Vec<Card>) -> Vec<Card> { vec![] }
     fn pick_type<'a>(&mut self, _p: Player, types: &'a Vec<Type>) -> &'a Type { &types[0] }
+    fn pick_attack<'a>(&mut self, _p: Player, attacks: &'a Vec<Attack>) -> &'a Attack { &attacks[0] }
     fn pick_action<'a>(&mut self, _p: Player, actions: &'a Vec<Action>) -> &'a Action { &actions[0] }
     fn pick_stage<'a>(&mut self, _p: Player, items: &'a Vec<Stage>) -> &'a Stage { &items[0] }
     fn pick_from_hand<'a>(&mut self, _p: Player, _whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card> { hand[0..how_many].iter().collect() }
@@ -215,18 +215,6 @@ pub enum SetupActiveSelection {
     Place(Card),
 }
 
-pub trait AttackBody {
-    fn run(&self, engine: &GameEngine, dm: &mut dyn DecisionMaker) -> GameEngine;
-    fn build(&self) -> AttackBuilder;
-    fn boxed_clone(&self) -> Box<dyn AttackBody>;
-}
-
-impl Clone for Box<dyn AttackBody> {
-    fn clone(&self) -> Self {
-        self.boxed_clone()
-    }
-}
-
 #[derive(Clone)]
 pub enum Action {
     Pass,
@@ -234,7 +222,7 @@ pub enum Action {
     AttachFromHand(Player, Card),
     BenchFromHand(Player, Card),
     EvolveFromHand(Player, Card),
-    Attack(Player, InPlayCard, String, Box<dyn AttackBody>),
+    Attack(Player, InPlayCard, Attack),
     Retreat(Player, InPlayCard),
 }
 impl std::fmt::Debug for Action {
@@ -244,7 +232,7 @@ impl std::fmt::Debug for Action {
             Action::AttachFromHand(_player, card) => { write!(f, "Attach {}", card.archetype) },
             Action::BenchFromHand(_player, card) => { write!(f, "Bench {}", card.archetype) },
             Action::EvolveFromHand(_player, card) => { write!(f, "Evolve into {}", card.archetype) },
-            Action::Attack(_player, in_play, name, _) => { write!(f, "Attack with {}: {}", in_play.stack[0].card().archetype, name) },
+            Action::Attack(_player, in_play, attack) => { write!(f, "Attack with {}: {}", in_play.stack[0].card().archetype, attack.name()) },
             Action::Retreat(_player, in_play) => { write!(f, "Retreat {}", in_play.stack[0].card().archetype) },
             Action::Pass => { write!(f, "Pass") },
         }
@@ -334,11 +322,11 @@ impl GameEngine {
                             .retreat(*player, in_play, dm)
                             .check_kos_and_stuff(dm)
                     },
-                    Action::Attack(player, attacking, _name, executor) => {
+                    Action::Attack(player, attacking, attack) => {
                        self
                             .push_action(action.clone())
                             .push_target(attacking, &self.state.side(player.opponent()).active[0])
-                            .then(|e| e.execute_attack(executor, dm))
+                            .then(|e| e.execute_attack(attack, dm))
                             .check_kos_and_stuff(dm)
                             .pop_target()
                             .pop_action()
@@ -355,9 +343,52 @@ impl GameEngine {
                 self.goto_pokemon_checkup()
             },
             GameStage::PokemonCheckup(player) => {
-                self.with_state(self.state.with_stage(GameStage::StartOfTurn(player)).next_turn(player))
+                self
+                    .pokemon_checkup(player, dm)
+                    .check_kos_and_stuff(dm)
+                    .then(|e| e.with_state(e.state.with_stage(GameStage::StartOfTurn(player.opponent())).next_turn(player.opponent())))
             }
         }
+    }
+
+    pub fn pokemon_checkup(&self, player: Player, dm: &mut dyn DecisionMaker) -> Self {
+        let mut engine = self.clone();
+
+        engine = engine.pokemon_checkup_special_conditions(player, dm);
+        engine = engine.pokemon_checkup_special_conditions(player.opponent(), dm);
+        engine
+    }
+
+    pub fn pokemon_checkup_special_conditions(&self, player: Player, dm: &mut dyn DecisionMaker) -> Self {
+        let mut engine = self.clone();
+
+        // poisoned, burned, asleep, paralyzed
+        for in_play in engine.state.side(player).active.clone().iter() {
+            if let Some(poison) = &in_play.poisoned {
+                engine = engine.with_state(engine.state.add_damage_counters(in_play, poison.counters));
+            }
+
+            // TODO: burned (didn't exist in base set)
+
+            match in_play.rotational_status {
+                RotationalStatus::Asleep => {
+                    if dm.flip(1).heads() == 1 {
+                        println!("{:?} woke up!", in_play);
+                        engine = engine.with_state(engine.state.wake_up(in_play));
+                    }
+                },
+                RotationalStatus::Paralyzed => {
+                    if let GameStage::PokemonCheckup(p) = self.state.stage {
+                        if p == player {
+                            engine = engine.with_state(engine.state.cure_paralysis(in_play));
+                        }
+                    }
+                },
+                _ => {},
+            }
+        }
+
+        engine
     }
 
     pub fn check_kos_and_stuff(&self, dm: &mut dyn DecisionMaker) -> Self {
@@ -464,7 +495,7 @@ impl GameEngine {
         engine
     }
 
-    pub fn execute_attack(&self, body: &Box<dyn AttackBody>, dm: &mut dyn DecisionMaker) -> Self {
+    pub fn execute_attack(&self, attack: &Attack, dm: &mut dyn DecisionMaker) -> Self {
         let mut engine = self.clone();
 
         let attack_effects = self.state.effects.iter()
@@ -478,8 +509,7 @@ impl GameEngine {
             }
         }
 
-        engine = body.run(&engine, dm);
-
+        engine = attack.run(&engine, dm);
         engine
     }
 
@@ -538,21 +568,21 @@ impl GameEngine {
 
     pub fn current_attack_name(&self) -> Option<String> {
         match self.resolving_actions.last() {
-            Some(Action::Attack(_, _, name, _)) => Some(name.clone()),
+            Some(Action::Attack(_, _, attack)) => Some(attack.name().clone()),
             _ => None,
         }
     }
 
     pub fn is_someone_attacking(&self) -> bool {
         match self.resolving_actions.last() {
-            Some(Action::Attack(_, _, _, _)) => true,
+            Some(Action::Attack(_, _, _)) => true,
             _ => false,
         }
     }
 
     pub fn player(&self) -> Player {
         match self.resolving_actions.last() {
-            Some(Action::Attack(player, _, _, _)) => *player,
+            Some(Action::Attack(player, _, _)) => *player,
             Some(Action::TrainerFromHand(player, _)) => *player,
             _ => { panic!("Error accessing GameEngine::player() while not attacking or using a trainer card"); }
         }
@@ -560,7 +590,7 @@ impl GameEngine {
 
     pub fn opponent(&self) -> Player {
         match self.resolving_actions.last() {
-            Some(Action::Attack(player, _, _, _)) => player.opponent(),
+            Some(Action::Attack(player, _, _)) => player.opponent(),
             Some(Action::TrainerFromHand(player, _)) => player.opponent(),
             _ => { panic!("Error accessing GameEngine::opponent() while not attacking or using a trainer card"); }
         }
@@ -891,7 +921,7 @@ impl GameEngine {
     pub fn goto_pokemon_checkup(&self) -> Self {
         match &self.state.stage {
             GameStage::EndOfTurn(player) => {
-                self.with_state(self.state.with_stage(GameStage::PokemonCheckup(player.opponent())))
+                self.with_state(self.state.with_stage(GameStage::PokemonCheckup(*player)))
             },
             stage => { panic!("Can't end turn while in stage {:?}", stage); }
         }
@@ -1111,16 +1141,33 @@ impl GameEngine {
         self.with_state(self.state.switch_active_with(with))
     }
 
+    pub fn are_attack_requirements_met(&self, action: &Action) -> bool {
+        if let Action::Attack(player, attacking, attack) = action {
+            let mut dm = FakeDM{};
+            let engine = self
+                .push_action(action.clone())
+                .push_target(&attacking, &self.state.side(player.opponent()).active[0]);
+
+            !attack.build().only_requirements().apply(engine, &mut dm).failed()
+        } else {
+            panic!("Can't check the attack requirements for {:?}", action);
+        }
+    }
+
     pub fn in_play_actions(&self, player: Player, in_play: &InPlayCard, active: bool) -> Vec<Action> {
-        if active && in_play.rotational_status != RotationalStatus::Paralyzed && self.can_attack(player, in_play) {
+        if active && in_play.rotational_status != RotationalStatus::Paralyzed && in_play.rotational_status != RotationalStatus::Asleep && self.can_attack(player, in_play) {
             self.attacks(in_play)
+                .into_iter()
+                .map(|attack| Action::Attack(player, in_play.clone(), attack))
+                .filter(|action| self.are_attack_requirements_met(action))
+                .collect()
         } else {
             vec![]
         }
     }
 
-    pub fn attacks(&self, in_play: &InPlayCard) -> Vec<Action> {
-        let mut attacks = self.archetype(in_play.stack[0].card()).attacks(in_play.owner, in_play, self);
+    pub fn attacks(&self, in_play: &InPlayCard) -> Vec<Attack> {
+        let mut attacks = self.archetype(in_play.stack[0].card()).attacks();
 
         for effect in self.state.effects.iter() {
             if let Some(new_attacks) = self.effect(effect).get_attacks(effect, in_play, self, attacks.clone()) {

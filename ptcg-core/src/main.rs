@@ -81,6 +81,23 @@ impl DecisionMaker for CLI {
         &types[choice.unwrap() - 1]
     }
 
+    fn pick_attack<'a>(&mut self, player: Player, attacks: &'a Vec<Attack>) -> &'a Attack {
+        let mut choice = None;
+
+        println!("<Player {:?}> pick one attack", player);
+        for (i, attack) in attacks.iter().enumerate() {
+            println!(" {}. {:?}", i + 1, attack.name());
+        }
+
+        while choice.is_none() {
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+            choice = input.trim().parse::<usize>().ok();
+        }
+
+        &attacks[choice.unwrap() - 1]
+    }
+
     fn pick_action<'a>(&mut self, player: Player, actions: &'a Vec<Action>) -> &'a Action {
         let mut choice = None;
 

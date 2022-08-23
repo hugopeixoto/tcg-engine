@@ -1,7 +1,7 @@
 use crate::attack_builder::AttackBuilder;
 use crate::effect::CustomEffect;
 use crate::state::{Effect, Player, InPlayCard};
-use crate::engine::{GameEngine, Resistance, Weakness, Action};
+use crate::engine::{GameEngine, Resistance, Weakness, Attack};
 
 // TODO: the attackbuilder builds a bunch of objects, maybe it
 // should be stored in the struct and reused here.
@@ -163,12 +163,12 @@ impl CustomEffect for DisableAttack {
         "DISABLE_ATTACK".into()
     }
 
-    fn get_attacks(&self, effect: &Effect, in_play: &InPlayCard, _engine: &GameEngine, actions: Vec<Action>) -> Option<Vec<Action>> {
+    fn get_attacks(&self, effect: &Effect, in_play: &InPlayCard, _engine: &GameEngine, actions: Vec<Attack>) -> Option<Vec<Attack>> {
         let disabled = effect.get_parameter_string(0).unwrap();
         let this_pokemon = effect.target.is_in_play(in_play);
 
         if this_pokemon {
-            Some(actions.into_iter().filter(|a| match a { Action::Attack(_, _, name, _) => *name != disabled, _ => true }).collect())
+            Some(actions.into_iter().filter(|a| a.name() != &disabled).collect())
         } else {
             None
         }
