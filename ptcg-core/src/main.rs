@@ -62,83 +62,34 @@ impl DecisionMaker for CLI {
         cards.clone()
     }
 
-    fn pick_type<'a>(&mut self, player: Player, types: &'a Vec<Type>) -> &'a Type {
-        let mut choice = None;
-
-        println!("<Player {:?}> pick a type:", player);
-        for (i, t) in types.iter().enumerate() {
-            println!(" {}. {:?}", i + 1, t);
-        }
-
-        while choice.is_none() {
-            let mut input = String::new();
-            std::io::stdin().read_line(&mut input).expect("Failed to read input");
-            match input.trim() {
-                text => { choice = text.parse::<usize>().ok(); },
-            }
-        }
-
-        &types[choice.unwrap() - 1]
+    fn pick_attach_from_hand<'a>(&mut self, player: Player, possibilities: &'a Vec<(&'a Card, &'a InPlayCard)>) -> &'a (&'a Card, &'a InPlayCard) {
+        Self::print_possibilities(player, &(1..=1), "attach from hand action", possibilities);
+        &possibilities[Self::pick_number(possibilities)]
     }
 
-    fn pick_attack<'a>(&mut self, player: Player, attacks: &'a Vec<Attack>) -> &'a Attack {
-        let mut choice = None;
-
-        println!("<Player {:?}> pick one attack", player);
-        for (i, attack) in attacks.iter().enumerate() {
-            println!(" {}. {:?}", i + 1, attack.name());
-        }
-
-        while choice.is_none() {
-            let mut input = String::new();
-            std::io::stdin().read_line(&mut input).expect("Failed to read input");
-            choice = input.trim().parse::<usize>().ok();
-        }
-
-        &attacks[choice.unwrap() - 1]
+    fn pick_move_damage_counters<'a>(&mut self, player: Player, possibilities: &'a Vec<(&'a InPlayCard, &'a InPlayCard, usize)>) -> &'a (&'a InPlayCard, &'a InPlayCard, usize) {
+        Self::print_possibilities(player, &(1..=1), "move damage counter action", possibilities);
+        &possibilities[Self::pick_number(possibilities)]
     }
 
-    fn pick_action<'a>(&mut self, player: Player, actions: &'a Vec<Action>) -> &'a Action {
-        let mut choice = None;
-
-        println!("available actions for {:?}:", player);
-        for (i, action) in actions.iter().enumerate() {
-            println!(" {}. {:?}", i + 1, action);
-        }
-
-        println!("  d. Print my discard");
-        println!("  D. Print opponent's discard");
-        println!("  h. Print my hand");
-
-        while choice.is_none() {
-            let mut input = String::new();
-            std::io::stdin().read_line(&mut input).expect("Failed to read input");
-            match input.trim() {
-                "d" => {},
-                "D" => {},
-                "h" => {},
-                text => { choice = text.parse::<usize>().ok(); },
-            }
-        }
-
-        &actions[choice.unwrap() - 1]
+    fn pick_type<'a>(&mut self, player: Player, possibilities: &'a Vec<Type>) -> &'a Type {
+        Self::print_possibilities(player, &(1..=1), "type", possibilities);
+        &possibilities[Self::pick_number(possibilities)]
     }
 
-    fn pick_stage<'a>(&mut self, player: Player, items: &'a Vec<Stage>) -> &'a Stage {
-        let mut choice = None;
+    fn pick_attack<'a>(&mut self, player: Player, possibilities: &'a Vec<Attack>) -> &'a Attack {
+        Self::print_possibilities(player, &(1..=1), "attack", possibilities);
+        &possibilities[Self::pick_number(possibilities)]
+    }
 
-        println!("available stages for {:?}:", player);
-        for (i, item) in items.iter().enumerate() {
-            println!(" {}. {:?}", i + 1, item);
-        }
+    fn pick_action<'a>(&mut self, player: Player, possibilities: &'a Vec<Action>) -> &'a Action {
+        Self::print_possibilities(player, &(1..=1), "action", possibilities);
+        &possibilities[Self::pick_number(possibilities)]
+    }
 
-        while choice.is_none() {
-            let mut input = String::new();
-            std::io::stdin().read_line(&mut input).expect("Failed to read input");
-            choice = input.trim().parse::<usize>().ok();
-        }
-
-        &items[choice.unwrap() - 1]
+    fn pick_stage<'a>(&mut self, player: Player, possibilities: &'a Vec<Stage>) -> &'a Stage {
+        Self::print_possibilities(player, &(1..=1), "stage(s)", possibilities);
+        &possibilities[Self::pick_number(possibilities)]
     }
 
     fn pick_from_hand<'a>(&mut self, _p: Player, whose: Player, how_many: usize, hand: &'a Vec<Card>) -> Vec<&'a Card> {
@@ -181,14 +132,10 @@ impl DecisionMaker for CLI {
         choice.unwrap()
     }
 
-    fn pick_from_prizes<'a>(&mut self, _who: Player, whose: Player, how_many: usize, searchable: &'a Vec<PrizeCard>) -> Vec<&'a PrizeCard> {
+    fn pick_from_prizes<'a>(&mut self, who: Player, whose: Player, how_many: usize, searchable: &'a Vec<PrizeCard>) -> Vec<&'a PrizeCard> {
         let mut choice = None;
 
-        println!("Pick {} cards from {:?}'s hand:", how_many, whose);
-        for (i, card) in searchable.iter().enumerate() {
-            println!("{}. {:?}", i + 1, card.card);
-        }
-
+        Self::print_possibilities(who, &(how_many..=how_many), &format!("of Player {:?}'s prize card(s)", whose), searchable);
         while choice.is_none() {
             let mut input = String::new();
             std::io::stdin().read_line(&mut input).expect("Failed to read input");
@@ -201,14 +148,10 @@ impl DecisionMaker for CLI {
         choice.unwrap()
     }
 
-    fn pick_in_play<'a>(&mut self, _player: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard> {
+    fn pick_in_play<'a>(&mut self, player: Player, how_many: usize, searchable: &'a Vec<InPlayCard>) -> Vec<&'a InPlayCard> {
         let mut choice = None;
 
-        println!("Pick {} in play pokemon:", how_many);
-        for (i, card) in searchable.iter().enumerate() {
-            println!("{}. {:?}", i + 1, card);
-        }
-
+        Self::print_possibilities(player, &(how_many..=how_many), "in play pokemon", searchable);
         while choice.is_none() {
             let mut input = String::new();
             std::io::stdin().read_line(&mut input).expect("Failed to read input");
@@ -221,14 +164,10 @@ impl DecisionMaker for CLI {
         choice.unwrap()
     }
 
-    fn pick_attached<'a>(&mut self, _player: Player, how_many: std::ops::RangeInclusive<usize>, searchable: &'a Vec<Card>) -> Vec<&'a Card> {
+    fn pick_attached<'a>(&mut self, player: Player, how_many: std::ops::RangeInclusive<usize>, searchable: &'a Vec<Card>) -> Vec<&'a Card> {
         let mut choice = None;
 
-        println!("Pick {:?} in play pokemon:", how_many);
-        for (i, card) in searchable.iter().enumerate() {
-            println!("{}. {:?}", i + 1, card);
-        }
-
+        Self::print_possibilities(player, &how_many, "attached card(s)", searchable);
         while choice.is_none() {
             let mut input = String::new();
             std::io::stdin().read_line(&mut input).expect("Failed to read input");
@@ -285,6 +224,31 @@ impl DecisionMaker for CLI {
         choice.iter().map(|x| &cards[*x]).collect()
     }
 }
+
+impl CLI {
+    fn print_possibilities<T: std::fmt::Debug>(player: Player, how_many: &std::ops::RangeInclusive<usize>, what: &str, possibilities: &Vec<T>) {
+        println!("<Player {:?}>: pick {:?} {}:", player, how_many, what);
+        for (i, card) in possibilities.iter().enumerate() {
+            println!("{}. {:?}", i + 1, card);
+        }
+    }
+
+    fn pick_number<T>(possibilities: &Vec<T>) -> usize {
+        let range = 1 ..= possibilities.len();
+        let mut choice = None;
+        while choice.is_none() {
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+            choice = input.trim()
+                .parse::<usize>()
+                .ok()
+                .and_then(|n| if range.contains(&n) { Some(n) } else { None });
+        }
+
+        choice.unwrap() - 1
+    }
+}
+
 
 use std::io::BufRead;
 fn load_deck(filename: &str) -> Result<Vec<String>, std::io::Error> {

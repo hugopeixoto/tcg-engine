@@ -321,7 +321,7 @@ impl InPlayCard {
 
 type PrizeCardID = usize;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PrizeCard {
     pub id: PrizeCardID,
     pub card: FaceCard,
@@ -779,22 +779,22 @@ impl GameState {
         self.with_player_side(side)
     }
 
-    pub fn manual_attach_from_hand(&self, player: Player, card: &Card, target: &InPlayID) -> Self {
+    pub fn manual_attach_from_hand(&self, player: Player, card: &Card, target: &InPlayCard) -> Self {
         let mut side = self.side(player).clone();
         side.manual_attachments_this_turn += 1;
 
         self
             .with_player_side(side)
-            .attach_from_hand(player, card, target)
+            .attach_from_hand(card, target)
     }
 
-    pub fn attach_from_hand(&self, player: Player, card: &Card, target: &InPlayID) -> Self {
-        let mut side = self.side(player).clone();
+    pub fn attach_from_hand(&self, card: &Card, target: &InPlayCard) -> Self {
+        let mut side = self.side(target.owner).clone();
 
         let p = side.hand.iter().position(|c| c == card).unwrap();
         side.hand.remove(p);
 
-        side.in_play_mut(target).unwrap().attached.push(AttachedCard { card: FaceCard::Up(card.clone()), attached_turn: self.turn });
+        side.in_play_mut(&target.id).unwrap().attached.push(AttachedCard { card: FaceCard::Up(card.clone()), attached_turn: self.turn });
 
         self.with_player_side(side)
     }
@@ -983,6 +983,12 @@ impl GameState {
         *c = c.saturating_sub(counters);
 
         self.with_player_side(side)
+    }
+
+    pub fn move_damage_counters(&self, from: &InPlayCard, to: &InPlayCard, counters: usize) -> Self {
+        self
+            .remove_damage_counters(from, counters)
+            .add_damage_counters(to, counters)
     }
 
     pub fn remove_all_damage_counters(&self, in_play: &InPlayCard) -> Self {

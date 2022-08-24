@@ -75,6 +75,10 @@ impl Format for BaseFossil {
         panic!("Couldn't find basic that matches card {}", card.archetype);
     }
 
+    fn all_special_conditions_prevent_pokemon_powers(&self) -> bool {
+        false
+    }
+
     fn available_types(&self) -> Vec<Type> {
         vec![
             Type::Fighting,

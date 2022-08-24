@@ -33,17 +33,31 @@ impl CardArchetype for <%= card.struct_name %><%= card.set_number %> {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
+        vec![
 <% card.attacks.each do |attack| -%>
-        Attack::new("<%= attack.name %>", Self::<%= attack.fn_name %>),
+            Attack::new("<%= attack.name %>", Self::<%= attack.fn_name %>),
 <% end -%>
-      ]
+        ]
     }
+<% if !card.poke_powers.empty? -%>
+    fn poke_powers(&self) -> Vec<Attack> {
+        vec![
+<% card.poke_powers.each do |poke_power| -%>
+            Attack::new("<%= poke_power.name %>", Self::<%= poke_power.fn_name %>),
+<% end -%>
+        ]
+    }
+<% end -%>
 }
 impl <%= card.struct_name %><%= card.set_number %> {
 <% card.attacks.each do |attack| -%>
     pub fn <%= attack.fn_name %>(<%= attack.impl.include?("builder") ? "" : "_" %>builder: AttackBuilder) -> AttackBuilder {
         <%= attack.impl %>
+    }
+<% end -%>
+<% card.poke_powers.each do |poke_power| -%>
+    pub fn <%= poke_power.fn_name %>(<%= poke_power.impl.include?("builder") ? "" : "_" %>builder: AttackBuilder) -> AttackBuilder {
+        <%= poke_power.impl %>
     }
 <% end -%>
 }
@@ -222,6 +236,20 @@ class Builder
     self
   end
 
+  def move_own_damage_counter_without_ko
+    @text << ".move_own_damage_counter_without_ko()"
+    self
+  end
+
+  def disabled_under_special_conditions
+    @text << ".disabled_under_special_conditions()"
+    self
+  end
+
+  def as_often_as_you_like_during_your_turn
+    self
+  end
+
   def attack_cost(cost)
     @text << ".attack_cost(&[#{cost.map{|c| "Type::#{c}"}.join(", ")}])"
     self
@@ -279,6 +307,11 @@ class Builder
 
   def draw(n)
     @text << ".draw(#{n})"
+    self
+  end
+
+  def attach_energy_from_hand(energy_type, target_type)
+    @text << ".attach_energy_from_hand(Type::#{energy_type}, Type::#{target_type})"
     self
   end
 end
@@ -512,6 +545,50 @@ $patterns = [
   },
 ]
 
+$poke_power_patterns = [
+  {
+    pattern: /^As often as you like during your turn, you may move 1 damage counter from 1 of your Pokémon to another as long as you don't Knock Out that Pokémon\. This power can't be used if \w+ is Asleep, Confused, or Paralyzed\.$/,
+    build: ->() {
+      disabled_under_special_conditions
+        .as_often_as_you_like_during_your_turn
+        .move_own_damage_counter_without_ko
+    },
+  },
+  {
+    pattern: /^As often as you like during your turn, you may attach 1 Water Energy card to 1 of your Water Pokémon\. This power can't be used if \w+ is Asleep, Confused, or Paralyzed\.$/,
+    build: ->() {
+      disabled_under_special_conditions
+        .as_often_as_you_like_during_your_turn
+        .attach_energy_from_hand("Water", "Water")
+    },
+  },
+]
+
+def poke_power_impl(poke_power)
+  text = poke_power
+    .fetch('text')
+    .gsub(/\([^)]+\)/, '')
+    .gsub(/ +/, " ")
+    .gsub(/\ +\./, ".")
+    .gsub(/\ +\,/, ",")
+    .strip
+
+  builder = Builder.new
+
+  $poke_power_patterns.each do |pattern|
+    m = pattern[:pattern].match(text)
+    if m
+      v = m.named_captures
+        .transform_keys(&:to_sym)
+        .transform_values { |v| v =~ /^\d+$/ ? v.to_i : v.to_s }
+      v.merge!({ damage: poke_power.fetch('damage') }) if pattern[:build].parameters.include?([:keyreq, :damage])
+      return builder.instance_exec(**v, &pattern[:build]).to_s.rstrip.gsub("\n", "\n        ")
+    end
+  end
+
+  "unimplemented!();"
+end
+
 def attack_impl(attack)
   text = attack
     .fetch('text')
@@ -556,11 +633,7 @@ def namify(name)
     .gsub('.', "")
 end
 
-
-def process_set(contents)
-  output = ""
-  output << PRELUDE
-
+def parse_set(contents)
   # typos in dataset
   contents = contents
     .gsub(/Paralzyed/, "Paralyzed")
@@ -574,28 +647,48 @@ def process_set(contents)
     .gsub(/ If \w+ has fewer damage counters than that, remove all of them\./, '')
 
   cards = JSON.parse(contents)['data']
-  pokemon_cards = cards.filter { |c| c["supertype"] == "Pokémon" }
-  pokemon_cards.each do |card|
-    stage = if card["subtypes"].include?("Basic")
-              "basic!()"
-            elsif card["subtypes"].include?("Stage 1")
-              'stage1!("' + card["evolvesFrom"] + '")'
-            elsif card["subtypes"].include?("Stage 2")
-              'stage2!("' + card["evolvesFrom"] + '")'
-            else
-              1/0
-            end
+  cards
+end
+
+def parse_pokemon_card(card)
+  stage = if card["subtypes"].include?("Basic")
+            "basic!()"
+          elsif card["subtypes"].include?("Stage 1")
+            'stage1!("' + card["evolvesFrom"] + '")'
+          elsif card["subtypes"].include?("Stage 2")
+            'stage2!("' + card["evolvesFrom"] + '")'
+          elsif card["subtypes"].include?("Baby")
+            'baby!("' + card["evolvesTo"].join(", ") + '")'
+          else
+            raise card["subtypes"].join(", ")
+          end
 
     weakness = if card["weaknesses"]
                  "weak_to!(#{card["weaknesses"].map{|w|w["type"]}.join(", ")})"
                else
                  "no_weakness!()";
                end
+
     resistance = if card["resistances"]
                    "resists!(#{card["resistances"].map{|w|w["type"]}.join(", ")}, 30)";
                  else
                    "no_resistance!()";
                  end
+
+    attacks = card["attacks"].then { |as| Array(as) }.map { |a|
+      OpenStruct.new(a.merge(
+        fn_name: idify(a["name"]),
+        impl: attack_impl(a),
+      ))
+    }
+
+    pokemon_powers = card.fetch("abilities", []).filter{|p| ["Poké-Power", "Poké-Body", "Pokémon Power"].include?(p["type"])}.map {|p|
+      OpenStruct.new(p.merge(
+        fn_name: idify(p["name"]),
+        impl: poke_power_impl(p),
+        parts: parse_pokemon_power(p),
+      ))
+    }
 
     card = OpenStruct.new(
       struct_name: namify(card["name"]),
@@ -608,14 +701,40 @@ def process_set(contents)
       retreat: card.fetch("retreatCost", []).size,
       types: card["types"],
       hp: card["hp"],
-      attacks: card["attacks"].then { |as| Array(as) }.map { |a|
-        OpenStruct.new(a.merge(
-          fn_name: idify(a["name"]),
-          impl: attack_impl(a),
-        ))
-      },
+      attacks: attacks,
+      pokemon_powers: pokemon_powers,
+      poke_powers: pokemon_powers.filter { |p| p.parts["poke-power"] },
     )
 
+    card.pokemon_powers.each { |pp| pp.card = card }
+    card.poke_powers.each { |pp| pp.card = card }
+    card.attacks.each { |pp| pp.card = card }
+
+    card
+ end
+
+def normalize_text(card, text)
+  text
+    .gsub(/\d+/, "X")
+    .gsub(/\s*\([^)]+\)\s*/, '')
+    .gsub(/\b(Water|Fire|Lightning|Psychic|Fighting|Grass|Darkness|Colorless|Fairy|Metal)\b/, 'TYPE')
+    .gsub(/\b(Poisoned|Asleep|Confused|Paralyzed)\b/, 'SPECIAL_CONDITION')
+    .gsub(Regexp.new("\\b" + Regexp.escape(card.display_name) + '\b'), 'THIS_POKEMON')
+    .split(".")
+    .map(&:strip)
+end
+
+def process_set(contents)
+  cards = parse_set(contents)
+
+  pokemon_cards = cards
+    .filter { |card| card["supertype"] == "Pokémon" }
+    .map { |card| parse_pokemon_card(card) }
+
+  output = ""
+  output << PRELUDE
+
+  pokemon_cards.each do |card|
     output << ERB.new(TEMPLATE, trim_mode: "<>-").result_with_hash(card: card)
   end
 
@@ -625,38 +744,95 @@ def process_set(contents)
   File.write("src/sets/#{set_name}/pokemon.rs", output)
 
   poops = pokemon_cards
-    .flat_map { |card| card.fetch("attacks", []).map { |a| a.merge("card" => card) } }
-    .filter { |attack| attack_impl(attack) == "unimplemented!();" }
-    .map do |attack|
-      attack["text"]
-        .gsub(/\d+/, "X")
-        .gsub(/\s*\([^)]+\)\s*/, '')
-        .gsub(/\b(Water|Fire|Lightning|Psychic|Fighting)\b/, 'TYPE')
-        .gsub(/\b(Poisoned|Asleep|Confused|Paralyzed)\b/, 'SPECIAL_CONDITION')
-        .gsub(Regexp.new("\\b" + Regexp.escape(attack['card']['name']) + '\b'), 'THIS_POKEMON')
-        .split(".")
-        .map(&:strip)
-    end
+    .flat_map { |card| card.attacks + card.pokemon_powers }
+    .filter { |attack| attack.impl == "unimplemented!();" }
+    .map { |attack| normalize_text(attack.card, attack.text) }
 
   {
-    total_attacks: pokemon_cards.sum { |card| card.fetch("attacks", []).size },
-    missing_attacks: pokemon_cards.sum { |card| card.fetch("attacks", []).filter{|attack| attack_impl(attack) == "unimplemented!();" }.size },
+    total_attacks: pokemon_cards.sum { |card| card.attacks.size },
+    missing_attacks: pokemon_cards.sum { |card| card.attacks.filter{|attack| attack.impl == "unimplemented!();" }.size },
+    total_pokemon_powers: pokemon_cards.sum { |card| card.pokemon_powers.size },
+    missing_pokemon_powers: pokemon_cards.sum { |card| card.pokemon_powers.filter{|power| power.impl == "unimplemented!();" }.size },
     missing_patterns: poops,
   }
 end
 
+def parse_pokemon_power(power)
+  text = power["text"]
+    .gsub(/\([^)]*\)/, '')
+    .gsub(/his or her/, 'their')
+    .gsub(/Asleep, Confused, or Paralyzed/, "affected by a Special Condition")
+    .gsub(/ +/, " ").gsub(/ ,/, ",").gsub(/ \./, ".")
+
+  text = "[poke-power] #{text}" if power["type"] == "Poké-Power"
+  text = "[poke-body] #{text}" if power["type"] == "Poké-Body"
+
+  if power["type"] == "Pokémon Power"
+    text = text
+      .gsub(/ +/, " ").gsub(/ ,/, ",").gsub(/ \./, ".")
+      .gsub(/^Once during your turn,/, "[poke-power][once-per-turn]")
+      .gsub(/^As often as you like during your turn,/, "[poke-power][as-often-as-you-like]")
+      .gsub(/^At any time during your turn,/, "[poke-power][once-per-turn]")
+      .gsub(/^When you play .* from your hand,/, "[poke-body][on-play]")
+      .gsub(/^As long as /, "[poke-body] As long as ")
+      .gsub(/^([^\[])/, '[poke-body] \1')
+  end
+
+  text = text
+    .gsub(/ or if .* is affected by a Special Condition\./, ' [disabled-under-special-conditions]')
+    .gsub(/ Ditto isn't a copy of any other Pokémon while Ditto is affected by a Special Condition\./, ' [disabled-under-special-conditions]')
+    .gsub(/ Th(e|is) [pP]ower can('|no)t be used (while|when|if) .* (is|becomes) (already )?affected by a Special Condition( when [^.]+)?\./, ' [disabled-under-special-conditions]')
+    .gsub(/ This [pP]ower (stops working|doesn't work) (while|when|if) .* (is|becomes) (already )?affected by a Special Condition( when [^.]+)?\./, ' [disabled-under-special-conditions]')
+    .gsub(/ You can't use this power if .* is affected by a Special Condition\./, ' [disabled-under-special-conditions]')
+    .gsub(/This power (works even while|can be used even if|works even if) .* is (already )?affected by a Special Condition( when [^.]+)?\./, ' [works-under-special-conditions]')
+    .gsub(/ +/, " ").gsub(/ ,/, ",").gsub(/ \./, ".")
+    .gsub(/Once during your turn,/, "[once-per-turn]")
+    .gsub(/As often as you like during your turn,/, "[as-often-as-you-like]")
+    .gsub(/At any time during your turn,/, "[once-per-turn]")
+    .gsub(/When you play .* from your hand,/, "[on-play]")
+    .strip
+
+  props = text.scan(/\[.*?\]/).map { |p| [p[1...-1], true] }.to_h
+
+  text = text
+    .gsub(/\[[^\]]+\]/, "")
+    .gsub(/ +/, " ").gsub(/ ,/, ",").gsub(/ \./, ".")
+    .strip
+
+
+  props.merge("text" => power['card'])
+end
+
 if !ARGV.empty?
+  #ARGV
+  #  .flat_map { |filename| parse_set(File.read(filename)) }
+  #  .filter { |card| card["supertype"] == "Pokémon" }
+  #  .tap { |cards| pp cards.flat_map {|c| c.fetch("abilities", [])}.map{|a| a["type"]}.uniq }
+  #  .map { |card| parse_pokemon_card(card) }
+  #  .flat_map { |card| card.pokemon_powers }
+  #  .map { |power| parse_pokemon_power(power) }
+  #  .sort
+  #  .reverse
+  #  .uniq
+
   stats = ARGV
     .map { |filename| process_set(File.read(filename)) }
 
   poops = stats.flat_map { |x| x[:missing_patterns] }.tally.map(&:reverse).sort
   total_attacks = stats.sum { |x| x[:total_attacks] }
   missing_attacks = stats.sum { |x| x[:missing_attacks] }
+  total_pokemon_powers = stats.sum{|x|x[:total_pokemon_powers]}
+  missing_pokemon_powers = stats.sum{|x|x[:missing_pokemon_powers]}
 
   pp poops
   puts "total attacks: #{total_attacks}"
   puts "missing attacks: #{missing_attacks}"
   puts "implemented attacks: #{total_attacks - missing_attacks}"
+
+  puts "total pokemon powers: #{total_pokemon_powers}"
+  puts "missing pokemon powers: #{missing_pokemon_powers}"
+  puts "implemented pokemon powers: #{total_pokemon_powers - missing_pokemon_powers}"
+
   puts "missing patterns: #{poops.size}"
   puts "implemented patterns: #{$patterns.size}"
   puts "implemented verbs: #{(Builder.instance_methods(false) - %i[initialize to_s]).size}"

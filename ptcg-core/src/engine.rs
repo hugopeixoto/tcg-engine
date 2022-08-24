@@ -39,6 +39,7 @@ pub trait CardArchetype {
     fn stage(&self) -> Option<Stage>;
     fn evolves_from(&self) -> Option<String>;
     fn attacks(&self) -> Vec<Attack> { vec![] }
+    fn poke_powers(&self) -> Vec<Attack> { vec![] }
     fn provides(&self) -> Vec<Type> { vec![] }
     fn hp(&self, card: &Card, engine: &GameEngine) -> Option<usize>;
     fn weakness(&self) -> Weakness;
@@ -82,6 +83,7 @@ pub trait Format {
     fn attacking_effects(&self) -> AttackingEffectsWhen;
     fn basic_for_stage2(&self, card: &Card) -> String;
     fn available_types(&self) -> Vec<Type>;
+    fn all_special_conditions_prevent_pokemon_powers(&self) -> bool;
 
     fn boxed_clone(&self) -> Box<dyn Format>;
 }
@@ -139,6 +141,8 @@ pub trait DecisionMaker {
     fn confirm_mulligan_draw(&mut self, p: Player, upto: usize) -> usize;
     fn confirm_setup_bench_selection(&mut self, p: Player, cards: &Vec<Card>) -> Vec<Card>;
     fn pick_type<'a>(&mut self, p: Player, types: &'a Vec<Type>) -> &'a Type;
+    fn pick_move_damage_counters<'a>(&mut self, p: Player, possibilities: &'a Vec<(&'a InPlayCard, &'a InPlayCard, usize)>) -> &'a (&'a InPlayCard, &'a InPlayCard, usize);
+    fn pick_attach_from_hand<'a>(&mut self, p: Player, possibilities: &'a Vec<(&'a Card, &'a InPlayCard)>) -> &'a (&'a Card, &'a InPlayCard);
     fn pick_attack<'a>(&mut self, p: Player, attacks: &'a Vec<Attack>) -> &'a Attack;
     fn pick_action<'a>(&mut self, p: Player, actions: &'a Vec<Action>) -> &'a Action;
     fn pick_stage<'a>(&mut self, p: Player, items: &'a Vec<Stage>) -> &'a Stage;
@@ -167,6 +171,8 @@ impl DecisionMaker for FakeDM {
     fn confirm_setup_active(&mut self, _p: Player, yes: &Vec<Card>, maybe: &Vec<Card>) -> Card { if !yes.is_empty() { yes[0].clone() } else { maybe[0].clone() } }
     fn confirm_mulligan_draw(&mut self, _p: Player, upto: usize) -> usize { upto }
     fn confirm_setup_bench_selection(&mut self, _p: Player, _cards: &Vec<Card>) -> Vec<Card> { vec![] }
+    fn pick_move_damage_counters<'a>(&mut self, _p: Player, possibilities: &'a Vec<(&'a InPlayCard, &'a InPlayCard, usize)>) -> &'a (&'a InPlayCard, &'a InPlayCard, usize) { &possibilities[0] }
+    fn pick_attach_from_hand<'a>(&mut self, p: Player, possibilities: &'a Vec<(&'a Card, &'a InPlayCard)>) -> &'a (&'a Card, &'a InPlayCard) { &possibilities[0] }
     fn pick_type<'a>(&mut self, _p: Player, types: &'a Vec<Type>) -> &'a Type { &types[0] }
     fn pick_attack<'a>(&mut self, _p: Player, attacks: &'a Vec<Attack>) -> &'a Attack { &attacks[0] }
     fn pick_action<'a>(&mut self, _p: Player, actions: &'a Vec<Action>) -> &'a Action { &actions[0] }
@@ -223,6 +229,7 @@ pub enum Action {
     BenchFromHand(Player, Card),
     EvolveFromHand(Player, Card),
     Attack(Player, InPlayCard, Attack),
+    PokePower(Player, InPlayCard, Attack),
     Retreat(Player, InPlayCard),
 }
 impl std::fmt::Debug for Action {
@@ -233,6 +240,7 @@ impl std::fmt::Debug for Action {
             Action::BenchFromHand(_player, card) => { write!(f, "Bench {}", card.archetype) },
             Action::EvolveFromHand(_player, card) => { write!(f, "Evolve into {}", card.archetype) },
             Action::Attack(_player, in_play, attack) => { write!(f, "Attack with {}: {}", in_play.stack[0].card().archetype, attack.name()) },
+            Action::PokePower(_player, in_play, attack) => { write!(f, "Use {}'s PokéPower: {}", in_play.stack[0].card().archetype, attack.name()) },
             Action::Retreat(_player, in_play) => { write!(f, "Retreat {}", in_play.stack[0].card().archetype) },
             Action::Pass => { write!(f, "Pass") },
         }
@@ -331,6 +339,13 @@ impl GameEngine {
                             .pop_target()
                             .pop_action()
                             .end_turn()
+                    },
+                    Action::PokePower(_player, _attacking, attack) => {
+                       self
+                            .push_action(action.clone())
+                            .then(|e| e.execute_poke_power(attack, dm))
+                            .check_kos_and_stuff(dm)
+                            .pop_action()
                     },
                     Action::BenchFromHand(_, card) => {
                         self
@@ -513,6 +528,12 @@ impl GameEngine {
         engine
     }
 
+    pub fn execute_poke_power(&self, poke_power: &Attack, dm: &mut dyn DecisionMaker) -> Self {
+        let mut engine = self.clone();
+        engine = poke_power.run(&engine, dm);
+        engine
+    }
+
     pub fn knock_out(&self, in_play: &InPlayCard, dm: &mut dyn DecisionMaker) -> Self {
         let mut engine = self.clone();
 
@@ -556,8 +577,27 @@ impl GameEngine {
         engine
     }
 
-    pub fn attach_from_hand(&self, player: Player, card: &Card, target: &InPlayCard) -> Self {
-        self.with_state(self.state.attach_from_hand(player, card, &target.id))
+    pub fn attach_from_hand(&self, card: &Card, target: &InPlayCard) -> Self {
+        self.with_state(self.state.attach_from_hand(card, target))
+    }
+
+    pub fn attach_from_hand_possibilities(&self) -> Vec<(&Card, &InPlayCard)> {
+        let mut possibilities = vec![];
+
+        let in_play = self.state.all_in_play();
+        let p1cards = &self.state.side(Player::One).hand;
+        let p2cards = &self.state.side(Player::Two).hand;
+
+        for target in in_play.iter() {
+            for card in p1cards.iter() {
+                possibilities.push((card, *target));
+            }
+            for card in p2cards.iter() {
+                possibilities.push((card, *target));
+            }
+        }
+
+        possibilities
     }
 
     // attack in flight
@@ -583,8 +623,9 @@ impl GameEngine {
     pub fn player(&self) -> Player {
         match self.resolving_actions.last() {
             Some(Action::Attack(player, _, _)) => *player,
+            Some(Action::PokePower(player, _, _)) => *player,
             Some(Action::TrainerFromHand(player, _)) => *player,
-            _ => { panic!("Error accessing GameEngine::player() while not attacking or using a trainer card"); }
+            _ => { panic!("Error accessing GameEngine::player() while not attacking, using an ability, or using a trainer card"); }
         }
     }
 
@@ -600,6 +641,14 @@ impl GameEngine {
         match self.attack_target_stack.last() {
             Some((attacking, _defending)) => self.state.in_play(attacking).unwrap(),
             _ => { panic!("Error accessing GameEngine::attacking() while not attacking"); }
+        }
+    }
+
+    pub fn this_pokemon(&self) -> &InPlayCard {
+        match self.resolving_actions.last() {
+            Some(Action::Attack(_, attacking, _)) => attacking,
+            Some(Action::PokePower(_, this_pokemon, _)) => this_pokemon,
+            _ => { panic!("Error accessing GameEngine::this_pokemon() while not attacking or using an ability/poképower"); },
         }
     }
 
@@ -683,12 +732,16 @@ impl GameEngine {
         resistance
     }
 
+    pub fn pokemon_types(&self, in_play: &InPlayCard) -> Vec<Type> {
+        self.archetype(in_play.stack[0].card()).pokemon_type()
+    }
+
     pub fn apply_weakness(&self, mut damage: usize) -> usize {
         // TODO: +X weaknesses instead of *X
         // TODO: Super effective glasses changing weakness to *3
         let (multiplier, types) = self.get_weakness(self.defending());
         for weakness in types {
-            if self.archetype(self.attacking().stack[0].card()).pokemon_type().contains(&weakness) {
+            if self.pokemon_types(self.attacking()).contains(&weakness) {
                 damage = damage * multiplier;
             }
         }
@@ -1141,29 +1194,49 @@ impl GameEngine {
         self.with_state(self.state.switch_active_with(with))
     }
 
-    pub fn are_attack_requirements_met(&self, action: &Action) -> bool {
-        if let Action::Attack(player, attacking, attack) = action {
-            let mut dm = FakeDM{};
-            let engine = self
-                .push_action(action.clone())
-                .push_target(&attacking, &self.state.side(player.opponent()).active[0]);
+    pub fn are_action_requirements_met(&self, action: &Action) -> bool {
+        match action {
+            Action::Attack(player, attacking, attack) => {
+                let mut dm = FakeDM{};
+                let engine = self
+                    .push_action(action.clone())
+                    .push_target(&attacking, &self.state.side(player.opponent()).active[0]);
 
-            !attack.build().only_requirements().apply(engine, &mut dm).failed()
-        } else {
-            panic!("Can't check the attack requirements for {:?}", action);
+                !attack.build().apply(engine, &mut dm).failed()
+            },
+            Action::PokePower(player, attacking, attack) => {
+                let mut dm = FakeDM{};
+                let engine = self
+                    .push_action(action.clone())
+                    .push_target(&attacking, &self.state.side(player.opponent()).active[0]);
+
+                !attack.build().apply(engine, &mut dm).failed()
+            },
+            _ => { panic!("Can't check the attack requirements for {:?}", action); }
         }
     }
 
     pub fn in_play_actions(&self, player: Player, in_play: &InPlayCard, active: bool) -> Vec<Action> {
+        let mut actions = vec![];
+
         if active && in_play.rotational_status != RotationalStatus::Paralyzed && in_play.rotational_status != RotationalStatus::Asleep && self.can_attack(player, in_play) {
-            self.attacks(in_play)
+            actions.extend(self.attacks(in_play)
                 .into_iter()
                 .map(|attack| Action::Attack(player, in_play.clone(), attack))
-                .filter(|action| self.are_attack_requirements_met(action))
-                .collect()
-        } else {
-            vec![]
+                .filter(|action| self.are_action_requirements_met(action))
+            );
         }
+
+        if self.can_use_pokemon_power(player, in_play) {
+            actions.extend(
+                self.poke_powers(in_play)
+                    .into_iter()
+                    .map(|attack| Action::PokePower(player, in_play.clone(), attack))
+                    .filter(|action| self.are_action_requirements_met(action))
+            )
+        }
+
+        actions
     }
 
     pub fn attacks(&self, in_play: &InPlayCard) -> Vec<Attack> {
@@ -1180,6 +1253,22 @@ impl GameEngine {
 
     pub fn can_attack(&self, _player: Player, _in_play: &InPlayCard) -> bool {
         true
+    }
+
+    pub fn poke_powers(&self, in_play: &InPlayCard) -> Vec<Attack> {
+        let poke_powers = self.archetype(in_play.stack[0].card()).poke_powers();
+
+        poke_powers
+    }
+
+    pub fn can_use_pokemon_power(&self, _player: Player, _in_play: &InPlayCard) -> bool {
+        true
+    }
+
+    // is this pokemon affected by a special condition that disables poke powers?
+    pub fn poke_power_affected_by_special_condition(&self, in_play: &InPlayCard) -> bool {
+        in_play.rotational_status == RotationalStatus::None &&
+            !(self.format.all_special_conditions_prevent_pokemon_powers() && (in_play.poisoned.is_some() || in_play.burned))
     }
 
     pub fn card_actions(&self, player: Player, card: &Card) -> Vec<Action> {
@@ -1261,18 +1350,19 @@ impl GameEngine {
     }
 
     pub fn healable_targets(&self, player: Player) -> Vec<InPlayCard> {
-        let mut targets = vec![];
-
-        for in_play in self.state.side(player).all_in_play() {
-            if self.is_healable(in_play) {
-                targets.push(in_play.clone());
-            }
-        }
-
-        targets
+        self.state.side(player)
+            .all_in_play()
+            .into_iter()
+            .filter(|ip| self.is_healable(ip))
+            .cloned()
+            .collect()
     }
 
     pub fn is_healable(&self, in_play: &InPlayCard) -> bool {
+        self.has_damage_counters(in_play)
+    }
+
+    pub fn has_damage_counters(&self, in_play: &InPlayCard) -> bool {
         in_play.damage_counters > 0
     }
 
@@ -1322,7 +1412,7 @@ impl GameEngine {
         let targets = self.attachment_from_hand_targets(player, card);
         let target = dm.pick_in_play(player, 1, &targets)[0];
 
-        self.with_state(self.state.manual_attach_from_hand(player, card, &target.id))
+        self.with_state(self.state.manual_attach_from_hand(player, card, &target))
     }
 
     pub fn can_attach_energy_from_hand(&self, player: Player) -> bool {
@@ -1391,6 +1481,27 @@ impl GameEngine {
 
     pub fn heal(&self, in_play: &InPlayCard, damage: usize) -> Self {
         self.with_state(self.state.remove_damage_counters(in_play, damage/10))
+    }
+
+    pub fn move_damage_counters(&self, from: &InPlayCard, to: &InPlayCard, how_many: usize) -> Self {
+        self.with_state(self.state.move_damage_counters(from, to, how_many))
+    }
+
+    pub fn move_damage_counter_possibilities(&self) -> Vec<(&InPlayCard, &InPlayCard, usize)> {
+        let mut possibilities = vec![];
+
+        let in_play = self.state.all_in_play();
+        for from in in_play.iter() {
+            for to in in_play.iter() {
+                if from != to {
+                    for counters in 1..= from.damage_counters {
+                        possibilities.push((*from, *to, counters));
+                    }
+                }
+            }
+        }
+
+        possibilities
     }
 
     pub fn heal_all(&self, in_play: &InPlayCard) -> Self {

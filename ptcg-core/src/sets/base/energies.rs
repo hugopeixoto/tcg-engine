@@ -14,6 +14,7 @@ impl CardArchetype for DoubleColorlessEnergy {
     }
 
     fn provides(&self) -> Vec<Type> {
+        // TODO: only provide CC while in hand?
         vec![Type::Colorless, Type::Colorless]
     }
 }

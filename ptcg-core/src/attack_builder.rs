@@ -73,6 +73,10 @@ impl<'a> AttackBuilderContext<'a> {
         self.engine.attacking()
     }
 
+    pub fn this_pokemon(&self) -> &InPlayCard {
+        self.engine.this_pokemon()
+    }
+
     pub fn defending(&self) -> &InPlayCard {
         self.engine.defending()
     }
@@ -553,6 +557,63 @@ impl AttackBuilder {
             let subbuilder = chosen.build();
 
             subbuilder.ignore_all_costs().chain(builder)
+        })
+    }
+
+    pub fn disabled_under_special_conditions(self) -> Self {
+        self.add_operation(move |mut builder| {
+            if !builder.engine.poke_power_affected_by_special_condition(builder.this_pokemon()) {
+                builder.failed = true;
+            }
+            builder
+        })
+    }
+
+    pub fn move_own_damage_counter_without_ko(self) -> Self {
+        self.add_operation(move |mut builder| {
+            let possibilities = builder.engine
+                .move_damage_counter_possibilities()
+                .into_iter()
+                .filter(|(from, to, counters)| {
+                    from.owner == builder.player() &&
+                    to.owner == builder.player() &&
+                    builder.engine.remaining_hp(to) > counters * 10
+                })
+                .collect::<Vec<_>>();
+
+            if possibilities.is_empty() {
+                builder.failed = true;
+                return builder;
+            }
+
+            let choice = builder.dm.pick_move_damage_counters(builder.player(), &possibilities);
+            builder.engine = builder.engine.move_damage_counters(choice.0, choice.1, choice.2);
+            builder
+        })
+    }
+
+    pub fn attach_energy_from_hand(self, energy_type: Type, target_type: Type) -> Self {
+        self.add_operation(move |mut builder| {
+            let possibilities = builder.engine
+                .attach_from_hand_possibilities()
+                .into_iter()
+                .filter(|(card, target)| {
+                    card.owner == builder.player() &&
+                    target.owner == builder.player() &&
+                    builder.engine.is_basic_energy(card) &&
+                    builder.engine.archetype(card).provides().contains(&energy_type) &&
+                    builder.engine.pokemon_types(target).contains(&target_type)
+                })
+                .collect::<Vec<_>>();
+
+            if possibilities.is_empty() {
+                builder.failed = true;
+                return builder;
+            }
+
+            let choice = builder.dm.pick_attach_from_hand(builder.player(), &possibilities);
+            builder.engine = builder.engine.attach_from_hand(choice.0, choice.1);
+            builder
         })
     }
 

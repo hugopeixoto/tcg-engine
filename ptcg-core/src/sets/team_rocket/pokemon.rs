@@ -21,10 +21,10 @@ impl CardArchetype for DarkAlakazam1 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Teleport Blast", Self::teleport_blast),
-        Attack::new("Mind Shock", Self::mind_shock),
-      ]
+        vec![
+            Attack::new("Teleport Blast", Self::teleport_blast),
+            Attack::new("Mind Shock", Self::mind_shock),
+        ]
     }
 }
 impl DarkAlakazam1 {
@@ -55,10 +55,10 @@ impl CardArchetype for DarkArbok2 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Stare", Self::stare),
-        Attack::new("Poison Vapor", Self::poison_vapor),
-      ]
+        vec![
+            Attack::new("Stare", Self::stare),
+            Attack::new("Poison Vapor", Self::poison_vapor),
+        ]
     }
 }
 impl DarkArbok2 {
@@ -89,10 +89,10 @@ impl CardArchetype for DarkBlastoise3 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Hydrocannon", Self::hydrocannon),
-        Attack::new("Rocket Tackle", Self::rocket_tackle),
-      ]
+        vec![
+            Attack::new("Hydrocannon", Self::hydrocannon),
+            Attack::new("Rocket Tackle", Self::rocket_tackle),
+        ]
     }
 }
 impl DarkBlastoise3 {
@@ -123,10 +123,10 @@ impl CardArchetype for DarkCharizard4 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Nail Flick", Self::nail_flick),
-        Attack::new("Continuous Fireball", Self::continuous_fireball),
-      ]
+        vec![
+            Attack::new("Nail Flick", Self::nail_flick),
+            Attack::new("Continuous Fireball", Self::continuous_fireball),
+        ]
     }
 }
 impl DarkCharizard4 {
@@ -159,9 +159,9 @@ impl CardArchetype for DarkDragonite5 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Giant Tail", Self::giant_tail),
-      ]
+        vec![
+            Attack::new("Giant Tail", Self::giant_tail),
+        ]
     }
 }
 impl DarkDragonite5 {
@@ -192,9 +192,9 @@ impl CardArchetype for DarkDugtrio6 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Knock Down", Self::knock_down),
-      ]
+        vec![
+            Attack::new("Knock Down", Self::knock_down),
+        ]
     }
 }
 impl DarkDugtrio6 {
@@ -222,9 +222,9 @@ impl CardArchetype for DarkGolbat7 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Flitter", Self::flitter),
-      ]
+        vec![
+            Attack::new("Flitter", Self::flitter),
+        ]
     }
 }
 impl DarkGolbat7 {
@@ -252,9 +252,9 @@ impl CardArchetype for DarkGyarados8 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Ice Beam", Self::ice_beam),
-      ]
+        vec![
+            Attack::new("Ice Beam", Self::ice_beam),
+        ]
     }
 }
 impl DarkGyarados8 {
@@ -286,10 +286,10 @@ impl CardArchetype for DarkHypno9 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Psypunch", Self::psypunch),
-        Attack::new("Bench Manipulation", Self::bench_manipulation),
-      ]
+        vec![
+            Attack::new("Psypunch", Self::psypunch),
+            Attack::new("Bench Manipulation", Self::bench_manipulation),
+        ]
     }
 }
 impl DarkHypno9 {
@@ -322,10 +322,10 @@ impl CardArchetype for DarkMachamp10 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Mega Punch", Self::mega_punch),
-        Attack::new("Fling", Self::fling),
-      ]
+        vec![
+            Attack::new("Mega Punch", Self::mega_punch),
+            Attack::new("Fling", Self::fling),
+        ]
     }
 }
 impl DarkMachamp10 {
@@ -358,10 +358,10 @@ impl CardArchetype for DarkMagneton11 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Sonicboom", Self::sonicboom),
-        Attack::new("Magnetic Lines", Self::magnetic_lines),
-      ]
+        vec![
+            Attack::new("Sonicboom", Self::sonicboom),
+            Attack::new("Magnetic Lines", Self::magnetic_lines),
+        ]
     }
 }
 impl DarkMagneton11 {
@@ -392,9 +392,9 @@ impl CardArchetype for DarkSlowbro12 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Fickle Attack", Self::fickle_attack),
-      ]
+        vec![
+            Attack::new("Fickle Attack", Self::fickle_attack),
+        ]
     }
 }
 impl DarkSlowbro12 {
@@ -425,9 +425,9 @@ impl CardArchetype for DarkVileplume13 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Petal Whirlwind", Self::petal_whirlwind),
-      ]
+        vec![
+            Attack::new("Petal Whirlwind", Self::petal_whirlwind),
+        ]
     }
 }
 impl DarkVileplume13 {
@@ -455,10 +455,10 @@ impl CardArchetype for DarkWeezing14 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Mass Explosion", Self::mass_explosion),
-        Attack::new("Stun Gas", Self::stun_gas),
-      ]
+        vec![
+            Attack::new("Mass Explosion", Self::mass_explosion),
+            Attack::new("Stun Gas", Self::stun_gas),
+        ]
     }
 }
 impl DarkWeezing14 {
@@ -489,10 +489,10 @@ impl CardArchetype for DarkAlakazam18 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Teleport Blast", Self::teleport_blast),
-        Attack::new("Mind Shock", Self::mind_shock),
-      ]
+        vec![
+            Attack::new("Teleport Blast", Self::teleport_blast),
+            Attack::new("Mind Shock", Self::mind_shock),
+        ]
     }
 }
 impl DarkAlakazam18 {
@@ -523,10 +523,10 @@ impl CardArchetype for DarkArbok19 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Stare", Self::stare),
-        Attack::new("Poison Vapor", Self::poison_vapor),
-      ]
+        vec![
+            Attack::new("Stare", Self::stare),
+            Attack::new("Poison Vapor", Self::poison_vapor),
+        ]
     }
 }
 impl DarkArbok19 {
@@ -557,10 +557,10 @@ impl CardArchetype for DarkBlastoise20 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Hydrocannon", Self::hydrocannon),
-        Attack::new("Rocket Tackle", Self::rocket_tackle),
-      ]
+        vec![
+            Attack::new("Hydrocannon", Self::hydrocannon),
+            Attack::new("Rocket Tackle", Self::rocket_tackle),
+        ]
     }
 }
 impl DarkBlastoise20 {
@@ -591,10 +591,10 @@ impl CardArchetype for DarkCharizard21 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Nail Flick", Self::nail_flick),
-        Attack::new("Continuous Fireball", Self::continuous_fireball),
-      ]
+        vec![
+            Attack::new("Nail Flick", Self::nail_flick),
+            Attack::new("Continuous Fireball", Self::continuous_fireball),
+        ]
     }
 }
 impl DarkCharizard21 {
@@ -627,9 +627,9 @@ impl CardArchetype for DarkDragonite22 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Giant Tail", Self::giant_tail),
-      ]
+        vec![
+            Attack::new("Giant Tail", Self::giant_tail),
+        ]
     }
 }
 impl DarkDragonite22 {
@@ -660,9 +660,9 @@ impl CardArchetype for DarkDugtrio23 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Knock Down", Self::knock_down),
-      ]
+        vec![
+            Attack::new("Knock Down", Self::knock_down),
+        ]
     }
 }
 impl DarkDugtrio23 {
@@ -690,9 +690,9 @@ impl CardArchetype for DarkGolbat24 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Flitter", Self::flitter),
-      ]
+        vec![
+            Attack::new("Flitter", Self::flitter),
+        ]
     }
 }
 impl DarkGolbat24 {
@@ -720,9 +720,9 @@ impl CardArchetype for DarkGyarados25 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Ice Beam", Self::ice_beam),
-      ]
+        vec![
+            Attack::new("Ice Beam", Self::ice_beam),
+        ]
     }
 }
 impl DarkGyarados25 {
@@ -754,10 +754,10 @@ impl CardArchetype for DarkHypno26 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Psypunch", Self::psypunch),
-        Attack::new("Bench Manipulation", Self::bench_manipulation),
-      ]
+        vec![
+            Attack::new("Psypunch", Self::psypunch),
+            Attack::new("Bench Manipulation", Self::bench_manipulation),
+        ]
     }
 }
 impl DarkHypno26 {
@@ -790,10 +790,10 @@ impl CardArchetype for DarkMachamp27 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Mega Punch", Self::mega_punch),
-        Attack::new("Fling", Self::fling),
-      ]
+        vec![
+            Attack::new("Mega Punch", Self::mega_punch),
+            Attack::new("Fling", Self::fling),
+        ]
     }
 }
 impl DarkMachamp27 {
@@ -826,10 +826,10 @@ impl CardArchetype for DarkMagneton28 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Sonicboom", Self::sonicboom),
-        Attack::new("Magnetic Lines", Self::magnetic_lines),
-      ]
+        vec![
+            Attack::new("Sonicboom", Self::sonicboom),
+            Attack::new("Magnetic Lines", Self::magnetic_lines),
+        ]
     }
 }
 impl DarkMagneton28 {
@@ -860,9 +860,9 @@ impl CardArchetype for DarkSlowbro29 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Fickle Attack", Self::fickle_attack),
-      ]
+        vec![
+            Attack::new("Fickle Attack", Self::fickle_attack),
+        ]
     }
 }
 impl DarkSlowbro29 {
@@ -893,9 +893,9 @@ impl CardArchetype for DarkVileplume30 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Petal Whirlwind", Self::petal_whirlwind),
-      ]
+        vec![
+            Attack::new("Petal Whirlwind", Self::petal_whirlwind),
+        ]
     }
 }
 impl DarkVileplume30 {
@@ -923,10 +923,10 @@ impl CardArchetype for DarkWeezing31 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Mass Explosion", Self::mass_explosion),
-        Attack::new("Stun Gas", Self::stun_gas),
-      ]
+        vec![
+            Attack::new("Mass Explosion", Self::mass_explosion),
+            Attack::new("Stun Gas", Self::stun_gas),
+        ]
     }
 }
 impl DarkWeezing31 {
@@ -957,10 +957,10 @@ impl CardArchetype for DarkCharmeleon32 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Tail Slap", Self::tail_slap),
-        Attack::new("Fireball", Self::fireball),
-      ]
+        vec![
+            Attack::new("Tail Slap", Self::tail_slap),
+            Attack::new("Fireball", Self::fireball),
+        ]
     }
 }
 impl DarkCharmeleon32 {
@@ -993,9 +993,9 @@ impl CardArchetype for DarkDragonair33 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Tail Strike", Self::tail_strike),
-      ]
+        vec![
+            Attack::new("Tail Strike", Self::tail_strike),
+        ]
     }
 }
 impl DarkDragonair33 {
@@ -1027,10 +1027,10 @@ impl CardArchetype for DarkElectrode34 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Rolling Tackle", Self::rolling_tackle),
-        Attack::new("Energy Bomb", Self::energy_bomb),
-      ]
+        vec![
+            Attack::new("Rolling Tackle", Self::rolling_tackle),
+            Attack::new("Energy Bomb", Self::energy_bomb),
+        ]
     }
 }
 impl DarkElectrode34 {
@@ -1063,10 +1063,10 @@ impl CardArchetype for DarkFlareon35 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Rage", Self::rage),
-        Attack::new("Playing with Fire", Self::playing_with_fire),
-      ]
+        vec![
+            Attack::new("Rage", Self::rage),
+            Attack::new("Playing with Fire", Self::playing_with_fire),
+        ]
     }
 }
 impl DarkFlareon35 {
@@ -1097,9 +1097,9 @@ impl CardArchetype for DarkGloom36 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Poisonpowder", Self::poisonpowder),
-      ]
+        vec![
+            Attack::new("Poisonpowder", Self::poisonpowder),
+        ]
     }
 }
 impl DarkGloom36 {
@@ -1130,10 +1130,10 @@ impl CardArchetype for DarkGolduck37 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Third Eye", Self::third_eye),
-        Attack::new("Super Psy", Self::super_psy),
-      ]
+        vec![
+            Attack::new("Third Eye", Self::third_eye),
+            Attack::new("Super Psy", Self::super_psy),
+        ]
     }
 }
 impl DarkGolduck37 {
@@ -1166,10 +1166,10 @@ impl CardArchetype for DarkJolteon38 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Lightning Flash", Self::lightning_flash),
-        Attack::new("Thunder Attack", Self::thunder_attack),
-      ]
+        vec![
+            Attack::new("Lightning Flash", Self::lightning_flash),
+            Attack::new("Thunder Attack", Self::thunder_attack),
+        ]
     }
 }
 impl DarkJolteon38 {
@@ -1202,9 +1202,9 @@ impl CardArchetype for DarkKadabra39 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Mind Shock", Self::mind_shock),
-      ]
+        vec![
+            Attack::new("Mind Shock", Self::mind_shock),
+        ]
     }
 }
 impl DarkKadabra39 {
@@ -1232,10 +1232,10 @@ impl CardArchetype for DarkMachoke40 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Drag Off", Self::drag_off),
-        Attack::new("Knock Back", Self::knock_back),
-      ]
+        vec![
+            Attack::new("Drag Off", Self::drag_off),
+            Attack::new("Knock Back", Self::knock_back),
+        ]
     }
 }
 impl DarkMachoke40 {
@@ -1269,9 +1269,9 @@ impl CardArchetype for DarkMuk41 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Sludge Punch", Self::sludge_punch),
-      ]
+        vec![
+            Attack::new("Sludge Punch", Self::sludge_punch),
+        ]
     }
 }
 impl DarkMuk41 {
@@ -1302,10 +1302,10 @@ impl CardArchetype for DarkPersian42 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Fascinate", Self::fascinate),
-        Attack::new("Poison Claws", Self::poison_claws),
-      ]
+        vec![
+            Attack::new("Fascinate", Self::fascinate),
+            Attack::new("Poison Claws", Self::poison_claws),
+        ]
     }
 }
 impl DarkPersian42 {
@@ -1340,9 +1340,9 @@ impl CardArchetype for DarkPrimeape43 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Frenzied Attack", Self::frenzied_attack),
-      ]
+        vec![
+            Attack::new("Frenzied Attack", Self::frenzied_attack),
+        ]
     }
 }
 impl DarkPrimeape43 {
@@ -1370,10 +1370,10 @@ impl CardArchetype for DarkRapidash44 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Rear Kick", Self::rear_kick),
-        Attack::new("Flame Pillar", Self::flame_pillar),
-      ]
+        vec![
+            Attack::new("Rear Kick", Self::rear_kick),
+            Attack::new("Flame Pillar", Self::flame_pillar),
+        ]
     }
 }
 impl DarkRapidash44 {
@@ -1406,10 +1406,10 @@ impl CardArchetype for DarkVaporeon45 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Bite", Self::bite),
-        Attack::new("Whirlpool", Self::whirlpool),
-      ]
+        vec![
+            Attack::new("Bite", Self::bite),
+            Attack::new("Whirlpool", Self::whirlpool),
+        ]
     }
 }
 impl DarkVaporeon45 {
@@ -1445,10 +1445,10 @@ impl CardArchetype for DarkWartortle46 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Doubleslap", Self::doubleslap),
-        Attack::new("Mirror Shell", Self::mirror_shell),
-      ]
+        vec![
+            Attack::new("Doubleslap", Self::doubleslap),
+            Attack::new("Mirror Shell", Self::mirror_shell),
+        ]
     }
 }
 impl DarkWartortle46 {
@@ -1482,10 +1482,10 @@ impl CardArchetype for Magikarp47 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Flop", Self::flop),
-        Attack::new("Rapid Evolution", Self::rapid_evolution),
-      ]
+        vec![
+            Attack::new("Flop", Self::flop),
+            Attack::new("Rapid Evolution", Self::rapid_evolution),
+        ]
     }
 }
 impl Magikarp47 {
@@ -1518,10 +1518,10 @@ impl CardArchetype for Porygon48 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Conversion 1", Self::conversion_1),
-        Attack::new("Psybeam", Self::psybeam),
-      ]
+        vec![
+            Attack::new("Conversion 1", Self::conversion_1),
+            Attack::new("Psybeam", Self::psybeam),
+        ]
     }
 }
 impl Porygon48 {
@@ -1558,10 +1558,10 @@ impl CardArchetype for Abra49 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Vanish", Self::vanish),
-        Attack::new("Psyshock", Self::psyshock),
-      ]
+        vec![
+            Attack::new("Vanish", Self::vanish),
+            Attack::new("Psyshock", Self::psyshock),
+        ]
     }
 }
 impl Abra49 {
@@ -1596,9 +1596,9 @@ impl CardArchetype for Charmander50 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Fire Tail", Self::fire_tail),
-      ]
+        vec![
+            Attack::new("Fire Tail", Self::fire_tail),
+        ]
     }
 }
 impl Charmander50 {
@@ -1628,10 +1628,10 @@ impl CardArchetype for DarkRaticate51 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Gnaw", Self::gnaw),
-        Attack::new("Hyper Fang", Self::hyper_fang),
-      ]
+        vec![
+            Attack::new("Gnaw", Self::gnaw),
+            Attack::new("Hyper Fang", Self::hyper_fang),
+        ]
     }
 }
 impl DarkRaticate51 {
@@ -1667,10 +1667,10 @@ impl CardArchetype for Diglett52 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Dig Under", Self::dig_under),
-        Attack::new("Scratch", Self::scratch),
-      ]
+        vec![
+            Attack::new("Dig Under", Self::dig_under),
+            Attack::new("Scratch", Self::scratch),
+        ]
     }
 }
 impl Diglett52 {
@@ -1703,9 +1703,9 @@ impl CardArchetype for Dratini53 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Wrap", Self::wrap),
-      ]
+        vec![
+            Attack::new("Wrap", Self::wrap),
+        ]
     }
 }
 impl Dratini53 {
@@ -1737,9 +1737,9 @@ impl CardArchetype for Drowzee54 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Nightmare", Self::nightmare),
-      ]
+        vec![
+            Attack::new("Nightmare", Self::nightmare),
+        ]
     }
 }
 impl Drowzee54 {
@@ -1770,10 +1770,10 @@ impl CardArchetype for Eevee55 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Tackle", Self::tackle),
-        Attack::new("Sand-attack", Self::sand_attack),
-      ]
+        vec![
+            Attack::new("Tackle", Self::tackle),
+            Attack::new("Sand-attack", Self::sand_attack),
+        ]
     }
 }
 impl Eevee55 {
@@ -1808,10 +1808,10 @@ impl CardArchetype for Ekans56 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Bite", Self::bite),
-        Attack::new("Poison Sting", Self::poison_sting),
-      ]
+        vec![
+            Attack::new("Bite", Self::bite),
+            Attack::new("Poison Sting", Self::poison_sting),
+        ]
     }
 }
 impl Ekans56 {
@@ -1848,10 +1848,10 @@ impl CardArchetype for Grimer57 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Poison Gas", Self::poison_gas),
-        Attack::new("Sticky Hands", Self::sticky_hands),
-      ]
+        vec![
+            Attack::new("Poison Gas", Self::poison_gas),
+            Attack::new("Sticky Hands", Self::sticky_hands),
+        ]
     }
 }
 impl Grimer57 {
@@ -1884,10 +1884,10 @@ impl CardArchetype for Koffing58 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Tackle", Self::tackle),
-        Attack::new("Poison Gas", Self::poison_gas),
-      ]
+        vec![
+            Attack::new("Tackle", Self::tackle),
+            Attack::new("Poison Gas", Self::poison_gas),
+        ]
     }
 }
 impl Koffing58 {
@@ -1924,10 +1924,10 @@ impl CardArchetype for Machop59 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Punch", Self::punch),
-        Attack::new("Kick", Self::kick),
-      ]
+        vec![
+            Attack::new("Punch", Self::punch),
+            Attack::new("Kick", Self::kick),
+        ]
     }
 }
 impl Machop59 {
@@ -1962,10 +1962,10 @@ impl CardArchetype for Magnemite60 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Tackle", Self::tackle),
-        Attack::new("Magnetism", Self::magnetism),
-      ]
+        vec![
+            Attack::new("Tackle", Self::tackle),
+            Attack::new("Magnetism", Self::magnetism),
+        ]
     }
 }
 impl Magnemite60 {
@@ -1998,10 +1998,10 @@ impl CardArchetype for Mankey61 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Mischief", Self::mischief),
-        Attack::new("Anger", Self::anger),
-      ]
+        vec![
+            Attack::new("Mischief", Self::mischief),
+            Attack::new("Anger", Self::anger),
+        ]
     }
 }
 impl Mankey61 {
@@ -2036,9 +2036,9 @@ impl CardArchetype for Meowth62 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Coin Hurl", Self::coin_hurl),
-      ]
+        vec![
+            Attack::new("Coin Hurl", Self::coin_hurl),
+        ]
     }
 }
 impl Meowth62 {
@@ -2066,10 +2066,10 @@ impl CardArchetype for Oddish63 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Sleep Powder", Self::sleep_powder),
-        Attack::new("Poisonpowder", Self::poisonpowder),
-      ]
+        vec![
+            Attack::new("Sleep Powder", Self::sleep_powder),
+            Attack::new("Poisonpowder", Self::poisonpowder),
+        ]
     }
 }
 impl Oddish63 {
@@ -2104,9 +2104,9 @@ impl CardArchetype for Ponyta64 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Ember", Self::ember),
-      ]
+        vec![
+            Attack::new("Ember", Self::ember),
+        ]
     }
 }
 impl Ponyta64 {
@@ -2137,10 +2137,10 @@ impl CardArchetype for Psyduck65 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Dizziness", Self::dizziness),
-        Attack::new("Water Gun", Self::water_gun),
-      ]
+        vec![
+            Attack::new("Dizziness", Self::dizziness),
+            Attack::new("Water Gun", Self::water_gun),
+        ]
     }
 }
 impl Psyduck65 {
@@ -2173,9 +2173,9 @@ impl CardArchetype for Rattata66 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Quick Attack", Self::quick_attack),
-      ]
+        vec![
+            Attack::new("Quick Attack", Self::quick_attack),
+        ]
     }
 }
 impl Rattata66 {
@@ -2207,10 +2207,10 @@ impl CardArchetype for Slowpoke67 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Afternoon Nap", Self::afternoon_nap),
-        Attack::new("Headbutt", Self::headbutt),
-      ]
+        vec![
+            Attack::new("Afternoon Nap", Self::afternoon_nap),
+            Attack::new("Headbutt", Self::headbutt),
+        ]
     }
 }
 impl Slowpoke67 {
@@ -2243,9 +2243,9 @@ impl CardArchetype for Squirtle68 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Shell Attack", Self::shell_attack),
-      ]
+        vec![
+            Attack::new("Shell Attack", Self::shell_attack),
+        ]
     }
 }
 impl Squirtle68 {
@@ -2275,9 +2275,9 @@ impl CardArchetype for Voltorb69 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Speed Ball", Self::speed_ball),
-      ]
+        vec![
+            Attack::new("Speed Ball", Self::speed_ball),
+        ]
     }
 }
 impl Voltorb69 {
@@ -2307,10 +2307,10 @@ impl CardArchetype for Zubat70 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Ram", Self::ram),
-        Attack::new("Bite", Self::bite),
-      ]
+        vec![
+            Attack::new("Ram", Self::ram),
+            Attack::new("Bite", Self::bite),
+        ]
     }
 }
 impl Zubat70 {
@@ -2345,9 +2345,9 @@ impl CardArchetype for DarkRaichu83 {
         engine.clone()
     }
     fn attacks(&self) -> Vec<Attack> {
-      vec![
-        Attack::new("Surprise Thunder", Self::surprise_thunder),
-      ]
+        vec![
+            Attack::new("Surprise Thunder", Self::surprise_thunder),
+        ]
     }
 }
 impl DarkRaichu83 {

@@ -274,7 +274,7 @@ impl TrainerCardArchetype for Defender80 {
         let target = dm.pick_in_play(player, 1, &targets)[0];
 
         engine
-            .attach_from_hand(player, card, target)
+            .attach_from_hand(card, target)
     }
 
     fn defending_damage_effect(&self, card: &Card, engine: &GameEngine, damage: usize) -> Option<usize> {
@@ -370,7 +370,7 @@ impl TrainerCardArchetype for PlusPower84 {
         let target = dm.pick_in_play(player, 1, &targets)[0];
 
         engine
-            .attach_from_hand(player, card, target)
+            .attach_from_hand(card, target)
     }
 
     fn attacking_damage_effect(&self, card: &Card, engine: &GameEngine, damage: usize) -> Option<usize> {
