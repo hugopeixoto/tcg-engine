@@ -172,7 +172,7 @@ impl DecisionMaker for FakeDM {
     fn confirm_mulligan_draw(&mut self, _p: Player, upto: usize) -> usize { upto }
     fn confirm_setup_bench_selection(&mut self, _p: Player, _cards: &Vec<Card>) -> Vec<Card> { vec![] }
     fn pick_move_damage_counters<'a>(&mut self, _p: Player, possibilities: &'a Vec<(&'a InPlayCard, &'a InPlayCard, usize)>) -> &'a (&'a InPlayCard, &'a InPlayCard, usize) { &possibilities[0] }
-    fn pick_attach_from_hand<'a>(&mut self, p: Player, possibilities: &'a Vec<(&'a Card, &'a InPlayCard)>) -> &'a (&'a Card, &'a InPlayCard) { &possibilities[0] }
+    fn pick_attach_from_hand<'a>(&mut self, _p: Player, possibilities: &'a Vec<(&'a Card, &'a InPlayCard)>) -> &'a (&'a Card, &'a InPlayCard) { &possibilities[0] }
     fn pick_type<'a>(&mut self, _p: Player, types: &'a Vec<Type>) -> &'a Type { &types[0] }
     fn pick_attack<'a>(&mut self, _p: Player, attacks: &'a Vec<Attack>) -> &'a Attack { &attacks[0] }
     fn pick_action<'a>(&mut self, _p: Player, actions: &'a Vec<Action>) -> &'a Action { &actions[0] }
