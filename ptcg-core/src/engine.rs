@@ -1113,7 +1113,7 @@ impl GameEngine {
         let mut energy = vec![];
         for attached in in_play.attached.iter() {
             if self.is_energy(attached.card()) {
-                energy.extend(self.archetype(attached.card()).provides());
+                energy.extend(self.provides(attached.card()));
             }
         }
 
@@ -1366,6 +1366,18 @@ impl GameEngine {
         in_play.damage_counters > 0
     }
 
+    pub fn provides(&self, card: &Card) -> Vec<Type> {
+        let mut energies = self.archetype(card).provides();
+
+        for effect in self.state.effects.iter() {
+            if let Some(new_energies) = self.effect(effect).get_provides(effect, card, self, energies.clone()) {
+                energies = new_energies;
+            }
+        }
+
+        energies
+    }
+
     pub fn can_play_trainer_from_hand(&self, card: &Card) -> bool {
         self.state.effects.iter()
             .filter(|e| e.target == EffectTarget::Player(card.owner))
@@ -1379,7 +1391,7 @@ impl GameEngine {
         let mut energy = vec![];
         for attached in in_play.attached.iter() {
             if self.is_energy(attached.card()) {
-                energy.extend(self.archetype(attached.card()).provides());
+                energy.extend(self.provides(attached.card()));
             }
         }
 

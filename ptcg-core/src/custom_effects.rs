@@ -1,6 +1,6 @@
 use crate::attack_builder::AttackBuilder;
 use crate::effect::CustomEffect;
-use crate::state::{Effect, Player, InPlayCard};
+use crate::state::{Effect, Player, InPlayCard, Type, EffectTarget, Card};
 use crate::engine::{GameEngine, Resistance, Weakness, Attack};
 
 // TODO: the attackbuilder builds a bunch of objects, maybe it
@@ -189,6 +189,23 @@ impl CustomEffect for FlipToAttack {
                 .flip_a_coin()
                 .if_tails(|e| e.prevent())
                 .into()
+        } else {
+            None
+        }
+    }
+}
+
+pub struct EnergyTypeTransform {}
+impl CustomEffect for EnergyTypeTransform {
+    fn identifier() -> String {
+        "ENERGY_TYPE_TRANSFORM".into()
+    }
+
+    fn get_provides(&self, effect: &Effect, card: &Card, _engine: &GameEngine, provides: Vec<Type>) -> Option<Vec<Type>> {
+        let new_type = effect.get_parameter_type(0).unwrap();
+
+        if effect.target == EffectTarget::InPlayCard(card.clone()) {
+            Some(provides.into_iter().map(|_| new_type.clone()).collect())
         } else {
             None
         }

@@ -1,6 +1,6 @@
 use crate::attack_builder::{AttackBuilder, AttackBuilderContext};
 use crate::state::{Effect, EffectConsequence, EffectExpiration, EffectSource, EffectTarget, EffectParameter, Type};
-use crate::state::{Player, InPlayCard};
+use crate::state::{Player, InPlayCard, Card};
 use crate::engine::{GameEngine, Resistance, Weakness, Attack};
 
 #[derive(Default)]
@@ -22,10 +22,20 @@ pub fn from_attack() -> AttackEffectBuilder {
     builder
 }
 
+pub fn from_poke_power() -> AttackEffectBuilder {
+    let mut builder = AttackEffectBuilder::default();
+
+    builder.source = Some(Box::new(|ab: &AttackBuilderContext| {
+        EffectSource::Attack(ab.player(), ab.this_pokemon().id)
+    }));
+
+    builder
+}
+
 impl AttackEffectBuilder {
     pub fn on_attacking(mut self) -> Self {
         self.target = Some(Box::new(|ab: &AttackBuilderContext| {
-            EffectTarget::InPlay(ab.player(), ab.attacking().id)
+            EffectTarget::InPlayPokemon(ab.player(), ab.attacking().id)
         }));
 
         self
@@ -33,7 +43,16 @@ impl AttackEffectBuilder {
 
     pub fn on_defending(mut self) -> Self {
         self.target = Some(Box::new(|ab: &AttackBuilderContext| {
-            EffectTarget::InPlay(ab.player(), ab.defending().id)
+            EffectTarget::InPlayPokemon(ab.player(), ab.defending().id)
+        }));
+
+        self
+    }
+
+    pub fn on_in_play_card(mut self, card: &Card) -> Self {
+        let card = card.clone();
+        self.target = Some(Box::new(move |_ab: &AttackBuilderContext| {
+            EffectTarget::InPlayCard(card.clone())
         }));
 
         self
@@ -42,6 +61,14 @@ impl AttackEffectBuilder {
     pub fn until_opponents_end_of_turn(mut self) -> Self {
         self.expires = Some(Box::new(|ab: &AttackBuilderContext| {
             EffectExpiration::EndOfTurn(ab.opponent(), 0)
+        }));
+
+        self
+    }
+
+    pub fn until_end_of_turn(mut self) -> Self {
+        self.expires = Some(Box::new(|ab: &AttackBuilderContext| {
+            EffectExpiration::EndOfTurn(ab.player(), 0)
         }));
 
         self
@@ -119,6 +146,7 @@ pub trait CustomEffect {
     fn get_resistance(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _resistance: Resistance) -> Option<Resistance> { None }
     fn get_weakness(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _weakness: Weakness) -> Option<Weakness> { None }
     fn get_attacks(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine, _actions: Vec<Attack>) -> Option<Vec<Attack>> { None }
+    fn get_provides(&self, _effect: &Effect, _card: &Card, _engine: &GameEngine, _provides: Vec<Type>) -> Option<Vec<Type>> { None }
 
     fn on_attempt_to_attack(&self, _effect: &Effect, _in_play: &InPlayCard, _engine: &GameEngine) -> Option<AttackBuilder> { None }
     fn on_affected(&self) -> Option<AttackBuilder> { None }

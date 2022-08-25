@@ -164,8 +164,10 @@ impl Charizard4 {
             .cost(|e| e.discard_attacking_energy_cards(&[Type::Any, Type::Any]))
             .damage(100)
     }
-    pub fn energy_burn(_builder: AttackBuilder) -> AttackBuilder {
-        unimplemented!();
+    pub fn energy_burn(builder: AttackBuilder) -> AttackBuilder {
+        builder
+            .disabled_under_special_conditions()
+            .energy_burn(Type::Fire)
     }
 }
 

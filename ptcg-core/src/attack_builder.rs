@@ -601,7 +601,7 @@ impl AttackBuilder {
                     card.owner == builder.player() &&
                     target.owner == builder.player() &&
                     builder.engine.is_basic_energy(card) &&
-                    builder.engine.archetype(card).provides().contains(&energy_type) &&
+                    builder.engine.provides(card).contains(&energy_type) &&
                     builder.engine.pokemon_types(target).contains(&target_type)
                 })
                 .collect::<Vec<_>>();
@@ -613,6 +613,21 @@ impl AttackBuilder {
 
             let choice = builder.dm.pick_attach_from_hand(builder.player(), &possibilities);
             builder.engine = builder.engine.attach_from_hand(choice.0, choice.1);
+            builder
+        })
+    }
+
+    pub fn energy_burn(self, energy_type: Type) -> Self {
+        self.add_operation(move |mut builder| {
+            for energy in builder.this_pokemon().attached.clone().iter() {
+                builder = effect::from_poke_power()
+                    .until_end_of_turn()
+                    .on_in_play_card(energy.card())
+                    .type_parameter(energy_type.clone())
+                    .custom_effect::<custom_effects::EnergyTypeTransform>()
+                    .apply(builder);
+            }
+
             builder
         })
     }

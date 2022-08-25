@@ -473,20 +473,22 @@ pub enum GameStage {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EffectTarget {
     Player(Player),
-    InPlay(Player, InPlayID),
+    InPlayPokemon(Player, InPlayID),
+    InPlayCard(Card),
 }
 
 impl EffectTarget {
     pub fn is_player(&self, player: Player) -> bool {
         *(match self {
             Self::Player(p) => p,
-            Self::InPlay(p, _) => p,
+            Self::InPlayPokemon(p, _) => p,
+            Self::InPlayCard(c) => &c.owner,
         }) == player
     }
 
     pub fn is_in_play(&self, in_play: &InPlayCard) -> bool {
         match self {
-            Self::InPlay(_, ip) => *ip == in_play.id,
+            Self::InPlayPokemon(_, ip) => *ip == in_play.id,
             _ => false,
         }
     }

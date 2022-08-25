@@ -241,6 +241,11 @@ class Builder
     self
   end
 
+  def energy_burn(energy_type)
+    @text << ".energy_burn(Type::#{energy_type})"
+    self
+  end
+
   def disabled_under_special_conditions
     @text << ".disabled_under_special_conditions()"
     self
@@ -562,6 +567,14 @@ $poke_power_patterns = [
         .attach_energy_from_hand("Water", "Water")
     },
   },
+  {
+    pattern: /^As often as you like during your turn, you may turn all Energy attached to \w+ into (?<energy_type>.*) Energy for the rest of the turn\. This power can't be used if \w+ is Asleep, Confused, or Paralyzed\.$/,
+    build: ->(energy_type:) {
+      disabled_under_special_conditions
+        .as_often_as_you_like_during_your_turn
+        .energy_burn(energy_type)
+    },
+  }
 ]
 
 def poke_power_impl(poke_power)
@@ -597,7 +610,6 @@ def attack_impl(attack)
     .gsub(/\ +\./, ".")
     .gsub(/\ +\,/, ",")
     .strip
-  damage = attack.fetch('damage', "")
 
   builder = Builder.new.attack_cost(attack["cost"])
 
@@ -711,7 +723,7 @@ def parse_pokemon_card(card)
     card.attacks.each { |pp| pp.card = card }
 
     card
- end
+end
 
 def normalize_text(card, text)
   text

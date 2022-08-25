@@ -63,6 +63,22 @@ impl CLIDrawable for FaceCard {
     }
 }
 
+pub fn energy_symbol(energy: &Type) -> String {
+    match energy {
+        Type::Colorless => "[C]",
+        Type::Fighting => "[F]",
+        Type::Fire => "[R]",
+        Type::Grass => "[G]",
+        Type::Lightning => "[L]",
+        Type::Psychic => "[P]",
+        Type::Water => "[W]",
+        Type::Dark => "[D]",
+        Type::Metal => "[M]",
+        Type::Fairy => "[Y]",
+        Type::Dragon => "[N]",
+        Type::Any => "[*]",
+    }.into()
+}
 
 impl InPlayCard {
     fn draw(&self, x: usize, y: usize, target: &mut CLIDrawTarget, engine: &GameEngine) {
@@ -71,20 +87,12 @@ impl InPlayCard {
         let energies = self.attached
             .iter()
             .filter(|card| card.is_up())
-            .map(|card| match card.card().archetype.as_str() {
-                "Double Colorless Energy (BS 96)" => "[C][C]",
-                "Fighting Energy (BS 97)" => "[F]",
-                "Fire Energy (BS 98)" => "[R]",
-                "Grass Energy (BS 99)" => "[G]",
-                "Lightning Energy (BS 100)" => "[L]",
-                "Psychic Energy (BS 101)" => "[P]",
-                "Water Energy (BS 102)" => "[W]",
-                "Defender (BS 80)" => "{Defender}",
-                _ => "[C]"
-            })
+            .flat_map(|card| engine.provides(card.card()))
+            .map(|energy_type| energy_symbol(&energy_type))
             .collect::<Vec<_>>()
-            .join("")
-            ;
+            .join("");
+
+        // "Defender (BS 80)" => "{Defender}",
         target.draw_line(&energies, x, y - 1);
 
         target.draw_line(&format!("{} HP", engine.remaining_hp(self)), x, y - 2);
